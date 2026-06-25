@@ -49,6 +49,14 @@ const useSellerStore = create((set, get) => ({
   sellerProductsSearch: "",
   currentSellerId: null,
 
+  // Payment state
+  paymentProcessing: false,
+  paymentError: null,
+  paymentHistory: [],
+  paymentHistoryTotal: 0,
+  paymentHistoryLoading: false,
+  paymentHistoryPagination: null,
+
   // Cache state
   lastFetchTime: null,
   cacheKey: null,
@@ -102,20 +110,16 @@ const useSellerStore = create((set, get) => ({
       const response = await sellerAPI.getByUserId(userId, params);
       console.log("📦 Sellers fetched successfully:", response.data);
 
-      // Extract sellers from response structure:
-      // { status: true, message: "seller list", sellers: { data: [...], total: 1, ... } }
+      // Extract sellers from response structure
       let sellersArray = [];
       let total = 0;
       let paginationData = null;
 
       if (response.data?.sellers?.data) {
-        // New structure with pagination
         sellersArray = Array.isArray(response.data.sellers.data)
           ? response.data.sellers.data
           : [];
         total = response.data.sellers.total || sellersArray.length;
-
-        // Extract pagination info
         paginationData = {
           current_page: response.data.sellers.current_page,
           first_page_url: response.data.sellers.first_page_url,
@@ -131,19 +135,16 @@ const useSellerStore = create((set, get) => ({
           total: response.data.sellers.total,
         };
       } else if (response.data?.sellers) {
-        // Direct sellers array (old structure)
         sellersArray = Array.isArray(response.data.sellers)
           ? response.data.sellers
           : [];
         total = sellersArray.length;
       } else if (response.data?.data?.sellers) {
-        // Nested data.sellers
         sellersArray = Array.isArray(response.data.data.sellers)
           ? response.data.data.sellers
           : [];
         total = sellersArray.length;
       } else if (response.data?.data?.data) {
-        // Nested data.data array
         sellersArray = Array.isArray(response.data.data.data)
           ? response.data.data.data
           : [];
@@ -201,17 +202,15 @@ const useSellerStore = create((set, get) => ({
 
       get().clearCache();
 
-      // Extract the created seller from response
       const newSeller = response.data?.data || response.data || sellerData;
 
-      const { sellers, currentPage, currentUserId, filters } = get();
+      const { sellers, currentUserId, currentPage, filters } = get();
       set({
         sellers: [newSeller, ...sellers],
         totalSellers: (sellers?.length || 0) + 1,
         loading: false,
       });
 
-      // Refresh the list to update pagination
       await get().fetchSellers(currentUserId, currentPage, filters);
 
       return newSeller;
@@ -226,14 +225,13 @@ const useSellerStore = create((set, get) => ({
     }
   },
 
-  // Get single seller by ID - Returns flat seller object
+  // Get single seller by ID
   getSellerById: async (sellerId) => {
     set({ loading: true, error: null });
     try {
       const response = await sellerAPI.getById(sellerId);
       console.log("📝 Seller fetched:", response.data);
 
-      // Extract seller from response - handle different response structures
       let sellerData = null;
 
       if (response.data?.data) {
@@ -259,132 +257,120 @@ const useSellerStore = create((set, get) => ({
     }
   },
 
-  // Update the fetchSellerProducts method
- // In sellerStore.js, update the fetchSellerProducts method
-
-fetchSellerProducts: async (sellerId, page = 1, search = '') => {
-  // Create a unique cache key for this request
-  const cacheKey = `${sellerId}-${page}-${search}`;
-  
-  // Check if this exact request is already in progress
-  if (productRequestCache.has(cacheKey)) {
-    console.log('⏳ Skipping duplicate products request (cache hit)');
-    return productRequestCache.get(cacheKey);
-  }
-
-  set({ 
-    sellerProductsLoading: true, 
-    sellerProductsError: null,
-    currentSellerId: sellerId,
-    sellerProductsSearch: search,
-  })
-  
-  // Create a promise and store it in the cache
-  const requestPromise = (async () => {
-    try {
-      const params = { page }
-      if (search) {
-        params.search = search
-      }
-      
-      const response = await sellerAPI.getSellerProducts(sellerId, params)
-      console.log('📦 Seller products fetched:', response.data)
-      
-      let productsArray = []
-      let total = 0
-      let paginationData = null
-      
-      // Extract products from response structure - FIXED
-      if (response.data?.sellerProducts?.data) {
-        // Correct structure: response.data.sellerProducts.data
-        productsArray = Array.isArray(response.data.sellerProducts.data) ? response.data.sellerProducts.data : []
-        total = response.data.sellerProducts.total || productsArray.length
-        paginationData = {
-          current_page: response.data.sellerProducts.current_page,
-          first_page_url: response.data.sellerProducts.first_page_url,
-          from: response.data.sellerProducts.from,
-          last_page: response.data.sellerProducts.last_page,
-          last_page_url: response.data.sellerProducts.last_page_url,
-          links: response.data.sellerProducts.links,
-          next_page_url: response.data.sellerProducts.next_page_url,
-          path: response.data.sellerProducts.path,
-          per_page: response.data.sellerProducts.per_page,
-          prev_page_url: response.data.sellerProducts.prev_page_url,
-          to: response.data.sellerProducts.to,
-          total: response.data.sellerProducts.total,
-        }
-      } else if (response.data?.data?.data) {
-        // Alternative: response.data.data.data
-        productsArray = Array.isArray(response.data.data.data) ? response.data.data.data : []
-        total = response.data.data.total || productsArray.length
-        paginationData = {
-          current_page: response.data.data.current_page,
-          first_page_url: response.data.data.first_page_url,
-          from: response.data.data.from,
-          last_page: response.data.data.last_page,
-          last_page_url: response.data.data.last_page_url,
-          links: response.data.data.links,
-          next_page_url: response.data.data.next_page_url,
-          path: response.data.data.path,
-          per_page: response.data.data.per_page,
-          prev_page_url: response.data.data.prev_page_url,
-          to: response.data.data.to,
-          total: response.data.data.total,
-        }
-      } else if (response.data?.products?.data) {
-        // Alternative: response.data.products.data
-        productsArray = Array.isArray(response.data.products.data) ? response.data.products.data : []
-        total = response.data.products.total || productsArray.length
-        paginationData = response.data.products
-      } else if (Array.isArray(response.data)) {
-        productsArray = response.data
-        total = productsArray.length
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        productsArray = response.data.data
-        total = productsArray.length
-      } else if (response.data?.sellerProducts && Array.isArray(response.data.sellerProducts)) {
-        productsArray = response.data.sellerProducts
-        total = productsArray.length
-      }
-      
-      console.log('📊 Products extracted:', productsArray.length, 'products')
-      console.log('📊 Total products:', total)
-      console.log('📊 Pagination:', paginationData)
-      
-      set({
-        sellerProducts: productsArray,
-        sellerProductsTotal: total,
-        sellerProductsCurrentPage: page,
-        sellerProductsPageSize: paginationData?.per_page || 15,
-        sellerProductsLoading: false,
-        sellerProductsPagination: paginationData,
-        sellerProductsSearch: search,
-        currentSellerId: sellerId,
-      })
-      
-      return response.data
-    } catch (error) {
-      console.error('❌ Failed to fetch seller products:', error)
-      toast.error(error.response?.data?.message || 'Failed to fetch seller products')
-      set({
-        sellerProducts: [],
-        sellerProductsTotal: 0,
-        sellerProductsLoading: false,
-        sellerProductsError: error.message || 'Failed to fetch seller products',
-        sellerProductsPagination: null,
-      })
-      throw error
-    } finally {
-      // Remove from cache after completion
-      productRequestCache.delete(cacheKey);
+  // Fetch seller products
+  fetchSellerProducts: async (sellerId, page = 1, search = '') => {
+    const cacheKey = `${sellerId}-${page}-${search}`;
+    
+    if (productRequestCache.has(cacheKey)) {
+      console.log('⏳ Skipping duplicate products request (cache hit)');
+      return productRequestCache.get(cacheKey);
     }
-  })();
-  
-  // Store the promise in cache
-  productRequestCache.set(cacheKey, requestPromise);
-  
-  return requestPromise;
-},
+
+    set({ 
+      sellerProductsLoading: true, 
+      sellerProductsError: null,
+      currentSellerId: sellerId,
+      sellerProductsSearch: search,
+    })
+    
+    const requestPromise = (async () => {
+      try {
+        const params = { page }
+        if (search) {
+          params.search = search
+        }
+        
+        const response = await sellerAPI.getSellerProducts(sellerId, params)
+        console.log('📦 Seller products fetched:', response.data)
+        
+        let productsArray = []
+        let total = 0
+        let paginationData = null
+        
+        if (response.data?.sellerProducts?.data) {
+          productsArray = Array.isArray(response.data.sellerProducts.data) ? response.data.sellerProducts.data : []
+          total = response.data.sellerProducts.total || productsArray.length
+          paginationData = {
+            current_page: response.data.sellerProducts.current_page,
+            first_page_url: response.data.sellerProducts.first_page_url,
+            from: response.data.sellerProducts.from,
+            last_page: response.data.sellerProducts.last_page,
+            last_page_url: response.data.sellerProducts.last_page_url,
+            links: response.data.sellerProducts.links,
+            next_page_url: response.data.sellerProducts.next_page_url,
+            path: response.data.sellerProducts.path,
+            per_page: response.data.sellerProducts.per_page,
+            prev_page_url: response.data.sellerProducts.prev_page_url,
+            to: response.data.sellerProducts.to,
+            total: response.data.sellerProducts.total,
+          }
+        } else if (response.data?.data?.data) {
+          productsArray = Array.isArray(response.data.data.data) ? response.data.data.data : []
+          total = response.data.data.total || productsArray.length
+          paginationData = {
+            current_page: response.data.data.current_page,
+            first_page_url: response.data.data.first_page_url,
+            from: response.data.data.from,
+            last_page: response.data.data.last_page,
+            last_page_url: response.data.data.last_page_url,
+            links: response.data.data.links,
+            next_page_url: response.data.data.next_page_url,
+            path: response.data.data.path,
+            per_page: response.data.data.per_page,
+            prev_page_url: response.data.data.prev_page_url,
+            to: response.data.data.to,
+            total: response.data.data.total,
+          }
+        } else if (response.data?.products?.data) {
+          productsArray = Array.isArray(response.data.products.data) ? response.data.products.data : []
+          total = response.data.products.total || productsArray.length
+          paginationData = response.data.products
+        } else if (Array.isArray(response.data)) {
+          productsArray = response.data
+          total = productsArray.length
+        } else if (response.data?.data && Array.isArray(response.data.data)) {
+          productsArray = response.data.data
+          total = productsArray.length
+        } else if (response.data?.sellerProducts && Array.isArray(response.data.sellerProducts)) {
+          productsArray = response.data.sellerProducts
+          total = productsArray.length
+        }
+        
+        console.log('📊 Products extracted:', productsArray.length, 'products')
+        console.log('📊 Total products:', total)
+        console.log('📊 Pagination:', paginationData)
+        
+        set({
+          sellerProducts: productsArray,
+          sellerProductsTotal: total,
+          sellerProductsCurrentPage: page,
+          sellerProductsPageSize: paginationData?.per_page || 15,
+          sellerProductsLoading: false,
+          sellerProductsPagination: paginationData,
+          sellerProductsSearch: search,
+          currentSellerId: sellerId,
+        })
+        
+        return response.data
+      } catch (error) {
+        console.error('❌ Failed to fetch seller products:', error)
+        toast.error(error.response?.data?.message || 'Failed to fetch seller products')
+        set({
+          sellerProducts: [],
+          sellerProductsTotal: 0,
+          sellerProductsLoading: false,
+          sellerProductsError: error.message || 'Failed to fetch seller products',
+          sellerProductsPagination: null,
+        })
+        throw error
+      } finally {
+        productRequestCache.delete(cacheKey);
+      }
+    })();
+    
+    productRequestCache.set(cacheKey, requestPromise);
+    return requestPromise;
+  },
 
   // Update seller
   updateSeller: async (sellerId, sellerData) => {
@@ -397,7 +383,6 @@ fetchSellerProducts: async (sellerId, page = 1, search = '') => {
 
       get().clearCache();
 
-      // Extract updated seller from response
       const updatedSeller = response.data?.data || response.data || sellerData;
 
       const { sellers, currentUserId, currentPage, filters } = get();
@@ -408,7 +393,6 @@ fetchSellerProducts: async (sellerId, page = 1, search = '') => {
         loading: false,
       });
 
-      // Refresh the list to update pagination
       await get().fetchSellers(currentUserId, currentPage, filters);
 
       return updatedSeller;
@@ -441,7 +425,6 @@ fetchSellerProducts: async (sellerId, page = 1, search = '') => {
         loading: false,
       });
 
-      // Refresh the list to update pagination
       await get().fetchSellers(currentUserId, currentPage, filters);
 
       return { success: true };
@@ -451,6 +434,79 @@ fetchSellerProducts: async (sellerId, page = 1, search = '') => {
       set({
         error: error.response?.data?.message || "Failed to delete seller",
         loading: false,
+      });
+      throw error;
+    }
+  },
+
+  // NEW: Process due payment for a seller
+  processDuePayment: async (sellerId, paymentData) => {
+    set({ paymentProcessing: true, paymentError: null });
+    try {
+      const response = await sellerAPI.processDuePayment(sellerId, paymentData);
+      console.log("✅ Payment processed successfully:", response.data);
+
+      toast.success("Payment processed successfully");
+
+      // Refresh seller data to update due amount
+      await get().fetchSellers(get().currentUserId);
+
+      return response.data;
+    } catch (error) {
+      console.error("❌ Failed to process payment:", error);
+      const errorMessage = error.response?.data?.message || "Failed to process payment";
+      toast.error(errorMessage);
+      set({
+        paymentError: errorMessage,
+        paymentProcessing: false,
+      });
+      throw error;
+    } finally {
+      set({ paymentProcessing: false });
+    }
+  },
+
+  // NEW: Fetch payment history for a seller
+  fetchPaymentHistory: async (sellerId, page = 1) => {
+    set({ paymentHistoryLoading: true });
+    try {
+      const response = await sellerAPI.getPaymentHistory(sellerId, { page });
+      console.log("📦 Payment history fetched:", response.data);
+
+      let history = [];
+      let total = 0;
+      let pagination = null;
+
+      if (response.data?.data) {
+        history = Array.isArray(response.data.data) ? response.data.data : [];
+        total = response.data.total || history.length;
+        pagination = {
+          current_page: response.data.current_page,
+          last_page: response.data.last_page,
+          per_page: response.data.per_page,
+          total: response.data.total,
+        };
+      } else if (Array.isArray(response.data)) {
+        history = response.data;
+        total = history.length;
+      }
+
+      set({
+        paymentHistory: history,
+        paymentHistoryTotal: total,
+        paymentHistoryPagination: pagination,
+        paymentHistoryLoading: false,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("❌ Failed to fetch payment history:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch payment history");
+      set({
+        paymentHistory: [],
+        paymentHistoryTotal: 0,
+        paymentHistoryLoading: false,
+        paymentHistoryPagination: null,
       });
       throw error;
     }
@@ -504,6 +560,18 @@ fetchSellerProducts: async (sellerId, page = 1, search = '') => {
       sellerProductsPagination: null,
       sellerProductsSearch: "",
       currentSellerId: null,
+    });
+  },
+
+  // Clear payment state
+  clearPaymentState: () => {
+    set({
+      paymentProcessing: false,
+      paymentError: null,
+      paymentHistory: [],
+      paymentHistoryTotal: 0,
+      paymentHistoryLoading: false,
+      paymentHistoryPagination: null,
     });
   },
 }));

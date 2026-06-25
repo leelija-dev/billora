@@ -19,7 +19,7 @@ import {
   FiMapPin,
   FiFileText,
   FiUser,
-  FiDollarSign,
+
 } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 import Button from "../../components/common/Button/Button";
@@ -34,6 +34,9 @@ import useSellerStore from "../../store/sellerStore";
 import { useAuthStore } from "../../store/authStore";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+
+import DuePaymentModal from '../../components/features/Sellers/DuePaymentModal';
+
 
 const Sellers = () => {
   const { user } = useAuthStore();
@@ -70,6 +73,9 @@ const Sellers = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingSeller, setViewingSeller] = useState(null);
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentSeller, setSelectedPaymentSeller] = useState(null);
 
   const navigate = useNavigate();
 
@@ -120,21 +126,21 @@ const Sellers = () => {
   }, []);
 
   // Add this useEffect in Sellers.jsx after the initial fetch
-useEffect(() => {
-  // Check if there's an edit parameter in the URL
-  const searchParams = new URLSearchParams(window.location.search);
-  const editId = searchParams.get('edit');
-  
-  if (editId) {
-    // Find the seller in the list
-    const sellerToEdit = safeSellers.find(s => s.id === parseInt(editId));
-    if (sellerToEdit) {
-      handleEditSeller(sellerToEdit);
+  useEffect(() => {
+    // Check if there's an edit parameter in the URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const editId = searchParams.get('edit');
+
+    if (editId) {
+      // Find the seller in the list
+      const sellerToEdit = safeSellers.find(s => s.id === parseInt(editId));
+      if (sellerToEdit) {
+        handleEditSeller(sellerToEdit);
+      }
+      // Clean up URL
+      window.history.replaceState({}, '', '/sellers');
     }
-    // Clean up URL
-    window.history.replaceState({}, '', '/sellers');
-  }
-}, [safeSellers]);
+  }, [safeSellers]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -175,10 +181,10 @@ useEffect(() => {
     }
   };
 
- const handleViewSeller = (seller) => {
-  // Navigate to seller details page instead of opening modal
-  navigate(`/seller/${seller.id}`);
-};
+  const handleViewSeller = (seller) => {
+    // Navigate to seller details page instead of opening modal
+    navigate(`/seller/${seller.id}`);
+  };
 
   const handleCancelForm = () => {
     setShowAddForm(false);
@@ -214,7 +220,7 @@ useEffect(() => {
       );
       toast.error(
         error.response?.data?.message ||
-          `Failed to ${showEditForm ? "update" : "create"} seller`,
+        `Failed to ${showEditForm ? "update" : "create"} seller`,
       );
     } finally {
       setFormSubmitting(false);
@@ -319,6 +325,19 @@ useEffect(() => {
       currency: "INR",
       minimumFractionDigits: 2,
     }).format(num);
+  };
+
+
+  // Add handler for payment
+  const handlePaymentClick = (seller) => {
+    setSelectedPaymentSeller(seller);
+    setShowPaymentModal(true);
+  };
+
+  // Add handler for successful payment
+  const handlePaymentSuccess = () => {
+    // Refresh sellers to update due amount
+    fetchSellers(currentUserId);
   };
 
   const columns = [
@@ -436,37 +455,54 @@ useEffect(() => {
     {
       header: "Actions",
       accessor: "id",
-      cell: (value, row) => (
-        <div className="flex items-center space-x-1">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-           onClick={() => handleViewSeller(row)}
-            className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="View seller details"
-          >
-            <FiEye className="w-4 h-4" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleEditSeller(row)}
-            className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-            title="Edit seller"
-          >
-            <FiEdit2 className="w-4 h-4" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleDeleteClick(row)}
-            className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            title="Delete seller"
-          >
-            <FiTrash2 className="w-4 h-4" />
-          </motion.button>
-        </div>
-      ),
+      cell: (value, row) => {
+        const dueAmount = parseFloat(row.due_amount) || 0;
+        return (
+          <div className="flex items-center space-x-1">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleViewSeller(row)}
+              className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="View seller details"
+            >
+              <FiEye className="w-4 h-4" />
+            </motion.button>
+
+            {/* NEW: Payment button - only show if due amount > 0 */}
+            {dueAmount > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handlePaymentClick(row)}
+                className="p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                title="Process payment"
+              >
+                <FaRupeeSign className="w-4 h-4" />
+              </motion.button>
+            )}
+
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleEditSeller(row)}
+              className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+              title="Edit seller"
+            >
+              <FiEdit2 className="w-4 h-4" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleDeleteClick(row)}
+              className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              title="Delete seller"
+            >
+              <FiTrash2 className="w-4 h-4" />
+            </motion.button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -483,6 +519,7 @@ useEffect(() => {
   );
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -514,11 +551,10 @@ useEffect(() => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setViewMode("table")}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === "table"
-                      ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                      : "text-gray-600 dark:text-gray-400"
-                  }`}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === "table"
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                    : "text-gray-600 dark:text-gray-400"
+                    }`}
                 >
                   <FiList className="w-4 h-4" />
                 </motion.button>
@@ -526,11 +562,10 @@ useEffect(() => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === "grid"
-                      ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                      : "text-gray-600 dark:text-gray-400"
-                  }`}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === "grid"
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                    : "text-gray-600 dark:text-gray-400"
+                    }`}
                 >
                   <FiGrid className="w-4 h-4" />
                 </motion.button>
@@ -748,6 +783,20 @@ useEffect(() => {
                             >
                               <FiEye className="w-4 h-4" />
                             </motion.button>
+
+                            {/* Payment button in grid view */}
+                            {parseFloat(seller.due_amount) > 0 && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handlePaymentClick(seller)}
+                                className="p-2 bg-white rounded-lg text-green-600 hover:bg-green-50"
+                                title="Process payment"
+                              >
+                                <FaRupeeSign className="w-4 h-4" />
+                              </motion.button>
+                            )}
+
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
@@ -812,6 +861,7 @@ useEffect(() => {
                       </motion.div>
                     );
                   })}
+
                 </div>
               )
             ) : (
@@ -836,199 +886,17 @@ useEffect(() => {
         </>
       )}
 
-      {/* View Seller Modal */}
-      <AnimatePresence>
-        {showViewModal && viewingSeller && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => {
-              setShowViewModal(false);
-              setViewingSeller(null);
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Seller Details
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowViewModal(false);
-                    setViewingSeller(null);
-                  }}
-                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <FiX className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {/* Profile Header */}
-                <div className="flex items-center space-x-4 pb-6 border-b border-gray-200 dark:border-gray-700">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <FiUser className="w-10 h-10 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {viewingSeller.name}
-                    </h3>
-                    {viewingSeller.gst_number && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        GST: {viewingSeller.gst_number}
-                      </p>
-                    )}
-                    <div className="flex items-center mt-1">
-                      <span
-                        className={`text-sm font-medium ${parseFloat(viewingSeller.due_amount) > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
-                      >
-                        Due Amount: {formatCurrency(viewingSeller.due_amount)}
-                      </span>
-                      {parseFloat(viewingSeller.due_amount) > 0 && (
-                        <span className="ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded-full">
-                          Payment Due
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Contact Information */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      Contact Information
-                    </h4>
-                    {viewingSeller.email && (
-                      <div className="flex items-center space-x-3 text-sm">
-                        <FiMail className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600 dark:text-gray-400">
-                          {viewingSeller.email}
-                        </span>
-                      </div>
-                    )}
-                    {viewingSeller.phone && (
-                      <div className="flex items-center space-x-3 text-sm">
-                        <FiPhone className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-600 dark:text-gray-400">
-                          {viewingSeller.phone}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Address Information */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                      Address Information
-                    </h4>
-                    {viewingSeller.address && (
-                      <div className="flex items-start space-x-3 text-sm">
-                        <FiMapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                        <div className="text-gray-600 dark:text-gray-400">
-                          <p>{viewingSeller.address}</p>
-                          {(viewingSeller.city || viewingSeller.state) && (
-                            <p>
-                              {[viewingSeller.city, viewingSeller.state]
-                                .filter(Boolean)
-                                .join(", ")}
-                            </p>
-                          )}
-                          {viewingSeller.pincode && (
-                            <p>Pincode: {viewingSeller.pincode}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Additional Information */}
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Seller ID
-                      </p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        #{viewingSeller.id}
-                      </p>
-                    </div>
-                    {viewingSeller.created_at && (
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Created At
-                        </p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {new Date(
-                            viewingSeller.created_at,
-                          ).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
-                      </div>
-                    )}
-                    {viewingSeller.updated_at && (
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Last Updated
-                        </p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {new Date(
-                            viewingSeller.updated_at,
-                          ).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowViewModal(false);
-                      setViewingSeller(null);
-                      handleEditSeller(viewingSeller);
-                    }}
-                    className="w-full sm:w-auto"
-                  >
-                    <FiEdit2 className="w-4 h-4 mr-2" />
-                    Edit Seller
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={() => {
-                      setShowViewModal(false);
-                      setViewingSeller(null);
-                    }}
-                    className="w-full sm:w-auto"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      
+    </motion.div>
+    <DuePaymentModal
+        seller={selectedPaymentSeller}
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedPaymentSeller(null);
+        }}
+        onSuccess={handlePaymentSuccess}
+      />
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
@@ -1109,7 +977,7 @@ useEffect(() => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 };
 

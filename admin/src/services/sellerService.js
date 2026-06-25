@@ -31,6 +31,16 @@ export const sellerAPI = {
   getSellerProducts: (sellerId, params = {}) => {
     return apiClient.get(`/seller-products/${sellerId}`, { params })
   },
+
+  // NEW: Process due payment for seller
+  processDuePayment: (sellerId, paymentData) => {
+    return apiClient.post(`/seller/due-payment/${sellerId}`, paymentData)
+  },
+
+  // NEW: Get payment history for seller
+  getPaymentHistory: (sellerId, params = {}) => {
+    return apiClient.get(`/seller/payment-history/${sellerId}`, { params })
+  },
 }
 
 const sellerService = sellerAPI
