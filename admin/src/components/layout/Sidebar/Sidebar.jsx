@@ -26,6 +26,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { FaFileMedical, FaRupeeSign, FaSellcast, FaStore } from "react-icons/fa";
 import { TbRuler2, TbSocial } from "react-icons/tb";
+import companyLogo from "../../../assets/images/company-logo.png";
 
 const Sidebar = () => {
   const { sidebarOpen, toggleSidebar, isMobile, setIsMobile } = useUIStore();
@@ -172,13 +173,14 @@ const Sidebar = () => {
             <AnimatePresence mode="wait">
               {sidebarOpen && (
                 <>
-                  <motion.div
-                    whileHover={{ scale: 1.05, rotate: 5 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20"
-                  >
-                    <span className="text-white font-bold text-xl">S</span>
-                  </motion.div>
+                  <motion.div className="h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden p-1">
+            <img
+              src={companyLogo}
+              alt="Logo"
+             
+              className="h-full w-full object-contain"
+            />
+          </motion.div>
 
                   <motion.div
                     key="logo-text"

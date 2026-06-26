@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { useAuthStore } from "../store/authStoreZustand";
 import toastService from "@/services/toastService";
+import Image from "next/image";
 
 const Navbar = () => {
   const { user, isLoggedIn, logout, isLoading: authLoading } = useAuthStore();
@@ -497,12 +498,18 @@ const Navbar = () => {
           {/* Logo */}
           <Link 
             href="/" 
-            className="flex items-center gap-1.5 sm:gap-2 group shrink-0"
+            className="flex items-center gap-[2px] group shrink-0"
             onClick={() => handleNavClick(0)}
           >
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white px-2 py-1 rounded-lg text-lg sm:text-xl md:text-2xl font-bold transition-all duration-200 group-hover:scale-105 group-hover:shadow-md">
-              B
-            </div>
+          <div className="h-[58px] w-[58px] min-h-[58px] min-w-[58px]  overflow-hidden p-1">
+            <Image
+              src="/image/company-logo.png"
+              alt="Logo"
+              width={57}
+              height={57}
+              className="h-full w-full object-contain"
+            />
+          </div>
             <span className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-200">
               {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
             </span>

@@ -19,6 +19,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { MdEmail, MdLocationOn } from "react-icons/md";
+import Image from 'next/image';
 
 const Footer = () => {
   const pathname = usePathname();
@@ -125,9 +126,15 @@ const Footer = () => {
               {/* Logo and Description */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white px-3 py-1.5 rounded-xl text-xl font-bold shadow-lg">
-                    B
-                  </div>
+                  <div className="h-[68px] w-[68px] min-h-[68px] min-w-[68px]  overflow-hidden p-1">
+                             <Image
+                               src="/image/company-logo.png"
+                               alt="Logo"
+                               width={67}
+                               height={67}
+                               className="h-full w-full object-contain"
+                             />
+                           </div>
                   <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                     {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
                   </span>
