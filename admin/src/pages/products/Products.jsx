@@ -1161,9 +1161,11 @@ const Products = () => {
                                 : []),
                             ]}
                             value={filters.category}
-                            onChange={(e) =>
-                              setFilters({ category: e.target.value })
-                            }
+                            onChange={(e) => {
+                              const selectedCategory = categories.find(cat => cat.id == e.target.value);
+                              setSearchTerm(selectedCategory?.name || "");
+                              setFilters({ category: e.target.value });
+                            }}
                           />
                           <Select
                             label="Status"
@@ -1173,9 +1175,14 @@ const Products = () => {
                               { value: "inactive", label: "Inactive" },
                             ]}
                             value={filters.status}
-                            onChange={(e) =>
-                              setFilters({ status: e.target.value })
-                            }
+                            onChange={(e) => {
+                              const statusMap = {
+                                "active": "active",
+                                "inactive": "inactive",
+                              };
+                              setSearchTerm(statusMap[e.target.value] || "");
+                              setFilters({ status: e.target.value });
+                            }}
                           />
                           <Select
                             label="Stock Status"
@@ -1186,9 +1193,15 @@ const Products = () => {
                               { value: "in", label: "In Stock" },
                             ]}
                             value={filters.stockStatus}
-                            onChange={(e) =>
-                              setFilters({ stockStatus: e.target.value })
-                            }
+                            onChange={(e) => {
+                              const stockStatusMap = {
+                                "low": "low stock",
+                                "out": "out of stock",
+                                "in": "in stock",
+                              };
+                              setSearchTerm(stockStatusMap[e.target.value] || "");
+                              setFilters({ stockStatus: e.target.value });
+                            }}
                           />
                         </div>
                       </div>

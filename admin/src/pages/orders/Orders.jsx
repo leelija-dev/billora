@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  FiPlus, 
-  FiSearch, 
-  FiFilter, 
+import {
+  FiPlus,
+  FiSearch,
+  FiFilter,
   FiEye,
   FiDownload,
   FiRefreshCw,
@@ -79,40 +79,40 @@ const Orders = () => {
   // Computed filtered orders based on current filters
   const filteredOrders = React.useMemo(() => {
     let filtered = [...orders]
-    
+
     // Apply search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase()
-      filtered = filtered.filter(order => 
+      filtered = filtered.filter(order =>
         (order.order_id && order.order_id.toString().toLowerCase().includes(searchLower)) ||
         (order.customer_name && order.customer_name.toLowerCase().includes(searchLower)) ||
         (order.customer_phone && order.customer_phone.toLowerCase().includes(searchLower)) ||
         (order.customer_email && order.customer_email.toLowerCase().includes(searchLower))
       )
     }
-    
+
     // Apply status filter
     if (filters.status) {
       filtered = filtered.filter(order => order.order_status === filters.status)
     }
-    
+
     // Apply payment status filter
     if (filters.paymentStatus) {
       filtered = filtered.filter(order => order.payment_status === filters.paymentStatus)
     }
-    
+
     // Apply date range filter
     if (filters.dateFrom) {
       const fromDate = new Date(filters.dateFrom)
       filtered = filtered.filter(order => new Date(order.created_at) >= fromDate)
     }
-    
+
     if (filters.dateTo) {
       const toDate = new Date(filters.dateTo)
       toDate.setHours(23, 59, 59, 999) // End of day
       filtered = filtered.filter(order => new Date(order.created_at) <= toDate)
     }
-    
+
     return filtered
   }, [orders, filters])
 
@@ -222,29 +222,29 @@ const Orders = () => {
       toast.error('Please enter a payment amount')
       return
     }
-    
+
     const amount = parseFloat(paidAmount)
     if (isNaN(amount) || amount <= 0) {
       toast.error('Please enter a valid payment amount')
       return
     }
-    
+
     if (amount > (paymentDetails?.remaining_due || 0)) {
       toast.error(`Payment amount cannot exceed remaining due of ₹${paymentDetails?.remaining_due?.toFixed(2)}`)
       return
     }
-    
+
     setUpdatingStatus(true)
     try {
       const result = await updateOrderPayment(selectedOrder.id, user.id, amount)
-      
+
       if (result.success) {
         // Close modal and reset form
         setShowPaymentModal(false)
         setSelectedOrder(null)
         setPaymentDetails(null)
         setPaidAmount('')
-        
+
         // Refresh orders to show updated data
         await fetchOrders(1, user.id)
       }
@@ -256,25 +256,25 @@ const Orders = () => {
     }
   }
 
- const handlePrintInvoice = (order, printType) => {
-  console.log('checking order in printe handler', order);
+  const handlePrintInvoice = (order, printType) => {
+    console.log('checking order in printe handler', order);
 
-  const modifiedOrder = {
-    ...order,
-    id: order.order_id
+    const modifiedOrder = {
+      ...order,
+      id: order.order_id
+    };
+    let isOrderDetails = true
+
+    if (printType === 'a4') {
+      const invoiceContent = generateA4InvoiceHTML(modifiedOrder, isOrderDetails);
+      printInvoice(invoiceContent, 'a4');
+    } else if (printType === 'thermal') {
+      const receiptContent = generateThermalInvoiceHTML(modifiedOrder, isOrderDetails);
+      printInvoice(receiptContent, 'thermal');
+    } else {
+      console.error('Invalid print type:', printType);
+    }
   };
-  let isOrderDetails=true
-
-  if (printType === 'a4') {
-    const invoiceContent = generateA4InvoiceHTML(modifiedOrder,isOrderDetails);
-    printInvoice(invoiceContent, 'a4');
-  } else if (printType === 'thermal') {
-    const receiptContent = generateThermalInvoiceHTML(modifiedOrder,isOrderDetails);
-    printInvoice(receiptContent, 'thermal');
-  } else {
-    console.error('Invalid print type:', printType);
-  }
-};
 
   const printInvoice = (content, type) => {
     const printWindow = window.open('', '_blank')
@@ -343,7 +343,7 @@ const Orders = () => {
   }
 
   const getStatusIcon = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return FiClock
       case 'processing': return FiRefreshCw
       case 'ready_to_serve': return FiCheckCircle
@@ -405,12 +405,11 @@ const Orders = () => {
       accessor: 'order_id',
       cell: (value, row) => (
         <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${
-            row.order_status === 'completed' ? 'bg-green-500' :
-            row.order_status === 'processing' ? 'bg-blue-500' :
-            row.order_status === 'pending' ? 'bg-yellow-500' :
-            'bg-gray-500'
-          }`} />
+          <div className={`w-2 h-2 rounded-full ${row.order_status === 'completed' ? 'bg-green-500' :
+              row.order_status === 'processing' ? 'bg-blue-500' :
+                row.order_status === 'pending' ? 'bg-yellow-500' :
+                  'bg-gray-500'
+            }`} />
           <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
             #{value}
           </span>
@@ -433,22 +432,22 @@ const Orders = () => {
       ),
     },
     {
-  header: 'Date',
-  accessor: 'created_at',
-  cell: (value) => (
-    <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-      <FiCalendar className="w-3 h-3 mr-1 text-gray-400" />
-      {new Date(value).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true, // set to false for 24-hour format
-      })}
-    </div>
-  ),
-},
+      header: 'Date',
+      accessor: 'created_at',
+      cell: (value) => (
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+          <FiCalendar className="w-3 h-3 mr-1 text-gray-400" />
+          {new Date(value).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true, // set to false for 24-hour format
+          })}
+        </div>
+      ),
+    },
     {
       header: 'Items',
       accessor: 'total_items',
@@ -490,7 +489,7 @@ const Orders = () => {
         const dueAmount = parseFloat(row.total_amount || 0) - parseFloat(row.paid_amount || 0)
         return (
           <div className="flex items-center">
-            
+
             <span className={`font-semibold ${dueAmount > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
               ₹{dueAmount.toFixed(2)}
             </span>
@@ -537,7 +536,7 @@ const Orders = () => {
           >
             <FiPrinter className="w-4 h-4" />
           </motion.button>
-          
+
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -605,9 +604,9 @@ const Orders = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="p-6">
-        <OrderForm 
+        <OrderForm
           onSuccess={handleFormSuccess}
           onCancel={handleCancelForm}
         />
@@ -644,9 +643,9 @@ const Orders = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="p-6">
-        <OrderForm 
+        <OrderForm
           order={selectedOrder}
           onSuccess={handleFormSuccess}
           onCancel={handleCancelForm}
@@ -679,7 +678,7 @@ const Orders = () => {
             Manage and track customer orders
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           {/* Date Range Selector */}
           {/* <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
@@ -816,7 +815,7 @@ const Orders = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {/* Handle bulk delete */}}
+                  onClick={() => {/* Handle bulk delete */ }}
                 >
                   Delete Selected
                 </Button>
@@ -844,17 +843,16 @@ const Orders = () => {
               className="pl-10"
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                showFilters 
+              className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
                   ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400'
                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
+                }`}
             >
               <FiFilter className="w-4 h-4" />
               <span>Filters</span>
@@ -950,19 +948,19 @@ const Orders = () => {
           loading={loading}
         />
         <Pagination
-        currentPage={currentPage}
-        totalItems={filteredOrders.length}
-        pageSize={pageSize}
-        onPageChange={handlePageChange}
-      />
+          currentPage={currentPage}
+          totalItems={filteredOrders.length}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+        />
       </motion.div>
-      
-      
+
+
     </motion.div>
   )
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="space-y-6 p-6"
@@ -1007,11 +1005,11 @@ const Orders = () => {
           setShowDetailsModal(false)
           setSelectedOrder(null)
         }}
-        title={`Order #${selectedOrder?.order_id }`}
+        title={`Order #${selectedOrder?.order_id}`}
         size="lg"
       >
         {selectedOrder && (
-          <OrderDetails 
+          <OrderDetails
             order={selectedOrder}
             onUpdateOrder={handleOrderStatusChange}
             onUpdatePayment={handlePaymentStatusChange}
@@ -1145,7 +1143,7 @@ const Orders = () => {
                 Choose print format for Order #{selectedOrder?.order_id}
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <Button
                 onClick={() => {
@@ -1159,7 +1157,7 @@ const Orders = () => {
                 <FiPrinter className="w-4 h-4 mr-2" />
                 Print A4 Invoice
               </Button>
-              
+
               <Button
                 onClick={() => {
                   handlePrintInvoice(selectedOrder, 'thermal')
@@ -1173,7 +1171,7 @@ const Orders = () => {
                 Print Thermal
               </Button>
             </div>
-            
+
             <div className="flex justify-center mt-4">
               <Button
                 variant="outline"

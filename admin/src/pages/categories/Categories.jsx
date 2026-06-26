@@ -564,18 +564,20 @@ const Categories = () => {
                         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Select
-                              label="Status"
-                              options={[
-                                { value: '', label: 'All Status' },
-                                { value: 'active', label: 'Active' },
-                                { value: 'inactive', label: 'Inactive' },
-                              ]}
-                              value={filters.status || ''}
-                              onChange={(e) => {
-                                setFilters({ status: e.target.value })
-                                fetchCategories()
-                              }}
-                            />
+  label="Status"
+  options={[
+    { value: '', label: 'All Status' },
+    { value: '1', label: 'Active' },
+    { value: '0', label: 'Inactive' },
+  ]}
+  value={filters.status || ''}
+  onChange={(e) => {
+    const statusValue = e.target.value;
+    setFilters({ status: statusValue });
+    // Fetch immediately with the new status filter
+    fetchCategories(1, { ...filters, status: statusValue });
+  }}
+/>
                           </div>
                         </div>
                       </motion.div>

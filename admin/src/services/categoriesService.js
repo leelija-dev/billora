@@ -8,6 +8,22 @@ export const categoriesAPI = {
     if (page) params.append('page', page)
     if (filters.search) params.append('search', filters.search)
     
+    // Handle status filter - convert to proper format
+    if (filters.status !== undefined && filters.status !== '') {
+      // Ensure status is sent as a number (0 or 1)
+      const statusValue = Number(filters.status)
+      if (!isNaN(statusValue)) {
+        params.append('status', statusValue)
+      }
+    }
+    
+    // Also support other filters if needed
+    if (filters.name) params.append('name', filters.name)
+    if (filters.description) params.append('description', filters.description)
+    if (filters.slug) params.append('slug', filters.slug)
+    
+    console.log('API Request URL:', `/categories?${params.toString()}`)
+    
     return apiClient.get(`/categories?${params.toString()}`)
   },
 

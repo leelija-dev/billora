@@ -32,6 +32,10 @@ const useStoreStore = create((set, get) => ({
   error: null,
   filters: {
     search: '',
+    status: '',
+    type: '',
+    start_date: '',
+    end_date: '',
   },
   // Store the current userId
   currentUserId: null,
@@ -40,12 +44,16 @@ const useStoreStore = create((set, get) => ({
   lastFetchTime: null,
   cacheKey: null,
 
-  // Fetch stores by user ID
+  // Fetch stores by user ID with all filters
   fetchStores: async (userId, page = 1, filters = {}) => {
     // Store the userId for later use
     set({ currentUserId: userId })
     
-    const cacheKey = JSON.stringify({ userId, page, filters })
+    // Merge filters
+    const currentFilters = get().filters
+    const mergedFilters = { ...currentFilters, ...filters }
+    
+    const cacheKey = JSON.stringify({ userId, page, filters: mergedFilters })
     const currentState = get()
     
     // Avoid duplicate requests if same data was fetched recently
@@ -72,25 +80,27 @@ const useStoreStore = create((set, get) => ({
       return
     }
 
+    console.log('🔄 Fetching stores with filters:', mergedFilters)
     set({ loading: true, cacheKey, currentUserId: userId })
+    
     try {
-      const response = await storeAPI.getByUserId(userId, filters.search)
-      console.log('API Response in store:', response)
+      const response = await storeAPI.getByUserId(userId, mergedFilters)
+      console.log('✅ API Response:', response.data)
       
       // Extract stores array from correct nested structure
-      const storesArray = response.data?.data?.data || response.data?.data || []
-      console.log('Stores data extracted:', storesArray)
+      const storesArray = response.data?.data?.data || response.data?.data || response.data || []
+      console.log('📊 Stores data extracted:', storesArray)
       
       // Cache the results
       const cacheData = {
         stores: storesArray,
-        total: storesArray.length
+        total: Array.isArray(storesArray) ? storesArray.length : 0
       }
       setCachedData(cacheKey, cacheData)
       
       set({
-        stores: storesArray,
-        totalStores: storesArray.length,
+        stores: Array.isArray(storesArray) ? storesArray : [],
+        totalStores: Array.isArray(storesArray) ? storesArray.length : 0,
         currentPage: page,
         loading: false,
         lastFetchTime: Date.now(),
@@ -98,7 +108,7 @@ const useStoreStore = create((set, get) => ({
       })
       return response.data
     } catch (error) {
-      console.error('Failed to fetch stores:', error)
+      console.error('❌ Failed to fetch stores:', error)
       set({ 
         stores: [], 
         totalStores: 0, 
@@ -129,7 +139,7 @@ const useStoreStore = create((set, get) => ({
       
       return response.data
     } catch (error) {
-      console.error('Failed to create store:', error)
+      console.error('❌ Failed to create store:', error)
       set({
         error: error.response?.data?.message || 'Failed to create store',
         loading: false,
@@ -157,7 +167,7 @@ const useStoreStore = create((set, get) => ({
       
       return response.data
     } catch (error) {
-      console.error('Failed to update store:', error)
+      console.error('❌ Failed to update store:', error)
       set({
         error: error.response?.data?.message || 'Failed to update store',
         loading: false,
@@ -186,7 +196,7 @@ const useStoreStore = create((set, get) => ({
       
       return { success: true }
     } catch (error) {
-      console.error('Failed to delete store:', error)
+      console.error('❌ Failed to delete store:', error)
       set({
         error: error.response?.data?.message || 'Failed to delete store',
         loading: false,
@@ -203,7 +213,7 @@ const useStoreStore = create((set, get) => ({
       set({ loading: false, error: null })
       return response.data
     } catch (error) {
-      console.error('Failed to fetch edit data:', error)
+      console.error('❌ Failed to fetch edit data:', error)
       set({
         error: error.response?.data?.message || 'Failed to fetch edit data',
         loading: false,
@@ -221,15 +231,20 @@ const useStoreStore = create((set, get) => ({
     if (JSON.stringify(newFilters) !== JSON.stringify(currentState.filters)) {
       set({ filters: newFilters })
       
+      // Clear any existing timeout
+      if (window._filterTimeout) {
+        clearTimeout(window._filterTimeout)
+      }
+      
       // Debounce API call
-      setTimeout(() => {
+      window._filterTimeout = setTimeout(() => {
         // Use the stored userId instead of trying to extract from stores
         const userId = get().currentUserId
         if (userId) {
           console.log('🔍 Searching stores with userId:', userId, 'and filters:', newFilters)
           get().fetchStores(userId, 1, newFilters)
         } else {
-          console.warn('No userId available for search, skipping fetch')
+          console.warn('⚠️ No userId available for search, skipping fetch')
         }
       }, 300)
     } else {
@@ -240,7 +255,7 @@ const useStoreStore = create((set, get) => ({
   // Clear cache data
   clearCache: () => {
     storeCache.clear()
-    console.log('Store cache cleared')
+    console.log('🗑️ Store cache cleared')
   },
 
   // Clear error

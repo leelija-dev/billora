@@ -556,7 +556,7 @@ const Brands = () => {
                       className="pl-10"
                     />
                   </div>
-                  <div className="flex items-center space-x-2">
+                  {/* <div className="flex items-center space-x-2">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -582,7 +582,7 @@ const Brands = () => {
                         <FiX className="w-5 h-5" />
                       </motion.button>
                     )}
-                  </div>
+                  </div> */}
                 </div>
               </>
             )}

@@ -8,7 +8,6 @@ import {
   FiPackage,
   FiDownload,
   FiRefreshCw,
-  FiMoreVertical,
   FiX,
   FiArrowLeft,
   FiAlertCircle,
@@ -18,9 +17,8 @@ import {
   FiGrid,
   FiList,
   FiEye,
-  FiCopy,
-  FiArchive,
   FiUpload,
+  FiCalendar,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -60,22 +58,26 @@ const Stores = () => {
   const [selectedStore, setSelectedStore] = useState(null);
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState("table"); // 'table' or 'grid'
+  const [viewMode, setViewMode] = useState("table");
   const [selectedStores, setSelectedStores] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storeToDelete, setStoreToDelete] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  
+  // Date filter states
+  const [startDate, setStartDate] = useState(filters.start_date || "");
+  const [endDate, setEndDate] = useState(filters.end_date || "");
+  const [statusFilter, setStatusFilter] = useState(filters.status || "");
+  const [typeFilter, setTypeFilter] = useState(filters.type || "");
 
   // Get current user ID from auth store
   const getUserId = () => {
-    // First try to get user from auth store (most reliable)
     if (user && user.id) {
       return user.id.toString();
     }
 
-    // Fallback to localStorage if auth store is not available
     const authStorage = localStorage.getItem("auth-storage");
     if (authStorage) {
       try {
@@ -88,7 +90,6 @@ const Stores = () => {
       }
     }
 
-    // Last fallback - try old auth key
     const authData = localStorage.getItem("auth");
     if (authData) {
       try {
@@ -120,13 +121,43 @@ const Stores = () => {
     fetchData();
   }, []);
 
+  // Handle search with debounce
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setFilters({ search: searchTerm });
+      if (searchTerm !== filters.search) {
+        setFilters({ search: searchTerm });
+      }
     }, 500);
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
+
+  // Handle date filters
+  useEffect(() => {
+    if (startDate !== filters.start_date || endDate !== filters.end_date) {
+      const debounceTimer = setTimeout(() => {
+        setFilters({ 
+          start_date: startDate,
+          end_date: endDate 
+        });
+      }, 500);
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [startDate, endDate]);
+
+  // Handle status filter
+  useEffect(() => {
+    if (statusFilter !== filters.status) {
+      setFilters({ status: statusFilter });
+    }
+  }, [statusFilter]);
+
+  // Handle type filter
+  useEffect(() => {
+    if (typeFilter !== filters.type) {
+      setFilters({ type: typeFilter });
+    }
+  }, [typeFilter]);
 
   const handleAddStore = () => {
     setShowAddForm(true);
@@ -134,31 +165,28 @@ const Stores = () => {
     setSelectedStore(null);
   };
 
-const handleEditStore = async (store) => {
-  try {
-    const editData = await getEditData(currentUserId);
-    console.log('📝 Edit data received:', editData);
-    
-    // Merge the edit data with the store data
-    const storeData = {
-      ...store,
-      ...editData.data,
-      // Ensure logo_url and bank_qr_url are properly set
-      logo_url: editData.data?.logo_url || store.logo_url || null,
-      bank_qr_url: editData.data?.bank_qr_url || store.bank_qr_url || null,
-    };
-    
-    setSelectedStore(storeData);
-    setShowEditForm(true);
-    setShowAddForm(false);
-  } catch (error) {
-    console.error('Failed to fetch edit data:', error);
-    // Fallback to store data without edit data
-    setSelectedStore(store);
-    setShowEditForm(true);
-    setShowAddForm(false);
-  }
-};
+  const handleEditStore = async (store) => {
+    try {
+      const editData = await getEditData(currentUserId);
+      console.log('📝 Edit data received:', editData);
+      
+      const storeData = {
+        ...store,
+        ...editData.data,
+        logo_url: editData.data?.logo_url || store.logo_url || null,
+        bank_qr_url: editData.data?.bank_qr_url || store.bank_qr_url || null,
+      };
+      
+      setSelectedStore(storeData);
+      setShowEditForm(true);
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Failed to fetch edit data:', error);
+      setSelectedStore(store);
+      setShowEditForm(true);
+      setShowAddForm(false);
+    }
+  };
 
   const handleCancelForm = () => {
     setShowAddForm(false);
@@ -176,9 +204,7 @@ const handleEditStore = async (store) => {
         await createStore(storeData);
         console.log("✅ Store created successfully");
       }
-      // Refresh the store list
       await fetchStores(currentUserId);
-      // Hide the form
       handleCancelForm();
     } catch (error) {
       console.error(
@@ -214,7 +240,6 @@ const handleEditStore = async (store) => {
         `Are you sure you want to delete ${selectedStores.length} stores?`,
       )
     ) {
-      // Implement bulk delete
       for (const id of selectedStores) {
         await deleteStore(id);
       }
@@ -236,7 +261,17 @@ const handleEditStore = async (store) => {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setFilters({ search: "", status: "", type: "" });
+    setStartDate("");
+    setEndDate("");
+    setStatusFilter("");
+    setTypeFilter("");
+    setFilters({ 
+      search: "", 
+      status: "", 
+      type: "",
+      start_date: "",
+      end_date: ""
+    });
     fetchStores(currentUserId);
   };
 
@@ -256,7 +291,6 @@ const handleEditStore = async (store) => {
     }
   };
 
-  // Helper function to get status display
   const getStatusDisplay = (store) => {
     const isActive =
       store.status === true || store.status === "active" || store.status === 1;
@@ -374,6 +408,15 @@ const handleEditStore = async (store) => {
       },
     },
     {
+      header: "Created",
+      accessor: "created_at",
+      cell: (value) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {value ? new Date(value).toLocaleDateString() : "N/A"}
+        </span>
+      ),
+    },
+    {
       header: "Actions",
       accessor: "id",
       cell: (value, row) => (
@@ -413,6 +456,17 @@ const handleEditStore = async (store) => {
     </div>
   );
 
+  // Active filters count
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (statusFilter) count++;
+    if (typeFilter) count++;
+    if (startDate) count++;
+    if (endDate) count++;
+    return count;
+  };
+
   return (
     <>
       <motion.div
@@ -434,11 +488,15 @@ const handleEditStore = async (store) => {
             <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
               <FiPackage className="w-4 h-4 mr-2" />
               Manage your store/shop information and settings
+              {getActiveFiltersCount() > 0 && (
+                <span className="ml-2 text-sm bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 px-2 py-0.5 rounded-full">
+                  {getActiveFiltersCount()} active filter{getActiveFiltersCount() !== 1 ? 's' : ''}
+                </span>
+              )}
             </p>
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Only show these buttons when not in form mode */}
             {!showAddForm && !showEditForm && (
               <>
                 {/* View Toggle */}
@@ -501,8 +559,8 @@ const handleEditStore = async (store) => {
               </>
             )}
 
-            {/* Add Store Button or Back Button */}
-            {!showAddForm && !showEditForm && safeStores.length === 0 ? (
+            {/* Add Store Button */}
+            {!showAddForm && !showEditForm && (
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -515,12 +573,6 @@ const handleEditStore = async (store) => {
                   Add Store
                 </Button>
               </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-              ></motion.div>
             )}
           </div>
         </motion.div>
@@ -602,7 +654,7 @@ const handleEditStore = async (store) => {
                     <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <Input
                       type="text"
-                      placeholder="Search stores by name, email, or city..."
+                      placeholder="Search stores by name, GST, mobile, address, or city..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -622,12 +674,12 @@ const handleEditStore = async (store) => {
                     >
                       <FiFilter className="w-4 h-4" />
                       <span>Filters</span>
-                      {(filters.status || filters.type) && (
+                      {getActiveFiltersCount() > 0 && (
                         <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
                       )}
                     </motion.button>
 
-                    {(searchTerm || filters.status || filters.type) && (
+                    {(searchTerm || statusFilter || typeFilter || startDate || endDate) && (
                       <motion.button
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -652,34 +704,152 @@ const handleEditStore = async (store) => {
                       className="overflow-hidden"
                     >
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Select
-                            label="Status"
-                            options={[
-                              { value: "", label: "All Status" },
-                              { value: "active", label: "Active" },
-                              { value: "inactive", label: "Inactive" },
-                            ]}
-                            value={filters.status || ""}
-                            onChange={(e) => {
-                              setFilters({ status: e.target.value });
-                              fetchStores(currentUserId);
-                            }}
-                          />
-                          <Select
-                            label="Store Type"
-                            options={[
-                              { value: "", label: "All Types" },
-                              { value: "retail", label: "Retail" },
-                              { value: "warehouse", label: "Warehouse" },
-                              { value: "online", label: "Online" },
-                            ]}
-                            value={filters.type || ""}
-                            onChange={(e) => {
-                              setFilters({ type: e.target.value });
-                              fetchStores(currentUserId);
-                            }}
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {/* Status Filter */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Status
+                            </label>
+                            <select
+                              value={statusFilter}
+                              onChange={(e) => setStatusFilter(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            >
+                              <option value="">All Status</option>
+                              <option value="1">Active</option>
+                              <option value="0">Inactive</option>
+                            </select>
+                          </div>
+
+                          {/* Store Type Filter */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Store Type
+                            </label>
+                            <select
+                              value={typeFilter}
+                              onChange={(e) => setTypeFilter(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            >
+                              <option value="">All Types</option>
+                              <option value="retail">Retail</option>
+                              <option value="warehouse">Warehouse</option>
+                              <option value="online">Online</option>
+                            </select>
+                          </div>
+
+                          {/* Start Date Filter */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <FiCalendar className="inline mr-1 w-4 h-4" />
+                              Start Date
+                            </label>
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* End Date Filter */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              <FiCalendar className="inline mr-1 w-4 h-4" />
+                              End Date
+                            </label>
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          {/* Clear Filters Button */}
+                          <div className="flex items-end">
+                            <Button
+                              variant="outline"
+                              onClick={clearFilters}
+                              className="w-full"
+                            >
+                              Clear All Filters
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Active Filters Display */}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {searchTerm && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                              Search: {searchTerm}
+                              <button
+                                onClick={() => {
+                                  setSearchTerm("");
+                                  setFilters({ search: "" });
+                                }}
+                                className="ml-2 hover:text-blue-600"
+                              >
+                                <FiX className="w-3 h-3" />
+                              </button>
+                            </span>
+                          )}
+                          {statusFilter && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                              Status: {statusFilter === "1" ? "Active" : "Inactive"}
+                              <button
+                                onClick={() => {
+                                  setStatusFilter("");
+                                  setFilters({ status: "" });
+                                }}
+                                className="ml-2 hover:text-green-600"
+                              >
+                                <FiX className="w-3 h-3" />
+                              </button>
+                            </span>
+                          )}
+                          {typeFilter && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                              Type: {typeFilter}
+                              <button
+                                onClick={() => {
+                                  setTypeFilter("");
+                                  setFilters({ type: "" });
+                                }}
+                                className="ml-2 hover:text-purple-600"
+                              >
+                                <FiX className="w-3 h-3" />
+                              </button>
+                            </span>
+                          )}
+                          {startDate && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                              From: {startDate}
+                              <button
+                                onClick={() => {
+                                  setStartDate("");
+                                  setFilters({ start_date: "" });
+                                }}
+                                className="ml-2 hover:text-orange-600"
+                              >
+                                <FiX className="w-3 h-3" />
+                              </button>
+                            </span>
+                          )}
+                          {endDate && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                              To: {endDate}
+                              <button
+                                onClick={() => {
+                                  setEndDate("");
+                                  setFilters({ end_date: "" });
+                                }}
+                                className="ml-2 hover:text-orange-600"
+                              >
+                                <FiX className="w-3 h-3" />
+                              </button>
+                            </span>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -865,15 +1035,14 @@ const handleEditStore = async (store) => {
               ) : (
                 <EmptyState
                   icon={FiPackage}
-                  title="No stores yet"
+                  title="No stores found"
                   description={
-                    searchTerm
-                      ? "No stores match your search criteria"
+                    searchTerm || statusFilter || typeFilter || startDate || endDate
+                      ? "No stores match your search or filter criteria"
                       : "Get started by adding your first store to manage your business locations"
                   }
                   action={
-                    !searchTerm &&
-                    safeStores.length === 0 && (
+                    !searchTerm && !statusFilter && !typeFilter && !startDate && !endDate && (
                       <Button onClick={handleAddStore} icon={FiPlus} size="lg">
                         Add Your First Store
                       </Button>
@@ -885,6 +1054,7 @@ const handleEditStore = async (store) => {
           </>
         )}
       </motion.div>
+
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
