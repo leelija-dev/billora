@@ -4,11 +4,26 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  FiLogIn, FiLogOut, FiUser, FiSettings, FiChevronDown, 
-  FiMenu, FiX, FiGrid, FiHome, FiCreditCard, FiUsers, 
-  FiBriefcase, FiFileText, FiMail, FiTool, FiHelpCircle,
-  FiLayers, FiStar, FiArrowRight
+import {
+  FiLogIn,
+  FiLogOut,
+  FiUser,
+  FiSettings,
+  FiChevronDown,
+  FiMenu,
+  FiX,
+  FiGrid,
+  FiHome,
+  FiCreditCard,
+  FiUsers,
+  FiBriefcase,
+  FiFileText,
+  FiMail,
+  FiTool,
+  FiHelpCircle,
+  FiLayers,
+  FiStar,
+  FiArrowRight,
 } from "react-icons/fi";
 import { useAuthStore } from "../store/authStoreZustand";
 import toastService from "@/services/toastService";
@@ -17,25 +32,25 @@ import Image from "next/image";
 const Navbar = () => {
   const { user, isLoggedIn, logout, isLoading: authLoading } = useAuthStore();
 
-  
   // Calculate hasActivePlan directly from user data
   const hasActivePlan = user?.is_active === 1 || false;
-  
+
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [isNavAction, setIsNavAction] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
+
   // Hide navbar on scroll state
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const scrollTimeoutRef = useRef(null);
-  
+
   // Dashboard URL (external app on port 3000)
-  const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:3000';
-  
+  const DASHBOARD_URL =
+    process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000";
+
   // Slider styles
   const [activeSliderStyle, setActiveSliderStyle] = useState({
     width: 0,
@@ -85,31 +100,31 @@ const Navbar = () => {
 
   // ✅ Updated: Hide navbar on specific pages
   const shouldHideNavbar = () => {
-    if (pathname === '/login' || pathname === '/register') {
+    if (pathname === "/login" || pathname === "/register") {
       return true;
     }
-    
-    if (pathname === '/order-success') {
+
+    if (pathname === "/order-success") {
       return true;
     }
-    
-    if (pathname.startsWith('/products/')) {
+
+    if (pathname.startsWith("/products/")) {
       return true;
     }
-    
-    if (pathname === '/products') {
+
+    if (pathname === "/products") {
       return true;
     }
-    if (pathname === '/forgot-password') {
+    if (pathname === "/forgot-password") {
       return true;
     }
-    if (pathname === '/reset-password') {
+    if (pathname === "/reset-password") {
       return true;
     }
-    if (pathname === '/order-history') {
+    if (pathname === "/order-history") {
       return true;
     }
-    
+
     return false;
   };
 
@@ -123,7 +138,7 @@ const Navbar = () => {
       user,
       pathname,
       shouldHide: shouldHideNavbar(),
-      authLoading
+      authLoading,
     });
   }, [isLoggedIn, hasActivePlan, user, pathname, authLoading]);
 
@@ -143,21 +158,20 @@ const Navbar = () => {
   // Handle logout - toast is now handled in the auth store
   const handleLogout = async () => {
     if (isLoggingOut) return;
-    
+
     setIsLoggingOut(true);
     setShowUserMenu(false);
-    
+
     try {
       await logout(); // Toast is handled inside the store
-      
+
       // Small delay for toast to show before navigation
       setTimeout(() => {
         router.push("/");
         router.refresh();
       }, 1500);
-      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     } finally {
       setIsLoggingOut(false);
     }
@@ -180,7 +194,10 @@ const Navbar = () => {
   // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target)
+      ) {
         setIsMobileMenuOpen(false);
       }
     };
@@ -209,7 +226,7 @@ const Navbar = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    
+
     animationFrameRef.current = requestAnimationFrame(() => {
       const current = navRefs.current[activeTabRef.current];
       const parent = containerRef.current;
@@ -241,17 +258,17 @@ const Navbar = () => {
     if (!isNavAction || index === activeTabRef.current) {
       return;
     }
-    
+
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    
+
     isHovering.current = true;
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    
+
     animationFrameRef.current = requestAnimationFrame(() => {
       const element = navRefs.current[index];
       const parent = containerRef.current;
@@ -275,11 +292,11 @@ const Navbar = () => {
 
   const handleMouseLeave = () => {
     isHovering.current = false;
-    
+
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    
+
     hoverTimeoutRef.current = setTimeout(() => {
       if (!isHovering.current) {
         setHoverStyle((prev) => ({
@@ -290,21 +307,21 @@ const Navbar = () => {
       }
     }, 30);
   };
-  
+
   const handleNavClick = (index) => {
     activeTabRef.current = index;
     setActiveTab(index);
     setIsNavAction(true);
-    
+
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    
+
     setHoverStyle({
       ...hoverStyle,
       opacity: 0,
     });
-    
+
     setTimeout(() => {
       updateActiveIndicator();
     }, 0);
@@ -314,23 +331,23 @@ const Navbar = () => {
     setIsNavAction(false);
     setActiveTab(-1);
     activeTabRef.current = -1;
-    
-    setActiveSliderStyle(prev => ({ 
-      ...prev, 
+
+    setActiveSliderStyle((prev) => ({
+      ...prev,
       opacity: 0,
-      transition: "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+      transition: "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
     }));
-    setActiveLineStyle(prev => ({ 
-      ...prev, 
+    setActiveLineStyle((prev) => ({
+      ...prev,
       opacity: 0,
-      transition: "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+      transition: "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
     }));
-    
+
     setHoverStyle((prev) => ({
       ...prev,
       opacity: 0,
     }));
-    
+
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
@@ -339,37 +356,36 @@ const Navbar = () => {
   useEffect(() => {
     const cleanPath = pathname?.replace(/\/$/, "");
     const isNav = isNavPage(cleanPath);
-    
+
     setIsNavAction(isNav);
-    
+
     if (isNav) {
       const newActiveTab = routeMap[cleanPath] ?? 0;
       activeTabRef.current = newActiveTab;
       setActiveTab(newActiveTab);
-      
-      setActiveSliderStyle(prev => ({ ...prev, opacity: 1 }));
-      setActiveLineStyle(prev => ({ ...prev, opacity: 1 }));
-      
+
+      setActiveSliderStyle((prev) => ({ ...prev, opacity: 1 }));
+      setActiveLineStyle((prev) => ({ ...prev, opacity: 1 }));
+
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
-      
+
       updateTimeoutRef.current = setTimeout(() => {
         updateActiveIndicator();
       }, 10);
     } else {
       activeTabRef.current = -1;
       setActiveTab(-1);
-      
-      setActiveSliderStyle(prev => ({ ...prev, opacity: 0 }));
-      setActiveLineStyle(prev => ({ ...prev, opacity: 0 }));
+
+      setActiveSliderStyle((prev) => ({ ...prev, opacity: 0 }));
+      setActiveLineStyle((prev) => ({ ...prev, opacity: 0 }));
     }
-    
+
     setHoverStyle((prev) => ({
       ...prev,
       opacity: 0,
     }));
-    
   }, [pathname]);
 
   useLayoutEffect(() => {
@@ -388,7 +404,7 @@ const Navbar = () => {
 
   useEffect(() => {
     let resizeTimeout;
-    
+
     const handleResize = () => {
       if (resizeTimeout) clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
@@ -409,7 +425,7 @@ const Navbar = () => {
     }
 
     window.addEventListener("resize", handleResize);
-    
+
     if (document.fonts) {
       document.fonts.ready.then(() => {
         setTimeout(() => {
@@ -426,7 +442,8 @@ const Navbar = () => {
       if (resizeTimeout) clearTimeout(resizeTimeout);
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationFrameRef.current)
+        cancelAnimationFrame(animationFrameRef.current);
     };
   }, [isNavAction, activeTab]);
 
@@ -450,18 +467,20 @@ const Navbar = () => {
   };
 
   const userInitial = getUserInitial();
-  const userEmail = user?.email || '';
-  const userName = user?.name || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email || "";
+  const userName = user?.name || user?.email?.split("@")[0] || "User";
 
   // Function to handle dashboard click - opens in new tab
   const handleDashboardClick = (e) => {
     e.preventDefault();
-    window.open(`${DASHBOARD_URL}dashboard`, '_blank');
+    window.open(`${DASHBOARD_URL}dashboard`, "_blank");
   };
 
   // Skeleton Loader Component
   const SkeletonButton = ({ width = "w-24", height = "h-9" }) => (
-    <div className={`${width} ${height} bg-gray-200 rounded-full animate-pulse`}></div>
+    <div
+      className={`${width} ${height} bg-gray-200 rounded-full animate-pulse`}
+    ></div>
   );
 
   const SkeletonUserMenu = () => (
@@ -486,39 +505,34 @@ const Navbar = () => {
         className={`fixed top-0 left-0 w-full bg-white z-[1000] h-16 md:h-20 flex items-center px-3 sm:px-4 md:px-6 transition-all duration-300 ${
           scrolled ? "shadow-lg border-b border-gray-100" : "shadow-sm"
         } ${
-          isNavbarVisible 
-            ? "translate-y-0 opacity-100" 
+          isNavbarVisible
+            ? "translate-y-0 opacity-100"
             : "-translate-y-full opacity-0"
         }`}
         style={{
-          transition: "transform 0.3s ease-in-out, opacity 0.25s ease-in-out"
+          transition: "transform 0.3s ease-in-out, opacity 0.25s ease-in-out",
         }}
       >
         <div className="max-w-[1400px] w-full mx-auto flex justify-between items-center gap-2 sm:gap-4">
           {/* Logo */}
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="flex items-center gap-[2px] group shrink-0"
             onClick={() => handleNavClick(0)}
           >
-          <div className="h-[58px] w-[58px] min-h-[58px] min-w-[58px]  overflow-hidden p-1">
-            <Image
-              src="/image/company-logo.png"
-              alt="Logo"
-              width={57}
-              height={57}
-              className="h-full w-full object-contain"
-            />
-          </div>
-            <span className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-200">
-              {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
-            </span>
+            <div className=" h-[38px] lg:h-[45px]   w-auto  overflow-hidden p-1">
+              <img
+                src="/image/company-logo.png"
+                alt="Logo"
+                className="h-full w-full object-contain"
+              />
+            </div>
           </Link>
 
           {/* Desktop Navigation - Hidden on Mobile */}
           <div className="hidden lg:flex items-center gap-2 xl:gap-4">
-            <div 
-              ref={containerRef} 
+            <div
+              ref={containerRef}
               className="relative flex items-center"
               onMouseLeave={handleMouseLeave}
             >
@@ -528,7 +542,9 @@ const Navbar = () => {
                 style={{
                   ...hoverStyle,
                   opacity: hoverStyle.opacity,
-                  transition: hoverStyle.transition || "all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
+                  transition:
+                    hoverStyle.transition ||
+                    "all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
                 }}
               />
 
@@ -537,7 +553,9 @@ const Navbar = () => {
                 className="absolute top-2 h-[36px] bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 rounded-md pointer-events-none will-change-transform"
                 style={{
                   ...activeSliderStyle,
-                  transition: activeSliderStyle.transition || "all 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
+                  transition:
+                    activeSliderStyle.transition ||
+                    "all 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
                 }}
               />
 
@@ -547,7 +565,9 @@ const Navbar = () => {
                 style={{
                   ...activeLineStyle,
                   boxShadow: "0 0 6px rgba(59,130,246,0.5)",
-                  transition: activeLineStyle.transition || "all 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
+                  transition:
+                    activeLineStyle.transition ||
+                    "all 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
                   backgroundSize: "200% 100%",
                 }}
               />
@@ -579,174 +599,192 @@ const Navbar = () => {
             {/* Dashboard Button Logic with Skeleton Loading */}
             {authLoading ? (
               <SkeletonButton width="w-32" height="h-9" />
+            ) : isLoggedIn && hasActivePlan ? (
+              <a
+                href={`${DASHBOARD_URL}dashboard`}
+                onClick={handleDashboardClick}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap cursor-pointer"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FiGrid size={16} />
+                <span>Dashboard</span>
+              </a>
             ) : (
-              isLoggedIn && hasActivePlan ? (
-                <a
-                  href={`${DASHBOARD_URL}dashboard`}
-                  onClick={handleDashboardClick}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap cursor-pointer"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FiGrid size={16} />
-                  <span>Dashboard</span>
-                </a>
-              ) : (
-                <Link
-                  href="/start-free-trial"
-                  onClick={handleExternalClick}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
-                >
-                  Start Free Trial
-                </Link>
-              )
+              <Link
+                href="/start-free-trial"
+                onClick={handleExternalClick}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 hover:shadow-md hover:scale-105 whitespace-nowrap"
+              >
+                Start Free Trial
+              </Link>
             )}
 
             {/* Desktop Auth Section with Skeleton Loading */}
             {authLoading ? (
               <SkeletonUserMenu />
-            ) : (
-              isLoggedIn ? (
-                <div className="relative" ref={userMenuRef}>
-                  <button
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
-                  >
-                    <div className="relative">
-                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
-                        {userInitial}
-                      </div>
-                      {hasActivePlan && (
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
-                      )}
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
+            ) : isLoggedIn ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 transition-all duration-200"
+                >
+                  <div className="relative">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                      {userInitial}
                     </div>
-                    <div className="hidden xl:block text-left">
-                      <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
-                        {userName}
-                      </div>
-                      {hasActivePlan && (
-                        <div className="text-xs text-green-600 font-medium">Premium Plan</div>
-                      )}
+                    {hasActivePlan && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>
+                    )}
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
+                  </div>
+                  <div className="hidden xl:block text-left">
+                    <div className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                      {userName}
                     </div>
-                    <FiChevronDown className={`text-gray-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} size={14} />
-                  </button>
+                    {hasActivePlan && (
+                      <div className="text-xs text-green-600 font-medium">
+                        Premium Plan
+                      </div>
+                    )}
+                  </div>
+                  <FiChevronDown
+                    className={`text-gray-400 transition-transform duration-200 hidden sm:block ${showUserMenu ? "rotate-180" : ""}`}
+                    size={14}
+                  />
+                </button>
 
-                  {/* Desktop Dropdown Menu */}
-                  {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
-                      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
-                              {userInitial}
-                            </div>
-                            {hasActivePlan && (
-                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white"></span>
-                            )}
+                {/* Desktop Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                            {userInitial}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {userName}
+                          {hasActivePlan && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-white"></span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {userName}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {userEmail}
+                          </p>
+                          {hasActivePlan && (
+                            <p className="text-xs text-green-600 font-medium mt-0.5">
+                              ✓ Premium Active
                             </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {userEmail}
-                            </p>
-                            {hasActivePlan && (
-                              <p className="text-xs text-green-600 font-medium mt-0.5">
-                                ✓ Premium Active
-                              </p>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                      <div className="py-2">
-                        {/* Dashboard link in dropdown menu */}
-                        {hasActivePlan && (
-                          <a
-                            href={`${DASHBOARD_URL}dashboard`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setShowUserMenu(false);
-                              window.open(`${DASHBOARD_URL}dashboard`, '_blank');
-                            }}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <FiGrid size={18} />
-                            <span>Dashboard</span>
-                            <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Active</span>
-                          </a>
-                        )}
-                        <a
-                          href={`${DASHBOARD_URL}settings`}
-                          onClick={(e) => {
-                              e.preventDefault();
-                              setShowUserMenu(false);
-                              window.open(`${DASHBOARD_URL}settings`, '_blank');
-                            }}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <FiUser size={18} />
-                          <span>My Profile</span>
-                        </a>
-                        <a
-                          href={`${DASHBOARD_URL}settings`}
-                          onClick={(e) => {
-                              e.preventDefault();
-                              setShowUserMenu(false);
-                              window.open(`${DASHBOARD_URL}settings`, '_blank');
-                            }}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <FiSettings size={18} />
-                          <span>Settings</span>
-                        </a>
-                      </div>
-                      <div className="border-t border-gray-100"></div>
-                      <div className="py-2">
-                        <button
-                          onClick={handleLogout}
-                          disabled={isLoggingOut}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          {isLoggingOut ? (
-                            <>
-                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                              </svg>
-                              <span>Logging out...</span>
-                            </>
-                          ) : (
-                            <>
-                              <FiLogOut size={18} />
-                              <span>Logout</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/login"
-                    onClick={handleExternalClick}
-                    className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all duration-200 whitespace-nowrap"
-                  >
-                    <FiLogIn size={14} />
-                    <span>Login</span>
-                  </Link>
-                </div>
-              )
+                    <div className="py-2">
+                      {/* Dashboard link in dropdown menu */}
+                      {hasActivePlan && (
+                        <a
+                          href={`${DASHBOARD_URL}dashboard`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowUserMenu(false);
+                            window.open(`${DASHBOARD_URL}dashboard`, "_blank");
+                          }}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <FiGrid size={18} />
+                          <span>Dashboard</span>
+                          <span className="ml-auto text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
+                            Active
+                          </span>
+                        </a>
+                      )}
+                      <a
+                        href={`${DASHBOARD_URL}settings`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowUserMenu(false);
+                          window.open(`${DASHBOARD_URL}settings`, "_blank");
+                        }}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <FiUser size={18} />
+                        <span>My Profile</span>
+                      </a>
+                      <a
+                        href={`${DASHBOARD_URL}settings`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowUserMenu(false);
+                          window.open(`${DASHBOARD_URL}settings`, "_blank");
+                        }}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <FiSettings size={18} />
+                        <span>Settings</span>
+                      </a>
+                    </div>
+                    <div className="border-t border-gray-100"></div>
+                    <div className="py-2">
+                      <button
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        {isLoggingOut ? (
+                          <>
+                            <svg
+                              className="animate-spin h-4 w-4"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            <span>Logging out...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FiLogOut size={18} />
+                            <span>Logout</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  onClick={handleExternalClick}
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all duration-200 whitespace-nowrap"
+                >
+                  <FiLogIn size={14} />
+                  <span>Login</span>
+                </Link>
+              </div>
             )}
           </div>
 
           {/* Mobile Menu Button - Updated for left sidebar */}
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden p-2 rounded-md hover:bg-gray-100 transition-all duration-200 z-20"
             aria-label="Toggle menu"
@@ -760,33 +798,35 @@ const Navbar = () => {
       <div className="h-16 md:h-20"></div>
 
       {/* Backdrop Overlay - Updated for left sidebar */}
-      <div 
+      <div
         className={`fixed inset-0 bg-black/50 z-[999] lg:hidden transition-all duration-300 ${
-          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+          isMobileMenuOpen
+            ? "opacity-100 visible"
+            : "opacity-0 invisible pointer-events-none"
         }`}
         onClick={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Mobile Sidebar Menu - NOW FROM LEFT SIDE with enhanced design */}
-      <div 
+      <div
         ref={mobileMenuRef}
         className={`fixed top-0 left-0 h-full w-full max-w-[320px] bg-gradient-to-b from-white to-gray-50 shadow-2xl z-[1000] lg:hidden transition-all duration-300 ease-out ${
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Mobile Menu Header - Gradient background */}
           <div className="relative px-5 py-6 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600">
             <div className="absolute top-4 right-4">
-              <button 
+              <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
               >
                 <FiX size={20} />
               </button>
             </div>
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="flex items-center gap-2"
               onClick={() => setIsMobileMenuOpen(false)}
             >
@@ -794,7 +834,7 @@ const Navbar = () => {
                 B
               </div>
               <span className="text-xl font-bold text-white">
-                {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
+                {process.env.NEXT_PUBLIC_APP_NAME || "Billora"}
               </span>
             </Link>
             <p className="text-white/80 text-xs mt-3 ml-1">
@@ -828,17 +868,25 @@ const Navbar = () => {
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm"></span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-900">{userName}</p>
-                    <p className="text-xs text-gray-500 break-all">{userEmail}</p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {userName}
+                    </p>
+                    <p className="text-xs text-gray-500 break-all">
+                      {userEmail}
+                    </p>
                     {hasActivePlan ? (
                       <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
                         <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                        <p className="text-xs font-medium text-green-700">Premium Plan Active</p>
+                        <p className="text-xs font-medium text-green-700">
+                          Premium Plan Active
+                        </p>
                       </div>
                     ) : (
                       <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded-full">
                         <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                        <p className="text-xs font-medium text-gray-600">Free Plan</p>
+                        <p className="text-xs font-medium text-gray-600">
+                          Free Plan
+                        </p>
                       </div>
                     )}
                   </div>
@@ -859,10 +907,13 @@ const Navbar = () => {
                   : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
               }`}
             >
-              <FiHome size={20} className={pathname === "/" ? "text-blue-600" : "text-gray-400"} />
+              <FiHome
+                size={20}
+                className={pathname === "/" ? "text-blue-600" : "text-gray-400"}
+              />
               <span>Home</span>
             </Link>
-            
+
             {navItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -877,7 +928,10 @@ const Navbar = () => {
                       : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                   }`}
                 >
-                  <Icon size={20} className={isActive ? "text-blue-600" : "text-gray-400"} />
+                  <Icon
+                    size={20}
+                    className={isActive ? "text-blue-600" : "text-gray-400"}
+                  />
                   <span>{item.name}</span>
                   {isActive && (
                     <FiArrowRight size={16} className="ml-auto text-blue-600" />
@@ -885,7 +939,7 @@ const Navbar = () => {
                 </Link>
               );
             })}
-            
+
             {/* Additional helpful links */}
             <div className="pt-4 mt-2 border-t border-gray-200">
               <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -927,7 +981,7 @@ const Navbar = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       setIsMobileMenuOpen(false);
-                      window.open(`${DASHBOARD_URL}dashboard`, '_blank');
+                      window.open(`${DASHBOARD_URL}dashboard`, "_blank");
                     }}
                     className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
                     target="_blank"
@@ -937,7 +991,7 @@ const Navbar = () => {
                     <span>Go to Dashboard</span>
                   </a>
                 )}
-                
+
                 {/* Free Trial / Book Demo - Enhanced */}
                 <Link
                   href="/start-free-trial"
@@ -947,7 +1001,7 @@ const Navbar = () => {
                   <FiStar size={18} />
                   <span>Start Free Trial</span>
                 </Link>
-                
+
                 {isLoggedIn ? (
                   <>
                     <Link
@@ -976,9 +1030,24 @@ const Navbar = () => {
                     >
                       {isLoggingOut ? (
                         <>
-                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
                           </svg>
                           <span>Logging out...</span>
                         </>
@@ -1005,15 +1074,16 @@ const Navbar = () => {
               </>
             )}
           </div>
-          
+
           {/* Version info */}
           <div className="px-4 py-3 text-center border-t border-gray-200 bg-white">
-            <p className="text-xs text-gray-400">© 2024 {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}</p>
+            <p className="text-xs text-gray-400">
+              © 2024 {process.env.NEXT_PUBLIC_APP_NAME || "Billora"}
+            </p>
             <p className="text-xs text-gray-400 mt-0.5">v2.0.0</p>
           </div>
         </div>
       </div>
-     
     </>
   );
 };

@@ -126,18 +126,19 @@ const Footer = () => {
               {/* Logo and Description */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="h-[68px] w-[68px] min-h-[68px] min-w-[68px]  overflow-hidden p-1">
-                             <Image
-                               src="/image/company-logo.png"
-                               alt="Logo"
-                               width={67}
-                               height={67}
-                               className="h-full w-full object-contain"
-                             />
-                           </div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}
-                  </span>
+                   <Link
+            href="/"
+            className="flex items-center gap-[2px] group shrink-0"
+            onClick={() => handleNavClick(0)}
+          >
+
+              <img
+                src="/image/company-2-logo.png"
+                alt="Logo"
+                className="h-full max-h-[38px] lg:max-h-[60px] max-w-[250px] w-auto "
+              />
+            
+          </Link>
                 </div>
                 <p className="text-gray-300 text-sm leading-relaxed max-w-md">
                   Modern GST billing software for Indian businesses. Simplify your invoicing, 

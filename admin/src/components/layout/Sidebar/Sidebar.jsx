@@ -24,7 +24,12 @@ import {
   FiTag,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaFileMedical, FaRupeeSign, FaSellcast, FaStore } from "react-icons/fa";
+import {
+  FaFileMedical,
+  FaRupeeSign,
+  FaSellcast,
+  FaStore,
+} from "react-icons/fa";
 import { TbRuler2, TbSocial } from "react-icons/tb";
 import companyLogo from "../../../assets/images/company-logo.png";
 
@@ -86,7 +91,7 @@ const Sidebar = () => {
     reports: FiBarChart2,
     plans: FiCreditCard,
     "social-link": TbSocial,
-    "seller": FaSellcast,
+    seller: FaSellcast,
     gst: FaRupeeSign,
     settings: FiSettings,
   };
@@ -173,28 +178,15 @@ const Sidebar = () => {
             <AnimatePresence mode="wait">
               {sidebarOpen && (
                 <>
-                  <motion.div className="h-[40px] w-[40px] min-h-[40px] min-w-[40px]  overflow-hidden p-1">
-            <img
-              src={companyLogo}
-              alt="Logo"
-             
-              className="h-full w-full object-contain"
-            />
-          </motion.div>
-
-                  <motion.div
-                    key="logo-text"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.1 }}
-                    className="flex flex-col"
-                  >
-                    <span className="font-semibold text-xl bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                      The Fast Bill
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400"></span>
+                  <motion.div className="h-[40px]  min-h-[40px] w-auto  overflow-hidden p-1">
+                    <img
+                      src={companyLogo}
+                      alt="Logo"
+                      className="h-full w-full object-contain"
+                    />
                   </motion.div>
+
+                  
                 </>
               )}
             </AnimatePresence>
