@@ -825,18 +825,17 @@ const Navbar = () => {
                 <FiX size={20} />
               </button>
             </div>
-            <Link
-              href="/"
-              className="flex items-center gap-2"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <div className="bg-white/20 backdrop-blur-sm text-white px-2.5 py-1.5 rounded-xl text-xl font-bold">
-                B
-              </div>
-              <span className="text-xl font-bold text-white">
-                {process.env.NEXT_PUBLIC_APP_NAME || "Billora"}
-              </span>
-            </Link>
+           <Link
+                    href="/"
+                    className="flex items-center gap-[2px] group shrink-0"
+                    onClick={() => handleNavClick(0)}
+                  >
+                    <img
+                      src="/image/company-2-logo.png"
+                      alt="Logo"
+                      className="h-full max-h-[38px] lg:max-h-[60px] max-w-[250px] w-auto "
+                    />
+                  </Link>
             <p className="text-white/80 text-xs mt-3 ml-1">
               Streamline your business finances
             </p>
@@ -940,7 +939,7 @@ const Navbar = () => {
               );
             })}
 
-            {/* Additional helpful links */}
+            {/* Additional helpful links
             <div className="pt-4 mt-2 border-t border-gray-200">
               <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                 Resources
@@ -961,7 +960,7 @@ const Navbar = () => {
                 <FiTool size={18} />
                 <span>Support</span>
               </Link>
-            </div>
+            </div> */}
           </div>
 
           {/* Mobile Action Buttons - Enhanced with better styling and skeleton loading */}

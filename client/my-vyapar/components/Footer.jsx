@@ -1,9 +1,9 @@
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import Container from '../components/Container';
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import Container from "../components/Container";
 import {
   FaTwitter,
   FaLinkedinIn,
@@ -19,20 +19,20 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { MdEmail, MdLocationOn } from "react-icons/md";
-import Image from 'next/image';
+import Image from "next/image";
 
 const Footer = () => {
   const pathname = usePathname();
 
   // Hide footer on specific pages (same as navbar)
   const shouldHideFooter = () => {
-    if (pathname === '/login' || pathname === '/register') return true;
-    if (pathname === '/order-success') return true;
-    if (pathname.startsWith('/products/')) return true;
-    if (pathname === '/products') return true;
-    if (pathname === '/forgot-password') return true;
-    if (pathname === '/reset-password') return true;
-    if (pathname === '/order-history') {
+    if (pathname === "/login" || pathname === "/register") return true;
+    if (pathname === "/order-success") return true;
+    if (pathname.startsWith("/products/")) return true;
+    if (pathname === "/products") return true;
+    if (pathname === "/forgot-password") return true;
+    if (pathname === "/reset-password") return true;
+    if (pathname === "/order-history") {
       return true;
     }
     return false;
@@ -41,63 +41,55 @@ const Footer = () => {
   if (shouldHideFooter()) return null;
 
   const socialLinks = [
-    { name: 'Facebook', icon: FaFacebookF, url: '#' },
-    { name: 'Twitter', icon: FaTwitter, url: '#' },
-    { name: 'LinkedIn', icon: FaLinkedinIn, url: '#' },
-    { name: 'Instagram', icon: FaInstagram, url: '#' },
-    { name: 'YouTube', icon: FaYoutube, url: '#' },
+    { name: "Facebook", icon: FaFacebookF, url: "#" },
+    { name: "Twitter", icon: FaTwitter, url: "#" },
+    { name: "LinkedIn", icon: FaLinkedinIn, url: "#" },
+    { name: "Instagram", icon: FaInstagram, url: "#" },
+    { name: "YouTube", icon: FaYoutube, url: "#" },
   ];
 
   const footerSections = [
     {
-      title: 'Product',
+      title: "Product",
       links: [
-        { label: 'Pricing', href: '/pricing' },
-       
-        { label: 'Solutions', href: '/solution' },
-       
-      ]
-    },
-    {
-      title: 'Company',
-      links: [
-        { label: 'About Us', href: '/about' },
-        { label: 'Careers', href: '/careers' },
-       
-       
-        { label: 'Blog', href: '/blog' },
-      ]
-    },
-    {
-      title: 'Support',
-      links: [
-      
-        { label: 'Contact Us', href: '/contact' },
-      
-      ]
-    },
-    {
-      title: 'Legal',
-      links: [
-        { label: 'Privacy Policy', href: '/privacy-policy' },
-        { label: 'Terms of Service', href: '/terms-service' },
-        { label: 'Cookie Policy', href: '/cookie-policy' },
-        { label: 'GDPR', href: '/gdpr' },
+        { label: "Pricing", href: "/pricing" },
 
-     
-       
-      ]
-    }
+        { label: "Solutions", href: "/solution" },
+      ],
+    },
+    {
+      title: "Company",
+      links: [
+        { label: "About Us", href: "/about" },
+        { label: "Careers", href: "/careers" },
+
+        { label: "Blog", href: "/blog" },
+      ],
+    },
+    {
+      title: "Support",
+      links: [{ label: "Contact Us", href: "/contact" }],
+    },
+    {
+      title: "Legal",
+      links: [
+        { label: "Privacy Policy", href: "/privacy-policy" },
+        { label: "Terms of Service", href: "/terms-service" },
+        { label: "Cookie Policy", href: "/cookie-policy" },
+        { label: "GDPR", href: "/gdpr" },
+      ],
+    },
   ];
 
   const contactInfo = {
     phone: [
       { number: "+91 7003150015", label: "Sales & Support" },
-      { number: "+91 332 584 9017", label: "Landline" }
+      { number: "+91 332 584 9017", label: "Landline" },
     ],
     email: "info@leelija.com",
-    address: "Leelija Web Solution Pvt Ltd, Taki Road, Bamunmura, Barasat, Kolkata - 700125, West Bengal, India",
-    hours: "9 AM to 7 PM (Everyday)"
+    address:
+      "Leelija Web Solution Pvt Ltd, Taki Road, Bamunmura, Barasat, Kolkata - 700125, West Bengal, India",
+    hours: "9 AM to 7 PM (Everyday)",
   };
 
   return (
@@ -106,7 +98,7 @@ const Footer = () => {
       <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-100px opacity-20 bg-gradient-to-r from-cyan-500 to-purple-500" />
       <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-100px opacity-15 bg-gradient-to-r from-sky-400 to-indigo-400" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-120px opacity-10 bg-gradient-to-r from-indigo-500 to-cyan-500" />
-      
+
       {/* Grid pattern overlay */}
       <div
         className="absolute inset-0 opacity-[0.03]"
@@ -120,29 +112,27 @@ const Footer = () => {
         <div className="relative z-10">
           {/* Main Footer Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 mb-12">
-            
             {/* Brand & Contact Info Section */}
             <div className="lg:col-span-5 space-y-6">
               {/* Logo and Description */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                   <Link
-            href="/"
-            className="flex items-center gap-[2px] group shrink-0"
-            onClick={() => handleNavClick(0)}
-          >
-
-              <img
-                src="/image/company-2-logo.png"
-                alt="Logo"
-                className="h-full max-h-[38px] lg:max-h-[60px] max-w-[250px] w-auto "
-              />
-            
-          </Link>
+                  <Link
+                    href="/"
+                    className="flex items-center gap-[2px] group shrink-0"
+                    onClick={() => handleNavClick(0)}
+                  >
+                    <img
+                      src="/image/company-2-logo.png"
+                      alt="Logo"
+                      className="h-full max-h-[38px] lg:max-h-[60px] max-w-[250px] w-auto "
+                    />
+                  </Link>
                 </div>
                 <p className="text-gray-300 text-sm leading-relaxed max-w-md">
-                  Modern GST billing software for Indian businesses. Simplify your invoicing, 
-                  stay compliant, and accelerate growth with our all-in-one platform.
+                  Modern GST billing software for Indian businesses. Simplify
+                  your invoicing, stay compliant, and accelerate growth with our
+                  all-in-one platform.
                 </p>
               </div>
 
@@ -155,12 +145,15 @@ const Footer = () => {
                   </div>
                   <div>
                     {contactInfo.phone.map((phone, idx) => (
-                      <a 
+                      <a
                         key={idx}
-                        href={`tel:${phone.number.replace(/\s/g, '')}`}
+                        href={`tel:${phone.number.replace(/\s/g, "")}`}
                         className="block text-gray-200 font-medium hover:text-blue-400 transition-colors text-sm mb-1"
                       >
-                        {phone.number} <span className="text-gray-400 text-xs font-normal">({phone.label})</span>
+                        {phone.number}{" "}
+                        <span className="text-gray-400 text-xs font-normal">
+                          ({phone.label})
+                        </span>
                       </a>
                     ))}
                   </div>
@@ -171,7 +164,7 @@ const Footer = () => {
                   <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-400/30">
                     <MdEmail className="text-purple-400 text-sm" />
                   </div>
-                  <a 
+                  <a
                     href={`mailto:${contactInfo.email}`}
                     className="text-gray-200 hover:text-purple-400 transition-colors text-sm"
                   >
@@ -195,7 +188,9 @@ const Footer = () => {
                     <FaClock className="text-green-400 text-sm" />
                   </div>
                   <div>
-                    <p className="text-gray-200 text-sm font-medium">Support Hours</p>
+                    <p className="text-gray-200 text-sm font-medium">
+                      Support Hours
+                    </p>
                     <p className="text-gray-400 text-sm">{contactInfo.hours}</p>
                   </div>
                 </div>
@@ -208,8 +203,12 @@ const Footer = () => {
                     <FaStar className="text-white text-lg" />
                   </div>
                   <div>
-                    <p className="font-bold text-white text-sm">Trusted by 1 Crore+ Indian Businesses</p>
-                    <p className="text-xs text-gray-400">Join millions of happy customers</p>
+                    <p className="font-bold text-white text-sm">
+                      Trusted by 1 Crore+ Indian Businesses
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Join millions of happy customers
+                    </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-400">
@@ -274,7 +273,9 @@ const Footer = () => {
 
               {/* Copyright */}
               <div className="text-gray-500 text-xs order-3 md:order-2">
-                &copy; {new Date().getFullYear()} {process.env.NEXT_PUBLIC_APP_NAME || 'Billora'}. All rights reserved.
+                &copy; {new Date().getFullYear()}{" "}
+                {process.env.NEXT_PUBLIC_APP_NAME || "Billora"}. All rights
+                reserved.
               </div>
 
               {/* CTA Button */}
