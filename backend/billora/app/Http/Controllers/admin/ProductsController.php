@@ -91,7 +91,7 @@ class ProductsController extends Controller
                     }
                     $query = Products::with($relations)
                         ->where('user_id', $user);
-                        // ->where('is_active', true);
+                    // ->where('is_active', true);
                     // Search filter
                     if ($request->has('search') && !empty($request->search)) {
 
@@ -102,7 +102,43 @@ class ProductsController extends Controller
                                 ->orWhere('category_id', 'like', '%' . $request->search . '%')
                                 ->orWhere('brand_id', 'like', '%' . $request->search . '%')
                                 ->orWhere('unit_id', 'like', '%' . $request->search . '%')
-                                ->orWhere('unit_amount', 'like', '%' . $request->search . '%');
+                                // ->orWhere('is_active', 'like', '%' . $request->search . '%')
+                                ->orWhere('unit_amount', 'like', '%' . $request->search . '%')
+
+                                ->orWhereHas('category', function ($category) use ($request) {
+                                    $category->where('name', 'like', "%{$request->search}%");
+                                });
+                            if ($request->search == 'active') {
+                                $q->orWhere('is_active', 1);
+                            }
+                            if ($request->search == 'inactive') {
+                                $q->orWhere('is_active', 0);
+                            }
+                            // if ($request->search == "low_stock") {
+                            //     $q->orWhereHas('stocks', function ($stocks) {
+                            //         $stocks->where('quantity', '<=', 5)
+                            //             ->where('quantity', '>', 0);
+                            //     });
+                            // }
+                            if ($request->search == 'low-stock') {
+                                $q->orWhereHas('stocks', function ($stocks) {
+                                    $stocks->whereBetween('quantity', [1, 10]);
+                                });
+                            }
+
+
+                            if ($request->search == 'out-of-stock') {
+                                $q->orWhereHas('stocks', function ($stocks) {
+                                    $stocks->where('quantity', 0);
+                            
+                                });
+                            }
+
+                            if ($request->search == "in-stock") {
+                                $q->orWhereHas('stocks', function ($stocks) {
+                                    $stocks->where('quantity', '>', 0);
+                                });
+                            }
                         });
                     }
 
@@ -468,15 +504,15 @@ class ProductsController extends Controller
                     $stocks['user_id'] = $user;
                     $stocks['created_by'] = $user;
                     $stock = Stocks::create($stocks);
-                    if($stock){
+                    if ($stock) {
                         $stockHistory = StockHistory::create([
                             'user_id' => $user,
-                            'product_id'=> $product->id,
-                            'stock_id'=> $stock->id,
+                            'product_id' => $product->id,
+                            'stock_id' => $stock->id,
                             'price' => $product->purchase_price,
                             'gst' => $product->purchase_gst_percentage,
-                            'quantity'=> 0,
-                            'created_by'=> $user
+                            'quantity' => 0,
+                            'created_by' => $user
                         ]);
                     }
                     $stocks = Stocks::where('user_id', $user)->get();
@@ -602,10 +638,10 @@ class ProductsController extends Controller
             }
 
             $product = Products::where('user_id', $user)->where('id', $id)->first();
-//             Log::info('images', [
-//     'images' => $request->images,
-//     'files' => $request->file('images')
-// ]);
+            //             Log::info('images', [
+            //     'images' => $request->images,
+            //     'files' => $request->file('images')
+            // ]);
             $data = $request->validate([
                 'name'                  => 'required',
                 'brand_id'              => 'nullable',
@@ -662,7 +698,7 @@ class ProductsController extends Controller
                 'old_images.*' => 'nullable|string',
 
             ]);
-            
+
             if ($product) {
                 if ($request->hasFile('image')) {
 
@@ -803,19 +839,19 @@ class ProductsController extends Controller
                         ]);
                     }
                 }
-            }elseif($request->images == null && !$request->hasFile('images')){
-                        $oldDbImag = ProductImages::where('product_id', $product->id)->get();
-                        foreach ($oldDbImag as $img) {
-                            $img->delete();
-                        
-                        if ($img->image_public_id) {
+            } elseif ($request->images == null && !$request->hasFile('images')) {
+                $oldDbImag = ProductImages::where('product_id', $product->id)->get();
+                foreach ($oldDbImag as $img) {
+                    $img->delete();
+
+                    if ($img->image_public_id) {
 
                         $this->deleteFromCloudinary(
                             $img->image_public_id
                         );
                     }
-                        }
                 }
+            }
             //update variants
             if ($request->has('variants')) {
 
@@ -846,7 +882,7 @@ class ProductsController extends Controller
                 }
             }
             DB::commit();
-            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush(); 
+            Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Product Updated Successfully',

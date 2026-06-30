@@ -1195,9 +1195,9 @@ const Products = () => {
                             value={filters.stockStatus}
                             onChange={(e) => {
                               const stockStatusMap = {
-                                "low": "low stock",
-                                "out": "out of stock",
-                                "in": "in stock",
+                                "low": "low-stock",
+                                "out": "out-of-stock",
+                                "in": "in-stock",
                               };
                               setSearchTerm(stockStatusMap[e.target.value] || "");
                               setFilters({ stockStatus: e.target.value });
