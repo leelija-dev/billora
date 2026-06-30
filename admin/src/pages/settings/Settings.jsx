@@ -356,9 +356,17 @@ const Settings = () => {
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         Member since{" "}
-                        {user?.created_at
+                        {/* {user?.created_at
                           ? new Date(user.created_at).toLocaleDateString()
-                          : "N/A"}
+                          : "N/A"} */}
+                          {user?.created_at ? new Date(user.created_at).toLocaleString('en-US', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true, // set to false for 24-hour format
+                        }) : "N/A"}
                       </p>
                       <Button variant="outline" size="sm" className="mt-2">
                         Change Avatar

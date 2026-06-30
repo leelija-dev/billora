@@ -1834,9 +1834,13 @@ const PaidUser = () => {
                                     Start Date
                                   </span>
                                   <span className="text-sm text-gray-900 dark:text-white">
-                                    {new Date(
-                                      subscription.currentPeriodStart,
-                                    ).toLocaleDateString()}
+                                    {new Date(subscription.currentPeriodStart).toLocaleDateString('en-IN' ,{
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      year: 'numeric'
+                                    })}
+
+                                    
                                   </span>
                                 </div>
                               )}
@@ -1847,9 +1851,11 @@ const PaidUser = () => {
                                     End Date
                                   </span>
                                   <span className="text-sm text-gray-900 dark:text-white">
-                                    {new Date(
-                                      subscription.currentPeriodEnd,
-                                    ).toLocaleDateString()}
+                                   {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-IN',{
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    year: 'numeric'
+                                  })}
                                   </span>
                                 </div>
                               )}

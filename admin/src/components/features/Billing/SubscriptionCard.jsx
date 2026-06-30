@@ -143,7 +143,11 @@ const SubscriptionCard = ({
                 Start Date
               </span>
               <span className="text-sm text-gray-900 dark:text-white">
-                {new Date(subscription.currentPeriodStart).toLocaleDateString()}
+                {new Date(subscription.currentPeriodStart).toLocaleDateString('en-IN' ,{
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: 'numeric'
+                })}
               </span>
             </div>
           )}
@@ -153,7 +157,12 @@ const SubscriptionCard = ({
               <span className="text-gray-600 dark:text-gray-400">End Date</span>
               <div className="text-right">
                 <span className="text-sm text-gray-900 dark:text-white">
-                  {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                  {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-IN',{
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric'
+                  })}
+                
                 </span>
                 {subscription.currentPeriodEnd && (
                   <p className={`text-xs mt-1 ${
