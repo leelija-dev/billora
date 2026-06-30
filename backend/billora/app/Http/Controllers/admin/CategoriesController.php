@@ -9,6 +9,8 @@ use Illuminate\Support\Str;
 use App\Models\Customers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+
 class CategoriesController extends Controller
 {
     public function index(Request $request)
@@ -16,21 +18,27 @@ class CategoriesController extends Controller
     $user = Auth::user()->id;
     $search = $request->search;
     $status = $request->status;
-    $cacheKey ='categories_' . $user . '_' . md5($search . '_' . $request->page);
+    // $cacheKey ='categories_' . $user . '_' . md5($search . '_' . $request->page);
+    $cacheKey = 'categories_' . $user . '_' . md5($search . '_' . $status . '_' . $request->page);
     $fromCache = Cache::tags(['categories_user_'.$user])->has($cacheKey);
 
     $startTime = microtime(true);
     $categories = Cache::tags(['categories_user_'.$user])
                       ->remember($cacheKey,600, function () use ($user, $search,$status) {
-        
-    if($status != null){
+    Log::info('status'.$status);
+    if ($status != null) {
+
         return Categories::where('user_id', $user)
-        ->where('is_active', $status)
-        ->where(function ($query) use ($search) {
-            $query->where('id', 'like', "%$search%")
-                ->orWhere('name', 'like', "%$search%")   
-                ->orWhere('slug', 'like', "%$search%")->orderBy('id','Desc')->paginate(15); 
-        });
+            ->where('is_active', $status)
+            ->where(function ($query) use ($search) {
+                if (!empty($search)) {
+                    $query->where('id', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%");
+                }
+            })
+            ->orderBy('id', 'desc')
+            ->paginate(15);
     }
     return Categories::where('user_id', $user)
         ->where(function ($query) use ($search) {
