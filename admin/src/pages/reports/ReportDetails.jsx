@@ -650,7 +650,7 @@ const ReportDetails = () => {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                       <FiUser className="w-4 h-4 mr-2" />
                       Created By
@@ -658,7 +658,7 @@ const ReportDetails = () => {
                     <p className="text-gray-900 dark:text-white font-mono">
                       User #{report.created_by || report.user_id}
                     </p>
-                  </div>
+                  </div> */}
                 </div>
               </motion.div>
 
@@ -797,9 +797,9 @@ const ReportDetails = () => {
                         <p className="font-bold text-gray-900 dark:text-white text-lg">
                           {report.store_name}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {/* <p className="text-sm text-gray-500 dark:text-gray-400">
                           Store ID: #{report.store_id}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
 
