@@ -205,6 +205,9 @@ class BillCustomerController extends Controller
 
                 // $data = $query->latest()->get();
                 $data = $query->orderBy('id', 'desc')->get();
+                $data->each(function ($item) {
+                    $item->invoice_number = $item->invoice?->invoice_number;
+                });
                 return [
                     'customer' => $billCustomer,
                     'payment_history' => $data
