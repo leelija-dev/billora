@@ -1558,7 +1558,7 @@ const handlePrintThermal = async (invoice) => {
                 >
                   Are you sure you want to cancel invoice{" "}
                   <span className="font-semibold">
-                    #{invoiceToCancel?.invoiceNumber || invoiceToCancel?.id}
+                    #{invoiceToCancel?.invoiceNumber || invoiceToCancel?.invoice_number}
                   </span>
                   ?
                   <br />
