@@ -423,7 +423,14 @@ const Stock = () => {
       ),
     },
     {
-      header: "Total Value",
+   header: (
+      <div>
+        <div>Total Value</div>
+        <div style={{ fontSize: "9px", color: "#191b1f" }}>
+          (Excluding GST)
+        </div>
+      </div>
+    ),
       accessor: "total_value",
       cell: (_, row) => {
         const quantity = parseInt(row.quantity) || 0;
