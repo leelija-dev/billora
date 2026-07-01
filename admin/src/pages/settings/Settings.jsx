@@ -359,9 +359,9 @@ const Settings = () => {
                         {/* {user?.created_at
                           ? new Date(user.created_at).toLocaleDateString()
                           : "N/A"} */}
-                          {user?.created_at ? new Date(user.created_at).toLocaleString('en-US', {
-                          month: '2-digit',
+                          {user?.created_at ? new Date(user.created_at).toLocaleString('en-IN', {
                           day: '2-digit',
+                          month: '2-digit',
                           year: 'numeric',
                           hour: 'numeric',
                           minute: '2-digit',

@@ -730,7 +730,7 @@ const Stores = () => {
                           </div>
 
                           {/* Store Type Filter */}
-                          <div>
+                          {/* <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Store Type
                             </label>
@@ -744,7 +744,7 @@ const Stores = () => {
                               <option value="warehouse">Warehouse</option>
                               <option value="online">Online</option>
                             </select>
-                          </div>
+                          </div> */}
 
                           {/* Start Date Filter */}
                           <div>

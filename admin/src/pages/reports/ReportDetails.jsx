@@ -701,7 +701,7 @@ const ReportDetails = () => {
                           {report.customer_name}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Customer ID: #{report.customer_id}
+                          City: {report.customer?.city || "N/A"}
                         </p>
                       </div>
                     </div>
@@ -985,7 +985,7 @@ const ReportDetails = () => {
                           #
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Product ID
+                          
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Product Name
@@ -1020,9 +1020,9 @@ const ReportDetails = () => {
                             {idx + 1}
                           </td>
                           <td className="px-4 py-3">
-                            <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {/* <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
                               #{item.product_id}
-                            </span>
+                            </span> */}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center space-x-2">
