@@ -307,7 +307,19 @@ const Notifications = () => {
 
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-gray-500 dark:text-gray-500">
-                        {notification.time}
+                        {/* {notification.time} */}
+                        {new Date(notification.time).toLocaleString("en-IN",{
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12:true
+                        })
+                        .replace("am", "AM")
+                        .replace("pm", "PM")
+                        }
+                       
                       </span>
                       {!notification.read && (
                         <button
