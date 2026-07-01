@@ -1454,7 +1454,7 @@ const handlePrintThermal = async (invoice) => {
                 Pay invoice due
               </h3>
               <p className="text-center text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Invoice #{payDueInvoice.id}
+                Invoice #{payDueInvoice.invoice_number || payDueInvoice.id }
                 <span className="block mt-1 font-medium text-orange-600 dark:text-orange-400">
                   Due: ₹{getCurrentDueAmount().toFixed(2)}
                 </span>
