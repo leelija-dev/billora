@@ -66,7 +66,7 @@ class StoreController extends Controller
                             $q->where('status', $status);
                         })
                         ->orderByDesc('id')
-                        ->paginate(15);
+                        ->paginate(8);
                 }
             );
             // if ($store->isEmpty()) {

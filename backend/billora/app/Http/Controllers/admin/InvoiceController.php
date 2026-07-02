@@ -566,7 +566,7 @@ class InvoiceController extends Controller
                     })
 
                     ->orderBy('created_at', 'desc')
-                    ->paginate(15);
+                    ->paginate(8);
             });
             // Response time
             $executionTime = microtime(true) - $start;

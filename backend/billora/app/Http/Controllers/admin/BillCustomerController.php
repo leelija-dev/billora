@@ -96,7 +96,7 @@ class BillCustomerController extends Controller
                     })
 
                     ->latest()
-                    ->paginate(15);
+                    ->paginate(8);
             });
         if ($billCustomer->isEmpty()) {
             return response()->json([
@@ -333,7 +333,7 @@ class BillCustomerController extends Controller
     public function trashed()
     {
         $user = Auth::user()->id;
-        $trashedCustomers = BillCustomer::onlyTrashed()->where('admin_id', $user)->paginate(15);
+        $trashedCustomers = BillCustomer::onlyTrashed()->where('admin_id', $user)->paginate(8);
         return response()->json([
             'status'    => true,
             'message'   => 'Bill Customer Trashed List',

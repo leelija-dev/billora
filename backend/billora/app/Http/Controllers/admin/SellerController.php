@@ -35,7 +35,7 @@ class SellerController extends Controller
                         ->orWhere('pincode', 'LIKE', "%{$search}%")
                     ;
                 })
-                ->paginate(15);
+                ->paginate(8);
             return response([
                 'status' => true,
                 'message' => 'seller list',

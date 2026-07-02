@@ -64,7 +64,7 @@ class StocksController extends Controller
                             });
                         })
                         ->orderBy('id', 'desc')
-                        ->paginate(15);
+                        ->paginate(8);
                 });
                 $executionTime = microtime(true) - $startTime;
                 return response()->json([

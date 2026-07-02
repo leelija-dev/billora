@@ -84,8 +84,8 @@ public function sellerProducts(Request $request, $id){
                     $q->where('name', 'LIKE', "%{$search}%")
                       ->orWhere('sku', 'LIKE', "%{$search}%");
                 });
-        })->paginate(15);
-        $sellerPaymentHistory = SellerPaymentHistory::where('seller_id', $id)->where('user_id', $user)->paginate(15);
+        })->orderBy('id', 'desc')->paginate(8);
+        $sellerPaymentHistory = SellerPaymentHistory::where('seller_id', $id)->where('user_id', $user)->orderBy('id', 'desc')->paginate(8);
         return response()->json([
             'status' => true,
             'message' => 'Seller products',

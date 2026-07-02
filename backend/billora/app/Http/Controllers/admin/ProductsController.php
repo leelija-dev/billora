@@ -144,7 +144,7 @@ class ProductsController extends Controller
 
                     return $query
                         ->orderBy('id', 'desc')
-                        ->paginate(15);
+                        ->paginate(8);
                 });
             $executionTime = microtime(true) - $startTime;
             return response()->json([
@@ -1207,7 +1207,7 @@ class ProductsController extends Controller
                         });
                     })
                     ->orderBy('id', 'desc')
-                    ->paginate(12);
+                    ->paginate(8);
                 return [
                     'status' => true,
                     'categories' => $categoies,
@@ -1247,7 +1247,7 @@ class ProductsController extends Controller
             $user_id = Crypt::decryptString($data['user_id']);
 
             $data = Cache::tags(['category_products_user_' . $id])->remember($cacheKey, 600, function () use ($id, $user_id) {
-                $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);
+                $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(8);
                 $categories = Categories::where('user_id', $user_id)
                     ->where('is_active', 1)
                     ->get();

@@ -41,7 +41,7 @@ class BrandController extends Controller
         //If filtering exists → skip cache
         if (!empty($search) || $status !== null && $status !== '') {
 
-            $brands = $query->orderBy('id', 'desc')->paginate(10);
+            $brands = $query->orderBy('id', 'desc')->paginate(8);
 
             $source = 'Database (filtered)';
         } else {
@@ -51,7 +51,7 @@ class BrandController extends Controller
 
             $brands = Cache::tags(['brands_user_' . $user])
                 ->remember($cacheKey, 600, function () use ($user) {
-                    return Brand::where('user_id', $user)->orderBy('id', 'desc')->paginate(10);;
+                    return Brand::where('user_id', $user)->orderBy('id', 'desc')->paginate(8);;
                 });
 
             $source = 'Cache/Database';
