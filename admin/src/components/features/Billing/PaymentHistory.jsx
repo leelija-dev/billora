@@ -75,7 +75,15 @@ const columns = [
         )}
         {row.startDate && row.endDate && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Period: {new Date(row.startDate).toLocaleDateString()} - {new Date(row.endDate).toLocaleDateString()}
+            Period: {new Date(row.startDate).toLocaleDateString('en-IN',{
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric'
+                  })} - {new Date(row.endDate).toLocaleDateString('en-IN',{
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric'
+                  })}
           </p>
         )}
       </div>

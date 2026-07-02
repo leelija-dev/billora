@@ -175,6 +175,10 @@ const GSTManagement = () => {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+
     });
   };
 
@@ -424,7 +428,7 @@ const GSTManagement = () => {
             customer_id: invoice.customer_id,
             customer: invoice.customer,
             // Override id with a unique value for the table key
-            id: item._uniqueId || `gst_in-${item.id}-${invIndex}-${itemIndex}`,
+            id: item._uniqueId ||'N/A' ,//`gst_in-${item.id}-${invIndex}-${itemIndex}`,
             // Keep original id for reference
             _originalId: invoice.invoice_number,
           }));
@@ -598,16 +602,16 @@ const GSTManagement = () => {
 
   // GST Out Columns - memoized with unique IDs
   const gstOutColumns = useMemo(() => [
-    {
-      id: 'id',
-      header: 'ID',
-      accessor: '_originalId',
-      cell: (value) => (
-        <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
-          #{value}
-        </span>
-      ),
-    },
+    // {
+    //   id: 'id',
+    //   header: 'ID',
+    //   accessor: '_originalId',
+    //   cell: (value) => (
+    //     <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
+    //       #{value}
+    //     </span>
+    //   ),
+    // },
     {
       id: 'product',
       header: 'Product',

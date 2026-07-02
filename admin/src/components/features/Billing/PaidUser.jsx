@@ -1347,7 +1347,11 @@ const PaidUser = () => {
                         color="from-purple-500 to-indigo-500"
                         subtitle={
                           stats.nextBilling
-                            ? new Date(stats.nextBilling).toLocaleDateString()
+                            ? new Date(stats.nextBilling).toLocaleDateString('en-IN',{
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            })
                             : "N/A"
                         }
                         delay={0.5}
@@ -1834,9 +1838,13 @@ const PaidUser = () => {
                                     Start Date
                                   </span>
                                   <span className="text-sm text-gray-900 dark:text-white">
-                                    {new Date(
-                                      subscription.currentPeriodStart,
-                                    ).toLocaleDateString()}
+                                    {new Date(subscription.currentPeriodStart).toLocaleDateString('en-IN' ,{
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      year: 'numeric'
+                                    })}
+
+                                    
                                   </span>
                                 </div>
                               )}
@@ -1847,9 +1855,11 @@ const PaidUser = () => {
                                     End Date
                                   </span>
                                   <span className="text-sm text-gray-900 dark:text-white">
-                                    {new Date(
-                                      subscription.currentPeriodEnd,
-                                    ).toLocaleDateString()}
+                                   {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-IN',{
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    year: 'numeric'
+                                  })}
                                   </span>
                                 </div>
                               )}
@@ -2210,7 +2220,7 @@ const PaidUser = () => {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Invoice #{selectedInvoice.number || selectedInvoice.id}
+                    {selectedInvoice.number || selectedInvoice.planName}
                   </h3>
                   <button
                     onClick={() => setShowInvoiceModal(false)}
@@ -2229,7 +2239,14 @@ const PaidUser = () => {
                       <p className="font-medium text-gray-900 dark:text-white">
                         {new Date(
                           selectedInvoice.date || selectedInvoice.createdAt,
-                        ).toLocaleDateString()}
+                        ).toLocaleDateString('en-IN',{
+                          month: '2-digit',
+                          day: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
                       </p>
                     </div>
                     <div>

@@ -286,7 +286,7 @@ const TrashedCustomers = () => {
           <FiCalendar className="w-3 h-3 mr-1 text-gray-400" />
           <span className="text-sm text-gray-600 dark:text-gray-300">
             {value
-              ? new Date(value).toLocaleDateString("en-US", {
+              ? new Date(value).toLocaleDateString("en-IN", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",

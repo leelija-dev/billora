@@ -13,6 +13,7 @@ use App\Models\Products;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class ReportController extends Controller
 {
@@ -30,67 +31,127 @@ class ReportController extends Controller
 
         $startTime = microtime(true);
 
-        $startDate = $request->start_date
+        // $startDate = $request->start_date
+        //     ? Carbon::parse($request->start_date)->startOfDay()
+        //     : Carbon::today()->startOfDay();
+
+        // $endDate = $request->end_date
+        //     ? Carbon::parse($request->end_date)->endOfDay()
+        //     : Carbon::today()->endOfDay();
+
+        $startDate = $request->filled('start_date')
             ? Carbon::parse($request->start_date)->startOfDay()
-            : Carbon::today()->startOfDay();
+            : null;
 
-        $endDate = $request->end_date
+        $endDate = $request->filled('end_date')
             ? Carbon::parse($request->end_date)->endOfDay()
-            : Carbon::today()->endOfDay();
+            : null;
         $data = Cache::remember($cacheKey, 600, function () use ($userId, $startDate, $endDate) {
-            $totalSales = Invoice::where('user_id', $userId)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->sum('total_items');
+            if ($startDate != null && $endDate != null) {
+                Log::info('start date and end date not null');
+                $totalSales = Invoice::where('user_id', $userId)
+                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->sum('total_items');
 
-            $totalSalesAmount = Invoice::where('user_id', $userId)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->sum('total_amount');
+                $totalSalesAmount = Invoice::where('user_id', $userId)
+                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->sum('total_amount');
 
-            // FIXED
-            $totalDue = BillCustomer::where('admin_id', $userId)
-                ->sum('due_amount');
+                // FIXED
+                $totalDue = BillCustomer::where('admin_id', $userId)
+                    ->sum('due_amount');
 
-            // FIXED PROFIT
-            $totalProfit = DB::table('invoice_items as ii')
-                ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
-                ->where('i.user_id', $userId)
-                ->whereBetween('i.created_at', [$startDate, $endDate])
-                ->selectRaw('SUM(ii.price * ii.quantity) as revenue')
-                ->value('revenue') ?? 0;
+                // FIXED PROFIT
+                $totalProfit = DB::table('invoice_items as ii')
+                    ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
+                    ->where('i.user_id', $userId)
+                    ->whereBetween('i.created_at', [$startDate, $endDate])
+                    ->selectRaw('SUM(ii.price * ii.quantity) as revenue')
+                    ->value('revenue') ?? 0;
 
-            $customerDues = BillCustomer::where('admin_id', $userId)
-                ->where('due_amount', '>', 0)
-                ->get();
-            $salesInvoice = Invoice::where('user_id', $userId)->with('customer','store','invoiceItems')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->orderBy('id', 'desc')
-                ->paginate(10);
-            $productSales = DB::table('invoice_items as ii')
-                ->join('products as p', 'ii.product_id', '=', 'p.id')
-                ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
+                $customerDues = BillCustomer::where('admin_id', $userId)
+                    ->where('due_amount', '>', 0)
+                    ->get();
+                $salesInvoice = Invoice::where('user_id', $userId)->with('customer', 'store', 'invoiceItems')
+                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->orderBy('id', 'desc')
+                    ->paginate(10);
+                $productSales = DB::table('invoice_items as ii')
+                    ->join('products as p', 'ii.product_id', '=', 'p.id')
+                    ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
 
-                ->where('i.user_id', $userId)
+                    ->where('i.user_id', $userId)
 
-                ->whereBetween('i.created_at', [$startDate, $endDate])
+                    ->whereBetween('i.created_at', [$startDate, $endDate])
 
-                ->select(
-                    'ii.product_id',
+                    ->select(
+                        'ii.product_id',
 
-                    'p.name as product_name',
+                        'p.name as product_name',
 
-                    DB::raw('SUM(ii.quantity) as total_sold'),
+                        DB::raw('SUM(ii.quantity) as total_sold'),
 
-                    DB::raw('COUNT(ii.id) as total_orders')
-                )
+                        DB::raw('COUNT(ii.id) as total_orders')
+                    )
 
-                ->groupBy(
-                    'ii.product_id',
-                    'p.name'
-                )
+                    ->groupBy(
+                        'ii.product_id',
+                        'p.name'
+                    )
 
-                ->orderByDesc('total_sold')
+                    ->orderByDesc('total_sold')
 
-                ->get();
+                    ->get();
+            } else if ($startDate == null && $endDate == null) {
+                // Log::info('start date and end date null');
+                $totalSales = Invoice::where('user_id', $userId)
+                    ->sum('total_items');
+
+                $totalSalesAmount = Invoice::where('user_id', $userId)
+                    ->sum('total_amount');
+
+                // FIXED
+                $totalDue = BillCustomer::where('admin_id', $userId)
+                    ->sum('due_amount');
+
+                // FIXED PROFIT
+                $totalProfit = DB::table('invoice_items as ii')
+                    ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
+                    ->where('i.user_id', $userId)
+                    ->selectRaw('SUM(ii.price * ii.quantity) as revenue')
+                    ->value('revenue') ?? 0;
+
+                $customerDues = BillCustomer::where('admin_id', $userId)
+                    ->where('due_amount', '>', 0)
+                    ->get();
+                $salesInvoice = Invoice::where('user_id', $userId)->with('customer', 'store', 'invoiceItems')
+                    ->orderBy('id', 'desc')
+                    ->paginate(10);
+                $productSales = DB::table('invoice_items as ii')
+                    ->join('products as p', 'ii.product_id', '=', 'p.id')
+                    ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
+
+                    ->where('i.user_id', $userId)
+
+                    ->select(
+                        'ii.product_id',
+
+                        'p.name as product_name',
+
+                        DB::raw('SUM(ii.quantity) as total_sold'),
+
+                        DB::raw('COUNT(ii.id) as total_orders')
+                    )
+
+                    ->groupBy(
+                        'ii.product_id',
+                        'p.name'
+                    )
+
+                    ->orderByDesc('total_sold')
+
+                    ->get();
+            }
             return [
                 'total_sales_items' => $totalSales,
                 'total_sales_amount' => $totalSalesAmount,
@@ -120,22 +181,23 @@ class ReportController extends Controller
             'data' => $data
         ]);
     }
-    public function singleReport(Request $request,$id){
+    public function singleReport(Request $request, $id)
+    {
         $user = Auth::user()->id;
-        try{
-        $invoice = Invoice::where('user_id',$user)->where('id',$id)->with('customer','store','invoiceItems')->firstOrFail();
-        if(!$invoice){
+        try {
+            $invoice = Invoice::where('user_id', $user)->where('id', $id)->with('customer', 'store', 'invoiceItems')->firstOrFail();
+            if (!$invoice) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invoice not found'
+                ]);
+            }
             return response()->json([
-                'status' => false,
-                'message' => 'Invoice not found'
+                'status' => true,
+                'message' => 'Invoice details',
+                'data' => $invoice
             ]);
-        }
-        return response()->json([
-            'status' => true,
-            'message' => 'Invoice details',
-            'data' => $invoice
-        ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage()

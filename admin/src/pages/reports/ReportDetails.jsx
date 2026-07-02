@@ -650,7 +650,7 @@ const ReportDetails = () => {
                     </p>
                   </div>
 
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                       <FiUser className="w-4 h-4 mr-2" />
                       Created By
@@ -658,7 +658,7 @@ const ReportDetails = () => {
                     <p className="text-gray-900 dark:text-white font-mono">
                       User #{report.created_by || report.user_id}
                     </p>
-                  </div>
+                  </div> */}
                 </div>
               </motion.div>
 
@@ -701,7 +701,7 @@ const ReportDetails = () => {
                           {report.customer_name}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Customer ID: #{report.customer_id}
+                          City: {report.customer?.city || "N/A"}
                         </p>
                       </div>
                     </div>
@@ -797,9 +797,9 @@ const ReportDetails = () => {
                         <p className="font-bold text-gray-900 dark:text-white text-lg">
                           {report.store_name}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {/* <p className="text-sm text-gray-500 dark:text-gray-400">
                           Store ID: #{report.store_id}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
 
@@ -985,7 +985,7 @@ const ReportDetails = () => {
                           #
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Product ID
+                          
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Product Name
@@ -1020,9 +1020,9 @@ const ReportDetails = () => {
                             {idx + 1}
                           </td>
                           <td className="px-4 py-3">
-                            <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {/* <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
                               #{item.product_id}
-                            </span>
+                            </span> */}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center space-x-2">

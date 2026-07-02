@@ -269,7 +269,7 @@ const Dashboard = () => {
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
               <FiClock className="w-4 h-4 mr-2" />
-              {new Date().toLocaleDateString('en-US', { 
+              {new Date().toLocaleDateString('en-IN', { 
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
@@ -592,7 +592,18 @@ const Dashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center">
                         <FiCalendar className="w-3 h-3 mr-2" />
-                        {new Date(order.createdAt).toLocaleDateString()}
+                        {new Date(order.createdAt).toLocaleDateString('en-IN',{
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour:'2-digit',
+                          minute:'2-digit',
+                          hour12: true
+                        })
+                        .replace("am", "AM")
+                        .replace("pm", "PM")
+                        
+                        }
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">

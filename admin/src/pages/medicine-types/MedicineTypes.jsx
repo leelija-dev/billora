@@ -159,7 +159,13 @@ const MedicineTypes = () => {
       accessor: 'created_at',
       cell: (value) => (
         <span className="text-gray-600 dark:text-gray-400">
-          {value ? new Date(value).toLocaleDateString() : '-'}
+          {value ? new Date(value).toLocaleDateString(
+            'en-IN',{
+              day:'2-digit',
+              month:'2-digit',
+              year:'numeric'
+            }
+          ) : '-'}
         </span>
       ),
     },

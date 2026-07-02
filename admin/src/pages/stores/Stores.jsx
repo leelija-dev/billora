@@ -65,7 +65,7 @@ const Stores = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  
+
   // Date filter states
   const [startDate, setStartDate] = useState(filters.start_date || "");
   const [endDate, setEndDate] = useState(filters.end_date || "");
@@ -136,9 +136,9 @@ const Stores = () => {
   useEffect(() => {
     if (startDate !== filters.start_date || endDate !== filters.end_date) {
       const debounceTimer = setTimeout(() => {
-        setFilters({ 
+        setFilters({
           start_date: startDate,
-          end_date: endDate 
+          end_date: endDate
         });
       }, 500);
       return () => clearTimeout(debounceTimer);
@@ -169,14 +169,14 @@ const Stores = () => {
     try {
       const editData = await getEditData(currentUserId);
       console.log('📝 Edit data received:', editData);
-      
+
       const storeData = {
         ...store,
         ...editData.data,
         logo_url: editData.data?.logo_url || store.logo_url || null,
         bank_qr_url: editData.data?.bank_qr_url || store.bank_qr_url || null,
       };
-      
+
       setSelectedStore(storeData);
       setShowEditForm(true);
       setShowAddForm(false);
@@ -265,9 +265,9 @@ const Stores = () => {
     setEndDate("");
     setStatusFilter("");
     setTypeFilter("");
-    setFilters({ 
-      search: "", 
-      status: "", 
+    setFilters({
+      search: "",
+      status: "",
       type: "",
       start_date: "",
       end_date: ""
@@ -412,7 +412,18 @@ const Stores = () => {
       accessor: "created_at",
       cell: (value) => (
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {value ? new Date(value).toLocaleDateString() : "N/A"}
+          {value
+            ? (() => {
+              const d = new Date(value);
+              const date = d.toLocaleDateString("en-GB").replace(/\//g, "-");
+              const time = d.toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              });
+              return `${date} ${time}`;
+            })()
+            : "N/A"}
         </span>
       ),
     },
@@ -505,11 +516,10 @@ const Stores = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setViewMode("table")}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === "table"
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "table"
                         ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
                         : "text-gray-600 dark:text-gray-400"
-                    }`}
+                      }`}
                   >
                     <FiList className="w-4 h-4" />
                   </motion.button>
@@ -517,11 +527,10 @@ const Stores = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === "grid"
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "grid"
                         ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
                         : "text-gray-600 dark:text-gray-400"
-                    }`}
+                      }`}
                   >
                     <FiGrid className="w-4 h-4" />
                   </motion.button>
@@ -666,11 +675,10 @@ const Stores = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                        showFilters
+                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
                           ? "bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400"
                           : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       <FiFilter className="w-4 h-4" />
                       <span>Filters</span>
@@ -722,7 +730,7 @@ const Stores = () => {
                           </div>
 
                           {/* Store Type Filter */}
-                          <div>
+                          {/* <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Store Type
                             </label>
@@ -736,7 +744,7 @@ const Stores = () => {
                               <option value="warehouse">Warehouse</option>
                               <option value="online">Online</option>
                             </select>
-                          </div>
+                          </div> */}
 
                           {/* Start Date Filter */}
                           <div>
@@ -1009,8 +1017,8 @@ const Stores = () => {
                                   <span className="text-gray-700 dark:text-gray-300">
                                     {store.created_at
                                       ? new Date(
-                                          store.created_at,
-                                        ).toLocaleDateString()
+                                        store.created_at,
+                                      ).toLocaleDateString()
                                       : "N/A"}
                                   </span>
                                 </div>

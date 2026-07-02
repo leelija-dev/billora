@@ -102,7 +102,8 @@ const OrderDetails = ({
         console.error("Invalid date value:", dateString);
         return "Invalid Date";
       }
-      return format(date, "PPP");
+      // return format(date, "PPP");
+      return format(date, "MMMM d, yyyy hh:mm a");
     } catch (error) {
       console.error("Date formatting error:", error, "Input:", dateString);
       return "Invalid Date";

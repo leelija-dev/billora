@@ -167,7 +167,7 @@ class DashboardController extends Controller
                 ->map(function ($invoice) {
                     return [
                         'id' => $invoice->id,
-                        'orderNumber' => $invoice->id,
+                        'orderNumber' => $invoice->invoice_number,
                         'customer' => [
                             'name' => $invoice->customer->name ?? ''
                         ],

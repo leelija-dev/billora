@@ -646,16 +646,16 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     <div class="meta-grid">
       <div class="meta-block">
         <div class="meta-label">${isOrderDetails ? "Order Number" : "Invoice Number"}</div>
-        <div class="meta-value">${escapeHtml(invoice.invoice_number || invoice.id || "INV-001")}</div>
+        <div class="meta-value">#${escapeHtml(invoice.invoice_number || invoice.id || "INV-001")}</div>
       </div>
       <div class="meta-block">
         <div class="meta-label">${isOrderDetails ? "Order Date" : "Invoice Date"}</div>
         <div class="meta-value">${formatDate(invoice.created_at)}</div>
       </div>
-      <div class="meta-block">
+       <!-- <div class="meta-block">
         <div class="meta-label">Order / Bill No</div>
         <div class="meta-value">${escapeHtml(invoice.order_id || invoice.id || "WALK-IN")}</div>
-      </div>
+      </div>  -->
     </div>
 
     <!-- Customer Details -->

@@ -17,7 +17,7 @@ return [
         // 'http://127.0.0.1:8000',
         'https://thefastbill.com',
         'https://app.thefastbill.com',
-        // 'https://api.thefastbill.com',
+        'https://api.thefastbill.com',
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => [

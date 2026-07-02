@@ -328,12 +328,15 @@ const CustomerDetails = () => {
       cell: (value) => new Date(value).toLocaleDateString('en-IN', {
         day: '2-digit',
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
       })
     },
     {
       header: 'Invoice ID',
-      accessor: 'invoice_id',
+      accessor: 'invoice_number',
       cell: (value) => value ? `#${value}` : 'N/A'
     },
     {
