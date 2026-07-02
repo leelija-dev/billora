@@ -45,10 +45,14 @@ class ProductsController extends Controller
             $user = Auth::user()->id;
             $page = $request->get('page', 1);
             $search = $request->search ?? 'all';
-
+            $start_date = $request->start_date;
+            $end_date = $request->end_date;
+            $min_price = $request->min_price;
+            $max_price = $request->max_price;
 
             // Unique cache key
-            $cacheKey = "products_{$user}_{$search}_page_{$page}";
+            // $cacheKey = "products_{$user}_{$search}_page_{$page}";
+            $cacheKey = "products_{$user}_{$search}_{$min_price}_{$max_price}_{$start_date}_{$end_date}_page_{$page}";
             $fromCache = Cache::tags(['products_user_' . $user])->has($cacheKey);
             $customer = Customers::findOrFail($user);
             $startTime = microtime(true);
@@ -62,7 +66,7 @@ class ProductsController extends Controller
                 ->contains('slug', 'stock-management');
             //    $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
             $product = Cache::tags(['products_user_' . $user])
-                ->remember($cacheKey, 600, function () use ($user, $request, $hasStockPermission) {
+                ->remember($cacheKey, 600, function () use ($user, $request, $hasStockPermission,$min_price,$max_price,$start_date,$end_date) {
 
                     // $query = Products::with([
                     //  'variants',
@@ -95,7 +99,7 @@ class ProductsController extends Controller
                     // Search filter
                     if ($request->has('search') && !empty($request->search)) {
 
-                        $query->where(function ($q) use ($request) {
+                        $query->where(function ($q) use ($request,$min_price,$max_price,$start_date,$end_date) {
 
                             $q->where('name', 'like', '%' . $request->search . '%')
                                 ->orWhere('sku', 'like', '%' . $request->search . '%')
@@ -107,6 +111,10 @@ class ProductsController extends Controller
 
                                 ->orWhereHas('category', function ($category) use ($request) {
                                     $category->where('name', 'like', "%{$request->search}%");
+                                })
+                                 ->orWhereHas('brand', function ($brand) use ($request) {
+                                    $brand->where('name', 'like', "%{$request->search}%")
+                                    ->orWhere('slug', 'like', "%{$request->search}%");
                                 });
                             if ($request->search == 'active') {
                                 $q->orWhere('is_active', 1);
@@ -120,6 +128,15 @@ class ProductsController extends Controller
                             //             ->where('quantity', '>', 0);
                             //     });
                             // }
+                            if($min_price && $max_price == 'above'){
+                                $q->orWhere('selling_price', '>=', $min_price);
+                            }elseif ($min_price && $max_price) {
+                                     $q->whereBetween('selling_price', [$min_price, $max_price]);
+                            }
+                            if($start_date && $end_date){
+                                $q->orWhere('created_at', '>=', $start_date)
+                                  ->orWhere('created_at', '<=', $end_date);
+                            }
                             if ($request->search == 'low-stock') {
                                 $q->orWhereHas('stocks', function ($stocks) {
                                     $stocks->whereBetween('quantity', [1, 10]);
@@ -144,7 +161,7 @@ class ProductsController extends Controller
 
                     return $query
                         ->orderBy('id', 'desc')
-                        ->paginate(15);
+                        ->paginate(8);
                 });
             $executionTime = microtime(true) - $startTime;
             return response()->json([
@@ -1173,7 +1190,7 @@ class ProductsController extends Controller
             );
             $fromCache = Cache::tags(['products_user_' . $id])->has($cacheKey);
             $data = Cache::tags(['products_user_' . $id])->remember($cacheKey, 600, function () use ($id, $request) {
-                // $products = Products::with('brand','category','unit')->where('user_id', $id)->where('is_active',true)->paginate(15);
+                // $products = Products::with('brand','category','unit')->where('user_id', $id)->where('is_active',true)->paginate(8);
                 $categoies = Categories::where('user_id', $id)->where('is_active', true)->get();
                 $brands = Brand::where('user_id', $id)->where('is_active', true)->get();
                 $store = Store::where('user_id', $id)->get();
@@ -1207,7 +1224,7 @@ class ProductsController extends Controller
                         });
                     })
                     ->orderBy('id', 'desc')
-                    ->paginate(12);
+                    ->paginate(8);
                 return [
                     'status' => true,
                     'categories' => $categoies,
@@ -1247,7 +1264,7 @@ class ProductsController extends Controller
             $user_id = Crypt::decryptString($data['user_id']);
 
             $data = Cache::tags(['category_products_user_' . $id])->remember($cacheKey, 600, function () use ($id, $user_id) {
-                $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(12);
+                $products = Products::with('brand', 'category', 'unit')->where('category_id', $id)->where('user_id', $user_id)->paginate(8);
                 $categories = Categories::where('user_id', $user_id)
                     ->where('is_active', 1)
                     ->get();
