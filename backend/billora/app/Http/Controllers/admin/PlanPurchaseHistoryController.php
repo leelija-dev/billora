@@ -49,7 +49,7 @@ class PlanPurchaseHistoryController extends Controller
             $query->where('payment_status', 'LIKE', "%{$search}%");
             }
 
-            return $query->paginate(10)->withQueryString();
+            return $query->paginate(8)->withQueryString();
         });
         $executionTime = microtime(true) - $startTime;
         return response()->json([
