@@ -157,18 +157,22 @@ export const reportsAPI = {
 };
 
 export const billingAPI = {
-  // Get user plan purchase history with pagination
-  getPlanPurchaseHistory: async (userId, page = 1, perPage = 10) => {
+  // Get user plan purchase history with pagination and search filter
+  getPlanPurchaseHistory: async (userId, page = 1, perPage = 10, search = "") => {
     try {
       console.log(
-        `💳 Fetching plan purchase history for user: ${userId}, page: ${page}`,
+        `💳 Fetching plan purchase history for user: ${userId}, page: ${page}, search: ${search}`,
       );
+      const params = {
+        page: page,
+      };
+      if (search) {
+        params.search = search;
+      }
       const response = await apiClient.get(
         `/plans-purchase-history/${userId}`,
         {
-          params: {
-            page: page,
-          },
+          params,
         },
       );
       console.log("💳 Plan purchase history fetched:", response.data);
