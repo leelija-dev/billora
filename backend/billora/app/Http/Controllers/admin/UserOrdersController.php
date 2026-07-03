@@ -231,7 +231,7 @@ class UserOrdersController extends Controller
          $formCache = Cache::tags(['order_user_' . Auth::user()->id])->has($cacheKey);
              $tag = "order_user_{$user}";
         $orderHistory = Cache::tags([$tag])->remember($cacheKey, 600, function () use ($id, $search,$startDate,$endDate) {
-        return UserOrders::with(['items.product'])
+        return UserOrders::with(['items.product','items.product.brand','items.product.unit','items.product.category'])
             ->where('user_id', $id)->orderBy('id','desc')
             ->when($search, function ($query) use ($search) {
 
