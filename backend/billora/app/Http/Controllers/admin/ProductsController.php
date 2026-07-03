@@ -66,7 +66,7 @@ class ProductsController extends Controller
                 ->contains('slug', 'stock-management');
             //    $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
             $product = Cache::tags(['products_user_' . $user])
-                ->remember($cacheKey, 600, function () use ($user, $request, $hasStockPermission,$min_price,$max_price,$start_date,$end_date) {
+                ->remember($cacheKey, 600, function () use ($user, $request, $hasStockPermission, $min_price, $max_price, $start_date, $end_date) {
 
                     // $query = Products::with([
                     //  'variants',
@@ -99,7 +99,7 @@ class ProductsController extends Controller
                     // Search filter
                     if ($request->has('search') && !empty($request->search)) {
 
-                        $query->where(function ($q) use ($request,$min_price,$max_price,$start_date,$end_date) {
+                        $query->where(function ($q) use ($request) {
 
                             $q->where('name', 'like', '%' . $request->search . '%')
                                 ->orWhere('sku', 'like', '%' . $request->search . '%')
@@ -112,9 +112,9 @@ class ProductsController extends Controller
                                 ->orWhereHas('category', function ($category) use ($request) {
                                     $category->where('name', 'like', "%{$request->search}%");
                                 })
-                                 ->orWhereHas('brand', function ($brand) use ($request) {
+                                ->orWhereHas('brand', function ($brand) use ($request) {
                                     $brand->where('name', 'like', "%{$request->search}%")
-                                    ->orWhere('slug', 'like', "%{$request->search}%");
+                                        ->orWhere('slug', 'like', "%{$request->search}%");
                                 });
                             if ($request->search == 'active') {
                                 $q->orWhere('is_active', 1);
@@ -128,19 +128,8 @@ class ProductsController extends Controller
                             //             ->where('quantity', '>', 0);
                             //     });
                             // }
-                            Log::info('min_price1111: ' . $min_price . ', max_price: ' . $max_price);
-                            if($min_price && $max_price == 'above'){
-                                Log::info('min_price1111: ' . $min_price . ', max_price: ' . $max_price);
-                                $q->orWhere('selling_price', '>=', $min_price);
-                            }elseif ($min_price && $max_price) {
-                                Log::info('min_price: ' . $min_price . ', max_price: ' . $max_price);
-                                     $q->whereBetween('selling_price', [$min_price, $max_price]);
 
-                            }
-                            if($start_date && $end_date){
-                                $q->orWhere('created_at', '>=', $start_date)
-                                  ->orWhere('created_at', '<=', $end_date);
-                            }
+
                             if ($request->search == 'low-stock') {
                                 $q->orWhereHas('stocks', function ($stocks) {
                                     $stocks->whereBetween('quantity', [1, 10]);
@@ -151,7 +140,6 @@ class ProductsController extends Controller
                             if ($request->search == 'out-of-stock') {
                                 $q->orWhereHas('stocks', function ($stocks) {
                                     $stocks->where('quantity', 0);
-                            
                                 });
                             }
 
@@ -162,7 +150,22 @@ class ProductsController extends Controller
                             }
                         });
                     }
+                    if ($request->filled('min_price') && $request->max_price == 'above') {
 
+                        $query->where('selling_price', '>=', $request->min_price);
+                    } elseif ($request->filled('min_price') && $request->filled('max_price')) {
+
+                        $query->whereBetween('selling_price', [
+                            $request->min_price,
+                            $request->max_price
+                        ]);
+                    }
+                    if ($request->filled('start_date') && $request->filled('end_date')) {
+                        $query->whereBetween('created_at', [
+                            $request->start_date . ' 00:00:00',
+                            $request->end_date . ' 23:59:59'
+                        ]);
+                    }
                     return $query
                         ->orderBy('id', 'desc')
                         ->paginate(8);
