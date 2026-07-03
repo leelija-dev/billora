@@ -130,7 +130,7 @@ class CustomerController extends Controller
                 $data['verification_token']
             );
            
-            Log::info('QR Generated Successfully');
+            // Log::info('QR Generated Successfully');
 
             // $customer->notify(new VerifyEmailNotification($data['verification_token']));
             // try {
@@ -467,10 +467,10 @@ class CustomerController extends Controller
                         ->subject('Verify Your Email Address');
                 });
 
-                Log::info('Verification email resent successfully', [
-                    'customer_id' => $customer->id,
-                    'email' => $customer->email
-                ]);
+                // Log::info('Verification email resent successfully', [
+                //     'customer_id' => $customer->id,
+                //     'email' => $customer->email
+                // ]);
 
                 return response()->json([
                     'status' => true,
@@ -1802,7 +1802,7 @@ class CustomerController extends Controller
                 'products_qr_public_id' => $upload['public_id']
             ]);
 
-            Log::info('QR Generated Successfully');
+            // Log::info('QR Generated Successfully');
             return response()->json([
                 'status' => true,
                 'message' => 'QR code generated and uploaded successfully',

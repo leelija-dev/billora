@@ -32,7 +32,7 @@ class SendPlanExpiryReminderJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::info('Plan Expiry Job Started');
+        // Log::info('Plan Expiry Job Started');
         $today = Carbon::today();
 
         //get all active plan
@@ -42,7 +42,7 @@ class SendPlanExpiryReminderJob implements ShouldQueue
             ->get();
        
 
-        Log::info('Plan find for expiry reminder: ' . $plans->count());
+        // Log::info('Plan find for expiry reminder: ' . $plans->count());
         if ($plans->isEmpty()) {
             Log::warning('No active plans found');
         }
@@ -54,7 +54,7 @@ class SendPlanExpiryReminderJob implements ShouldQueue
             $expireDate = $plan->end_date;
             if ($daysLeft <= $days_before_reminder && $daysLeft >= 0) {
                 if ($this->sendEmail) {
-                    Log::info("Sending mail to: " . $plan->user->email);
+                    // Log::info("Sending mail to: " . $plan->user->email);
                     Mail::to($plan->user->email)
                         ->queue(new PlanExpiryReminder(
                             $plan->user,
@@ -83,7 +83,7 @@ class SendPlanExpiryReminderJob implements ShouldQueue
             }
         }
         $expiredPlans = Customers::where('plan_id', '!=', null)->where('is_active', false)->get();
-        Log::info('Expired plans found for post-expiry reminder: ' . $expiredPlans->count());
+        // Log::info('Expired plans found for post-expiry reminder: ' . $expiredPlans->count());
         foreach ($expiredPlans as $plan) {
             $planHistory = PlanPurchaseHistory::where('user_id', $plan->id)->where('plan_id',$plan->plan_id)->oldest()   // 👈 this gives first record
             ->first();//->latest()->first();
@@ -108,7 +108,7 @@ class SendPlanExpiryReminderJob implements ShouldQueue
                 // if (!$alreadySent) {
 
                     if ($this->sendEmail) {
-                        Log::info("Sending Day {$daysAfterExpiry} expiry mail to: " . $plan->email);
+                        // Log::info("Sending Day {$daysAfterExpiry} expiry mail to: " . $plan->email);
 
                         Mail::to($plan->email)
                             ->queue(new PlanExpiryReminder(
@@ -132,6 +132,6 @@ class SendPlanExpiryReminderJob implements ShouldQueue
                 // }
             }
         }
-        Log::info('Plan Expiry Job Completed');
+        // Log::info('Plan Expiry Job Completed');
     }
 }

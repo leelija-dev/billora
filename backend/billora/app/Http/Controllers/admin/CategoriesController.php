@@ -25,7 +25,7 @@ class CategoriesController extends Controller
     $startTime = microtime(true);
     $categories = Cache::tags(['categories_user_'.$user])
                       ->remember($cacheKey,600, function () use ($user, $search,$status) {
-    Log::info('status'.$status);
+    // Log::info('status'.$status);
     if ($status != null) {
 
         return Categories::where('user_id', $user)

@@ -126,11 +126,11 @@ class BlogController extends Controller
             ]);
 
             //Save Categories
-            Log::info('Blog Categories Debug', [
-                'blog_id' => $blog->id,
-                'category_ids' => $validated['category_id'] ?? null,
-                'is_empty' => empty($validated['category_id'])
-            ]);
+            // Log::info('Blog Categories Debug', [
+            //     'blog_id' => $blog->id,
+            //     'category_ids' => $validated['category_id'] ?? null,
+            //     'is_empty' => empty($validated['category_id'])
+            // ]);
 
             if (!empty($validated['category_id'])) {
 
@@ -143,16 +143,16 @@ class BlogController extends Controller
                     ];
                 }
 
-                Log::info('Category data prepared for insertion', [
-                    'category_data' => $categoryData
-                ]);
+                // Log::info('Category data prepared for insertion', [
+                //     'category_data' => $categoryData
+                // ]);
 
                 $result = BlogCategories::insert($categoryData);
 
-                Log::info('Category insertion result', [
-                    'result' => $result,
-                    'inserted_count' => count($categoryData)
-                ]);
+                // Log::info('Category insertion result', [
+                //     'result' => $result,
+                //     'inserted_count' => count($categoryData)
+                // ]);
             } else {
                 Log::warning('No categories selected for blog', [
                     'blog_id' => $blog->id
@@ -179,7 +179,7 @@ class BlogController extends Controller
             //FAQ add
 
            if (!empty($validated['question'])) {
-                Log::info('FAQ data is not empty',$validated['question']);
+                // Log::info('FAQ data is not empty',$validated['question']);
                 $faqData = [];
                 
                 foreach ($validated['question'] as $key => $question) {

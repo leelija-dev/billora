@@ -911,9 +911,9 @@ class InvoiceController extends Controller
             }
             $dueAmount = max(0, $totalAmount - $request->paid_amount);
             $due_amount = (($billCustomer->due_amount - ($invoice->total_amount - $invoice->paid_amount)) + ($totalAmount - $request->paid_amount));
-            Log::info('paid_amount: ' . $request->paid_amount);
-            Log::info('totalAmount: ' . $totalAmount);
-            Log::info('due_amount: ' . $due_amount);
+            // Log::info('paid_amount: ' . $request->paid_amount);
+            // Log::info('totalAmount: ' . $totalAmount);
+            // Log::info('due_amount: ' . $due_amount);
             $invoice->update([
                 'customer_id'   => $request->customer_id,
                 'store_id'      => $request->store_id,
