@@ -352,6 +352,9 @@ const OrderDetails = ({
                   Price
                 </th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  GST
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Total
                 </th>
               </tr>
@@ -372,6 +375,9 @@ const OrderDetails = ({
                    </td>
                   <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
                     ₹{parseFloat(item.price || 0).toFixed(2)}
+                   </td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
+                    ₹{parseFloat(item.gst || 0).toFixed(2)}
                    </td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
                     ₹
