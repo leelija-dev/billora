@@ -7,8 +7,9 @@ export const useOrderStore = create((set, get) => ({
   orders: [],
   totalOrders: 0,
   currentPage: 1,
-  pageSize: 15,
+  pageSize: 8,
   loading: false,
+  pagination: null,
   filters: {
     search: '',
     status: '',
@@ -20,27 +21,27 @@ export const useOrderStore = create((set, get) => ({
   fetchOrders: async (page = 1, userId) => {
     set({ loading: true })
     try {
-      const { filters, pageSize } = get()
-      
       // Validate user ID
       if (!userId) {
         throw new Error('User ID is required to fetch orders')
       }
       
-      // Use user order history endpoint for admin side
-      const response = await orderAPI.getUserOrderHistory(userId)
+      // Use user order history endpoint for admin side with pagination
+      const response = await orderAPI.getUserOrderHistory(userId, page)
       console.log('Orders API response:', response)
       
-      // Handle the actual response structure: { status: true, data: [], message: "Order History" }
+      // Handle the new paginated response structure
       const responseData = response.data
-      if (responseData?.status === true) {
-        const ordersData = Array.isArray(responseData?.data) ? responseData.data : []
-        const totalCount = ordersData.length
+      if (responseData?.status === true && responseData?.data) {
+        const paginationData = responseData.data
+        const ordersData = Array.isArray(paginationData?.data) ? paginationData.data : []
         
         set({
           orders: ordersData,
-          totalOrders: totalCount,
-          currentPage: page,
+          totalOrders: paginationData?.total || 0,
+          currentPage: paginationData?.current_page || page,
+          pageSize: paginationData?.per_page || 8,
+          pagination: paginationData,
           loading: false,
         })
       } else {
@@ -49,6 +50,8 @@ export const useOrderStore = create((set, get) => ({
         set({
           orders: [],
           totalOrders: 0,
+          currentPage: 1,
+          pagination: null,
           loading: false,
         })
       }
@@ -58,6 +61,8 @@ export const useOrderStore = create((set, get) => ({
       set({ 
         orders: [],
         totalOrders: 0,
+        currentPage: 1,
+        pagination: null,
         loading: false 
       })
     }

@@ -128,10 +128,14 @@ class ProductsController extends Controller
                             //             ->where('quantity', '>', 0);
                             //     });
                             // }
+                            Log::info('min_price1111: ' . $min_price . ', max_price: ' . $max_price);
                             if($min_price && $max_price == 'above'){
+                                Log::info('min_price1111: ' . $min_price . ', max_price: ' . $max_price);
                                 $q->orWhere('selling_price', '>=', $min_price);
                             }elseif ($min_price && $max_price) {
+                                Log::info('min_price: ' . $min_price . ', max_price: ' . $max_price);
                                      $q->whereBetween('selling_price', [$min_price, $max_price]);
+
                             }
                             if($start_date && $end_date){
                                 $q->orWhere('created_at', '>=', $start_date)

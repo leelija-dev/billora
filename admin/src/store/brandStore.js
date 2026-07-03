@@ -27,7 +27,7 @@ const useBrandStore = create((set, get) => ({
   brands: [],
   totalBrands: 0,
   currentPage: 1,
-  pageSize: 15,
+  pageSize: 8,
   loading: false,
   error: null,
   filters: {

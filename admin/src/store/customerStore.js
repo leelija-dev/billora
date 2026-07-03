@@ -29,7 +29,7 @@ export const useCustomerStore = create((set, get) => ({
   customers: [],
   totalCustomers: 0,
   currentPage: 1,
-  pageSize: 15,
+  pageSize: 8,
   loading: false,
   filters: {
     search: "",

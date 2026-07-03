@@ -15,9 +15,31 @@ export const productsAPI = {
   },
 
   // Get all products
-  getAll: async (search = "") => {
+  getAll: async (filters = {}) => {
     try {
-      const params = search ? { search } : {};
+      const params = {};
+      
+      // Handle search parameter
+      if (filters.search) {
+        params.search = filters.search;
+      }
+      
+      // Handle date range filters
+      if (filters.start_date) {
+        params.start_date = filters.start_date;
+      }
+      if (filters.end_date) {
+        params.end_date = filters.end_date;
+      }
+      
+      // Handle price range filters
+      if (filters.min_price) {
+        params.min_price = filters.min_price;
+      }
+      if (filters.max_price) {
+        params.max_price = filters.max_price;
+      }
+      
       console.log("📦 Fetching all products with params:", params);
       const response = await apiClient.get("/products", { params });
       console.log("📦 Products fetched successfully:", response.data);

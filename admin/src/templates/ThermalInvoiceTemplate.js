@@ -17,13 +17,6 @@ const formatCurrency = (value) => {
   return `₹${num.toFixed(2)}`;
 };
 
-// Helper function to truncate long product names for thermal paper
-const truncateText = (text, maxLength = 20) => {
-  if (!text) return "";
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + "...";
-};
-
 // Calculate totals from invoice items
 const calculateSubtotal = (items, packages) => {
   let subtotal = 0;
@@ -196,11 +189,11 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     return `
     <div class="store-header">
       ${logoHTML}
-      <div class="store-name">${truncateText(invoice.store_name, 30)}</div>
+      <div class="store-name">${invoice.store_name || ""}</div>
       <div class="store-details">
-        ${invoice.store_address ? truncateText(invoice.store_address, 35) + "<br>" : ""}
+        ${invoice.store_address ? invoice.store_address + "<br>" : ""}
         ${invoice.store_phone ? `Tel: ${invoice.store_phone}` : ""}
-        ${invoice.store_email ? `&nbsp;| Email: ${truncateText(invoice.store_email, 25)}` : ""}
+        ${invoice.store_email ? `&nbsp;| Email: ${invoice.store_email}` : ""}
         ${invoice.store_gst ? `<br>GST: ${invoice.store_gst}` : ""}
       </div>
     </div>
@@ -517,10 +510,10 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   <!-- Customer Info -->
   <div class="customer-section">
     <div class="customer-label">CUSTOMER</div>
-    <div><strong>${invoice.customer_name ? truncateText(invoice.customer_name, 30) : "Walk-in Customer"}</strong></div>
+    <div><strong>${invoice.customer_name || "Walk-in Customer"}</strong></div>
     ${invoice.customer_phone ? `<div>${invoice.customer_phone}</div>` : ""}
-    ${invoice.customer_email ? `<div style="font-size: 8px;">${truncateText(invoice.customer_email, 30)}</div>` : ""}
-    ${invoice.customer_gst ? `<div>GST: ${invoice?.customer?.gst_number}</div>` : ""}
+    ${invoice.customer_email ? `<div style="font-size: 8px;">${invoice.customer_email}</div>` : ""}
+    ${invoice.customer_gst ? `<div>GST: ${invoice?.customer?.gst_number || invoice.customer_gst}</div>` : ""}
   </div>
 
   <div class="divider"></div>
@@ -549,7 +542,7 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
 
             return `
       <div class="item-row">
-        <div class="item-name">${truncateText(productName, 25)}${discount > 0 ? ` (-${discount}%)` : ""}${gst > 0 ? ` [+${gst}%]` : ""}</div>
+        <div class="item-name">${productName}${discount > 0 ? ` (-${discount}%)` : ""}${gst > 0 ? ` [+${gst}%]` : ""}</div>
         <div class="item-qty">${quantity}${unitCode ? ` ${unitCode}` : ""}</div>
         <div class="item-price">${formatCurrency(itemPrice)}</div>
         <div class="item-total">${formatCurrency(itemTotal)}</div>
@@ -576,7 +569,7 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
 
         return `
         <div class="item-row package-item">
-          <div class="item-name">📦 ${truncateText(packageName, 23)}</div>
+          <div class="item-name">📦 ${packageName}</div>
           <div class="item-qty">${quantity}${unitCode ? ` ${unitCode}` : ""}</div>
           <div class="item-price">${formatCurrency(pkgPrice)}</div>
           <div class="item-total">${formatCurrency(pkgTotal)}</div>
@@ -669,7 +662,7 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
         ? `
     <div class="payment-row" style="font-size: 8px;">
       <span>TXN ID:</span>
-      <span>${truncateText(invoice.transaction_id, 20)}</span>
+      <span>${invoice.transaction_id}</span>
     </div>
     `
         : ""
@@ -688,7 +681,7 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     <div class="thankyou">Thank You!</div>
     <div>Visit Again</div>
     <div style="font-size: 7px; margin-top: 5px;">
-      ${invoice.store_email ? truncateText(invoice.store_email, 30) + "<br>" : ""}
+      ${invoice.store_email ? invoice.store_email + "<br>" : ""}
       ${new Date().toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
     </div>
     ${paidAmount >= totalAmount ? '<div style="margin-top: 4px;">✅ PAID</div>' : '<div style="margin-top: 4px;">⚠️ PENDING</div>'}

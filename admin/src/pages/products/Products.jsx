@@ -89,6 +89,10 @@ const Products = () => {
   const [selectedStockProduct, setSelectedStockProduct] = useState(null);
   const [selectedStockRecord, setSelectedStockRecord] = useState(null);
   const [updatingStock, setUpdatingStock] = useState(false);
+  const [startDate, setStartDate] = useState(filters.start_date || "");
+  const [endDate, setEndDate] = useState(filters.end_date || "");
+  const [minPrice, setMinPrice] = useState(filters.min_price || "");
+  const [maxPrice, setMaxPrice] = useState(filters.max_price || "");
 
   // Function to get total stock quantity for a product from its stocks array
   const getProductTotalStock = (product) => {
@@ -136,6 +140,19 @@ const Products = () => {
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm, setFilters]);
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setFilters({ 
+        start_date: startDate,
+        end_date: endDate,
+        min_price: minPrice,
+        max_price: maxPrice,
+      });
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [startDate, endDate, minPrice, maxPrice, setFilters]);
 
   // Fetch categories, brands and units data
   useEffect(() => {
@@ -493,7 +510,11 @@ const Products = () => {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setFilters({ search: "", category: "", status: "" });
+    setStartDate("");
+    setEndDate("");
+    setMinPrice("");
+    setMaxPrice("");
+    setFilters({ search: "", category: "", status: "", start_date: "", end_date: "", min_price: "", max_price: "" });
   };
 
   const toggleProductSelection = (productId) => {
@@ -785,29 +806,27 @@ const Products = () => {
                         width: `${Math.min((totalStock / maxStock) * 100, 100)}%`,
                       }}
                       transition={{ duration: 0.5 }}
-                      className={`h-full rounded-full ${
-                        totalStock <= lowStockThreshold && totalStock > 0
+                      className={`h-full rounded-full ${totalStock <= lowStockThreshold && totalStock > 0
                           ? "bg-red-500"
                           : totalStock === 0
                             ? "bg-gray-400"
                             : totalStock <= lowStockThreshold * 2
                               ? "bg-yellow-500"
                               : "bg-green-500"
-                      }`}
+                        }`}
                     />
                   </div>
                   <span
                     className={`
               text-sm font-medium
-              ${
-                totalStock <= lowStockThreshold && totalStock > 0
-                  ? "text-red-600 dark:text-red-400"
-                  : totalStock === 0
-                    ? "text-orange-600 dark:text-orange-400"
-                    : totalStock <= lowStockThreshold * 2
-                      ? "text-yellow-600 dark:text-yellow-400"
-                      : "text-gray-900 dark:text-white"
-              }
+              ${totalStock <= lowStockThreshold && totalStock > 0
+                        ? "text-red-600 dark:text-red-400"
+                        : totalStock === 0
+                          ? "text-orange-600 dark:text-orange-400"
+                          : totalStock <= lowStockThreshold * 2
+                            ? "text-yellow-600 dark:text-yellow-400"
+                            : "text-gray-900 dark:text-white"
+                      }
             `}
                   >
                     {totalStock}
@@ -908,120 +927,118 @@ const Products = () => {
         animate={{ opacity: 1 }}
         className="space-y-6 p-6"
       >
-        {/* Header with Gradient */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+       {/* Header with Gradient */}
+<motion.div
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.5 }}
+  className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+>
+  <div className="flex-1 min-w-0">
+    <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+      Products
+    </h1>
+    <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 flex items-center text-sm sm:text-base">
+      <FiPackage className="w-4 h-4 mr-2 flex-shrink-0" />
+      <span className="truncate">Manage your product catalog and inventory</span>
+    </p>
+  </div>
+
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    {!showAddForm && !showEditForm && (
+      <>
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setViewMode("table")}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
+              viewMode === "table"
+                ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                : "text-gray-600 dark:text-gray-400"
+            }`}
+          >
+            <FiList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
+              viewMode === "grid"
+                ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                : "text-gray-600 dark:text-gray-400"
+            }`}
+          >
+            <FiGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </motion.button>
+        </div>
+
+        {/* Refresh Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleRefresh}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
         >
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Products
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
-              <FiPackage className="w-4 h-4 mr-2" />
-              Manage your product catalog and inventory
-            </p>
-          </div>
+          <FiRefreshCw
+            className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
+          />
+        </motion.button>
 
-          <div className="flex items-center space-x-3">
-            {!showAddForm && !showEditForm && (
-              <>
-                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setViewMode("table")}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === "table"
-                        ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                        : "text-gray-600 dark:text-gray-400"
-                    }`}
-                  >
-                    <FiList className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === "grid"
-                        ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                        : "text-gray-600 dark:text-gray-400"
-                    }`}
-                  >
-                    <FiGrid className="w-4 h-4" />
-                  </motion.button>
-                </div>
+        
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleRefresh}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiRefreshCw
-                    className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                </motion.button>
+        {/* Deleted Products Link - Always visible with responsive text */}
+        <Link
+          to="/products/deleted"
+          className="flex items-center px-2 sm:px-4 py-1.5 sm:py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-xs sm:text-base whitespace-nowrap"
+        >
+          <FiTrash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+          <span className="hidden xs:inline">Deleted Products</span>
+          <span className="xs:hidden">Deleted</span>
+        </Link>
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </motion.button>
+        
+      </>
+    )}
 
-                <Link
-                  to="/products/deleted"
-                  className="flex items-center px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                >
-                  <FiTrash2 className="w-4 h-4 mr-2" />
-                  Deleted Products
-                </Link>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiUpload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </motion.button>
-              </>
-            )}
-
-            {!showAddForm && !showEditForm ? (
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  onClick={handleAddProduct}
-                  icon={FiPlus}
-                  className="shadow-lg shadow-primary-500/30"
-                >
-                  Add Product
-                </Button>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-              >
-                <Button
-                  variant="outline"
-                  onClick={handleCancelForm}
-                  icon={FiArrowLeft}
-                >
-                  Back to Products
-                </Button>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
+    {/* Add/Back Button */}
+    {!showAddForm && !showEditForm ? (
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="flex-shrink-0"
+      >
+        <Button
+          onClick={handleAddProduct}
+          icon={FiPlus}
+          className="shadow-lg shadow-primary-500/30 text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2"
+        >
+          <span className="hidden xs:inline">Add Product</span>
+          <span className="xs:hidden">Add</span>
+        </Button>
+      </motion.div>
+    ) : (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        className="flex-shrink-0"
+      >
+        <Button
+          variant="outline"
+          onClick={handleCancelForm}
+          icon={FiArrowLeft}
+          className="text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2"
+        >
+          <span className="hidden xs:inline">Back to Products</span>
+          <span className="xs:hidden">Back</span>
+        </Button>
+      </motion.div>
+    )}
+  </div>
+</motion.div>
         {showAddForm || showEditForm ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1110,20 +1127,19 @@ const Products = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
-                        showFilters
+                      className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${showFilters
                           ? "bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400"
                           : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       <FiFilter className="w-4 h-4" />
                       <span>Filters</span>
-                      {(filters.category || filters.status) && (
+                      {(filters.category || filters.status || startDate || endDate || minPrice || maxPrice) && (
                         <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
                       )}
                     </motion.button>
 
-                    {(searchTerm || filters.category || filters.status) && (
+                    {(searchTerm || filters.category || filters.status || startDate || endDate || minPrice || maxPrice) && (
                       <motion.button
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -1148,16 +1164,16 @@ const Products = () => {
                       className="overflow-hidden"
                     >
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           <Select
                             label="Category"
                             options={[
                               { value: "", label: "All Categories" },
                               ...(Array.isArray(categories)
                                 ? categories.map((cat) => ({
-                                    value: cat.id,
-                                    label: cat.name,
-                                  }))
+                                  value: cat.id,
+                                  label: cat.name,
+                                }))
                                 : []),
                             ]}
                             value={filters.category}
@@ -1203,6 +1219,57 @@ const Products = () => {
                               setFilters({ stockStatus: e.target.value });
                             }}
                           />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Start Date
+                            </label>
+                            <Input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              End Date
+                            </label>
+                            <Input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Min Price
+                            </label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={minPrice}
+                              onChange={(e) => setMinPrice(e.target.value)}
+                              className="w-full"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Max Price
+                            </label>
+                            <Input
+                              type="text"
+                              placeholder="Enter price or 'above'"
+                              value={maxPrice}
+                              onChange={(e) => setMaxPrice(e.target.value)}
+                              className="w-full"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Enter a price or type 'above' for price & above
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -1390,8 +1457,8 @@ const Products = () => {
                                   ₹
                                   {product.selling_price
                                     ? parseFloat(product.selling_price).toFixed(
-                                        2,
-                                      )
+                                      2,
+                                    )
                                     : "0.00"}
                                 </span>
                                 <StatusBadge
@@ -1411,14 +1478,13 @@ const Products = () => {
                                     Stock
                                   </span>
                                   <span
-                                    className={`font-medium ${
-                                      totalStock <= lowStockThreshold &&
-                                      totalStock > 0
+                                    className={`font-medium ${totalStock <= lowStockThreshold &&
+                                        totalStock > 0
                                         ? "text-red-600 dark:text-red-400"
                                         : totalStock === 0
                                           ? "text-orange-600 dark:text-orange-400"
                                           : "text-gray-700 dark:text-gray-300"
-                                    }`}
+                                      }`}
                                   >
                                     {totalStock} /{" "}
                                     {product.maximum_stock_quantity || 100}
@@ -1431,16 +1497,15 @@ const Products = () => {
                                       width: `${Math.min((totalStock / (product.maximum_stock_quantity || 100)) * 100, 100)}%`,
                                     }}
                                     transition={{ duration: 0.5 }}
-                                    className={`h-full rounded-full ${
-                                      totalStock <= lowStockThreshold &&
-                                      totalStock > 0
+                                    className={`h-full rounded-full ${totalStock <= lowStockThreshold &&
+                                        totalStock > 0
                                         ? "bg-red-500"
                                         : totalStock === 0
                                           ? "bg-gray-400"
                                           : totalStock <= lowStockThreshold * 2
                                             ? "bg-yellow-500"
                                             : "bg-green-500"
-                                    }`}
+                                      }`}
                                   />
                                 </div>
 
@@ -1450,8 +1515,8 @@ const Products = () => {
                                       {stocksList.map((stock, idx) => {
                                         const unit = Array.isArray(units)
                                           ? units.find(
-                                              (u) => u.id === stock.unit_id,
-                                            )
+                                            (u) => u.id === stock.unit_id,
+                                          )
                                           : null;
                                         return (
                                           <div
@@ -1505,7 +1570,7 @@ const Products = () => {
             </motion.div>
           </>
         )}
-        
+
         <StockAddModal
           isOpen={showStockModal}
           onClose={() => {
