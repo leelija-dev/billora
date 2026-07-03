@@ -5,8 +5,14 @@ use Google\Client;
 use Google\Service\Drive;
 
 
+// Route::get('/', function () {
+//     return view('admin.login');
+// });
 Route::get('/', function () {
-    return view('admin.login');
+    return redirect()->route('login');
+});
+Route::fallback(function () {
+    return response()->view('404', [], 404);
 });
 Route::get('/verify-email/{token}', [CustomerController::class, 'verifyEmail']);
 Route::post('/resend-verification', [CustomerController::class, 'resendVerificationEmail']);
