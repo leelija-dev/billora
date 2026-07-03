@@ -1641,7 +1641,7 @@ const SellerDetails = () => {
           title="Seller not found"
           description="The seller you're looking for doesn't exist or has been removed."
           action={
-            <Button onClick={() => navigate("/sellers")}>
+            <Button onClick={() => navigate("/seller")}>
               <FiArrowLeft className="w-4 h-4 mr-2" />
               Back to Sellers
             </Button>
@@ -1662,7 +1662,7 @@ const SellerDetails = () => {
         <motion.button
           whileHover={{ scale: 1.05, x: -5 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate("/sellers")}
+          onClick={() => navigate("/seller")}
           className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <FiArrowLeft className="w-5 h-5" />
