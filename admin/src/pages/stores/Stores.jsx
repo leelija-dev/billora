@@ -62,6 +62,8 @@ const Stores = () => {
   const [selectedStores, setSelectedStores] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storeToDelete, setStoreToDelete] = useState(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [bulkDeleteSubmitting, setBulkDeleteSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -235,17 +237,22 @@ const Stores = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${selectedStores.length} stores?`,
-      )
-    ) {
+    setShowBulkDeleteConfirm(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    setBulkDeleteSubmitting(true);
+    try {
       for (const id of selectedStores) {
         await deleteStore(id);
       }
       setSelectedStores([]);
-      setShowDeleteConfirm(false);
+      setShowBulkDeleteConfirm(false);
       await fetchStores(currentUserId);
+    } catch (error) {
+      console.error("Failed to delete stores:", error);
+    } finally {
+      setBulkDeleteSubmitting(false);
     }
   };
 
@@ -629,7 +636,7 @@ const Stores = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowDeleteConfirm(true)}
+                        onClick={handleBulkDelete}
                       >
                         Delete Selected
                       </Button>
@@ -1124,12 +1131,89 @@ const Stores = () => {
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={storeToDelete ? handleDelete : handleBulkDelete}
+                    onClick={handleDelete}
                     className="flex-1"
                   >
                     Delete
                   </Button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showBulkDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              if (!bulkDeleteSubmitting) {
+                setShowBulkDeleteConfirm(false);
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                  className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                  <FiAlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                </motion.div>
+                <motion.h3
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+                >
+                  Delete Multiple Stores
+                </motion.h3>
+                <motion.p
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-gray-600 dark:text-gray-400 mb-6"
+                >
+                  Are you sure you want to delete {selectedStores.length} stores? This action cannot be undone.
+                </motion.p>
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex space-x-3 w-full"
+                >
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBulkDeleteConfirm(false)}
+                    disabled={bulkDeleteSubmitting}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={confirmBulkDelete}
+                    disabled={bulkDeleteSubmitting}
+                    isLoading={bulkDeleteSubmitting}
+                    className="flex-1"
+                  >
+                    Delete All
+                  </Button>
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>

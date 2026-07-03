@@ -66,6 +66,8 @@ const Categories = () => {
   const [viewMode, setViewMode] = useState('table')
   const [selectedCategories, setSelectedCategories] = useState([])
   const [showFilters, setShowFilters] = useState(false)
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false)
+  const [bulkDeleteSubmitting, setBulkDeleteSubmitting] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -178,17 +180,22 @@ const Categories = () => {
   }
 
   const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedCategories.length} categories?`)) {
-      try {
-        for (const id of selectedCategories) {
-          await deleteCategory(id)
-        }
-        setSelectedCategories([])
-        setShowDeleteConfirm(false)
-        await fetchCategories()
-      } catch (error) {
-        console.error('Failed to delete categories:', error)
+    setShowBulkDeleteConfirm(true)
+  }
+
+  const confirmBulkDelete = async () => {
+    setBulkDeleteSubmitting(true)
+    try {
+      for (const id of selectedCategories) {
+        await deleteCategory(id)
       }
+      setSelectedCategories([])
+      setShowBulkDeleteConfirm(false)
+      await fetchCategories()
+    } catch (error) {
+      console.error('Failed to delete categories:', error)
+    } finally {
+      setBulkDeleteSubmitting(false)
     }
   }
 
@@ -472,7 +479,7 @@ const Categories = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowDeleteConfirm(true)}
+                      onClick={handleBulkDelete}
                     >
                       Delete Selected
                     </Button>
@@ -815,6 +822,80 @@ const Categories = () => {
                       onClick={() => handleDelete(selectedCategory?.id)}
                     >
                       Delete
+                    </Button>
+                  </motion.div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showBulkDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              if (!bulkDeleteSubmitting) {
+                setShowBulkDeleteConfirm(false)
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                  className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                  <FiAlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                </motion.div>
+                
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Delete Multiple Categories
+                </h3>
+                
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Are you sure you want to delete {selectedCategories.length} categories? This action cannot be undone.
+                </p>
+                
+                <div className="flex items-center justify-center space-x-4">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowBulkDeleteConfirm(false)}
+                      disabled={bulkDeleteSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                  </motion.div>
+                  
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button
+                      variant="danger"
+                      onClick={confirmBulkDelete}
+                      disabled={bulkDeleteSubmitting}
+                      isLoading={bulkDeleteSubmitting}
+                    >
+                      Delete All
                     </Button>
                   </motion.div>
                 </div>
