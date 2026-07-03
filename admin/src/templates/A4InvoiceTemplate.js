@@ -833,14 +833,19 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
 </html>`;
 
   // Helper function to render items section
-  function renderItemsSection(invoice) {
+ function renderItemsSection(invoice) {
     let html = "";
 
+    // Determine which items array to use
+    const items = invoice.invoice_items || invoice.items || [];
+    
+    console.log("checking the invoice items", items);
+
     // Products
-    if (Array.isArray(invoice.invoice_items) && invoice.invoice_items.length > 0) {
+    if (Array.isArray(items) && items.length > 0) {
       html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
-      console.log("checking the invoice items", invoice.items);
-      invoice.invoice_items.forEach((item, idx) => {
+      
+      items.forEach((item, idx) => {
         const price = parseNumeric(item.price);
         const qty = parseNumeric(item.quantity, 1);
         const total = parseNumeric(item.total_price, price * qty);
@@ -861,7 +866,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
       });
     }
 
-    // Packages
+    // Packages - keep this separate if packages exist
     if (Array.isArray(invoice.packages) && invoice.packages.length > 0) {
       html += `<tr><td colspan="7" class="section-header" style="background: #eef3f9 !important;">📦 PACKAGES</td></tr>`;
       invoice.packages.forEach((pkg, idx) => {
@@ -884,15 +889,13 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
     }
 
     // No items
-    if (
-      (!invoice.items || invoice.items.length === 0) &&
-      (!invoice.packages || invoice.packages.length === 0)
-    ) {
+    const allItems = [...(items || []), ...(invoice.packages || [])];
+    if (allItems.length === 0) {
       html += `<tr><td colspan="7" style="text-align: center; padding: 28px; color: #8aa0b5;">No items found</td></tr>`;
     }
 
     return html;
-  }
+}
 
   // Helper function to escape HTML
   function escapeHtml(str) {
