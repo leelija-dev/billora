@@ -52,9 +52,12 @@ class ProductsController extends Controller
             $category = $request->category;
             $status = $request->status;
             $stock_status = $request->stock_status;
+            $unit = $request->unit;
+            $brand = $request->brand;
+
             // Unique cache key
             // $cacheKey = "products_{$user}_{$search}_page_{$page}";
-            $cacheKey = "products_{$user}_{$search}_{$min_price}_{$max_price}_{$start_date}_{$end_date}_{$category}_{$status}_{$stock_status}_page_{$page}";
+            $cacheKey = "products_{$user}_{$search}_{$min_price}_{$max_price}_{$start_date}_{$end_date}_{$category}_{$unit}_{$brand}_{$status}_{$stock_status}_page_{$page}";
             $fromCache = Cache::tags(['products_user_' . $user])->has($cacheKey);
             $customer = Customers::findOrFail($user);
             $startTime = microtime(true);
@@ -165,6 +168,18 @@ class ProductsController extends Controller
                     if ($request->filled('category')) {
                         $query->whereHas('category', function ($category) use ($request) {
                             $category->where('name', 'like', "%{$request->category}%");
+                        });
+                    }
+                    if($request->filled('brand')){
+                        $query->whereHas('brand',function ($brand) use ($request){
+                            $brand->where('name','like',"%{$request->brand}%");
+                        });
+                    }
+                    if($request->filled('unit')){
+                        $query->whereHas('unit',function ($unit) use ($request){
+                            $unit->where('name','like',"%{$request->unit}%")
+                            ->orWhere('slug','like',"%{$request->unit}%")
+                            ->orWhere('code','like',"%{$request->unit}%");
                         });
                     }
                     return $query
