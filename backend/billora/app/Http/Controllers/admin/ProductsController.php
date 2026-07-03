@@ -49,10 +49,15 @@ class ProductsController extends Controller
             $end_date = $request->end_date;
             $min_price = $request->min_price;
             $max_price = $request->max_price;
+            $category = $request->category;
+            $status = $request->status;
+            $stock_status = $request->stock_status;
+            $unit = $request->unit;
+            $brand = $request->brand;
 
             // Unique cache key
             // $cacheKey = "products_{$user}_{$search}_page_{$page}";
-            $cacheKey = "products_{$user}_{$search}_{$min_price}_{$max_price}_{$start_date}_{$end_date}_page_{$page}";
+            $cacheKey = "products_{$user}_{$search}_{$min_price}_{$max_price}_{$start_date}_{$end_date}_{$category}_{$unit}_{$brand}_{$status}_{$stock_status}_page_{$page}";
             $fromCache = Cache::tags(['products_user_' . $user])->has($cacheKey);
             $customer = Customers::findOrFail($user);
             $startTime = microtime(true);
@@ -116,38 +121,7 @@ class ProductsController extends Controller
                                     $brand->where('name', 'like', "%{$request->search}%")
                                         ->orWhere('slug', 'like', "%{$request->search}%");
                                 });
-                            if ($request->search == 'active') {
-                                $q->orWhere('is_active', 1);
-                            }
-                            if ($request->search == 'inactive') {
-                                $q->orWhere('is_active', 0);
-                            }
-                            // if ($request->search == "low_stock") {
-                            //     $q->orWhereHas('stocks', function ($stocks) {
-                            //         $stocks->where('quantity', '<=', 5)
-                            //             ->where('quantity', '>', 0);
-                            //     });
-                            // }
-
-
-                            if ($request->search == 'low-stock') {
-                                $q->orWhereHas('stocks', function ($stocks) {
-                                    $stocks->whereBetween('quantity', [1, 10]);
-                                });
-                            }
-
-
-                            if ($request->search == 'out-of-stock') {
-                                $q->orWhereHas('stocks', function ($stocks) {
-                                    $stocks->where('quantity', 0);
-                                });
-                            }
-
-                            if ($request->search == "in-stock") {
-                                $q->orWhereHas('stocks', function ($stocks) {
-                                    $stocks->where('quantity', '>', 0);
-                                });
-                            }
+                            
                         });
                     }
                     if ($request->filled('min_price') && $request->max_price == 'above') {
@@ -165,6 +139,48 @@ class ProductsController extends Controller
                             $request->start_date . ' 00:00:00',
                             $request->end_date . ' 23:59:59'
                         ]);
+                    }
+                    if ($request->filled('status') == 'active') {
+                        $query->orWhere('is_active', 1);
+                    }
+                    if ($request->filled('status') == 'inactive') {
+                        $query->orWhere('is_active', 0);
+                    }
+                    
+                    if ($request->filled('stock_status') == 'low-stock') {
+                        $query->orWhereHas('stocks', function ($stocks) {
+                            $stocks->whereBetween('quantity', [1, 10]);
+                        });
+                    }
+
+
+                    if ($request->filled('stock_status') == 'out-of-stock') {
+                        $query->orWhereHas('stocks', function ($stocks) {
+                            $stocks->where('quantity', 0);
+                        });
+                    }
+
+                    if ($request->filled('stock_status') == 'in-stock') {
+                        $query->orWhereHas('stocks', function ($stocks) {
+                            $stocks->where('quantity', '>', 0);
+                        });
+                    }
+                    if ($request->filled('category')) {
+                        $query->whereHas('category', function ($category) use ($request) {
+                            $category->where('name', 'like', "%{$request->category}%");
+                        });
+                    }
+                    if($request->filled('brand')){
+                        $query->whereHas('brand',function ($brand) use ($request){
+                            $brand->where('name','like',"%{$request->brand}%");
+                        });
+                    }
+                    if($request->filled('unit')){
+                        $query->whereHas('unit',function ($unit) use ($request){
+                            $unit->where('name','like',"%{$request->unit}%")
+                            ->orWhere('slug','like',"%{$request->unit}%")
+                            ->orWhere('code','like',"%{$request->unit}%");
+                        });
                     }
                     return $query
                         ->orderBy('id', 'desc')
