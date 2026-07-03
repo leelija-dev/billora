@@ -123,7 +123,7 @@ const Units = () => {
 
   const handlePageChange = (page) => {
     setPageLoading(true)
-    fetchUnits(page).finally(() => {
+    fetchUnits(page, { search: searchTerm }).finally(() => {
       setPageLoading(false)
     })
   }

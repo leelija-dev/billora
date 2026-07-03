@@ -301,7 +301,7 @@ const Orders = () => {
   }
 
   const handlePageChange = (page) => {
-    fetchOrders(page, user.id)
+    fetchOrders(page, user.id, filters)
   }
 
   const handleRefresh = async () => {

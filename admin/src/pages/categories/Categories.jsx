@@ -147,7 +147,7 @@ const Categories = () => {
 
   const handlePageChange = (page) => {
     setPageLoading(true)
-    fetchCategories(page).finally(() => {
+    fetchCategories(page, { search: searchTerm }).finally(() => {
       setPageLoading(false)
     })
   }

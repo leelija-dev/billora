@@ -186,7 +186,7 @@ const Invoices = () => {
       return;
     }
     setPageLoading(true);
-    fetchInvoices(page).finally(() => {
+    fetchInvoices(page, { search: searchTerm }).finally(() => {
       setPageLoading(false);
     });
   };

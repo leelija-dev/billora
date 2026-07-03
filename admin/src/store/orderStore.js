@@ -18,7 +18,7 @@ export const useOrderStore = create((set, get) => ({
     dateTo: '',
   },
 
-  fetchOrders: async (page = 1, userId) => {
+  fetchOrders: async (page = 1, userId, filters = {}) => {
     set({ loading: true })
     try {
       // Validate user ID
@@ -27,7 +27,7 @@ export const useOrderStore = create((set, get) => ({
       }
       
       // Use user order history endpoint for admin side with pagination
-      const response = await orderAPI.getUserOrderHistory(userId, page)
+      const response = await orderAPI.getUserOrderHistory(userId, page, filters)
       console.log('Orders API response:', response)
       
       // Handle the new paginated response structure
