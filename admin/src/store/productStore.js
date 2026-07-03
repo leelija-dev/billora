@@ -33,6 +33,9 @@ export const useProductStore = create((set, get) => ({
     search: '',
     category: '',
     status: '',
+    stock_status: '',
+    unit: '',
+    brand: '',
     start_date: '',
     end_date: '',
     min_price: '',
@@ -84,7 +87,9 @@ export const useProductStore = create((set, get) => ({
 
     set({ loading: true, cacheKey })
     try {
-      const response = await productsAPI.getAll(filters)
+      // Pass page parameter to filters for API
+      const apiFilters = { ...filters, page }
+      const response = await productsAPI.getAll(apiFilters)
       
       console.log(' Product Store - Raw API Response:', response)
       

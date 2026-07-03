@@ -19,6 +19,11 @@ export const productsAPI = {
     try {
       const params = {};
       
+      // Handle page parameter
+      if (filters.page) {
+        params.page = filters.page;
+      }
+      
       // Handle search parameter
       if (filters.search) {
         params.search = filters.search;
@@ -38,6 +43,31 @@ export const productsAPI = {
       }
       if (filters.max_price) {
         params.max_price = filters.max_price;
+      }
+      
+      // Handle category filter
+      if (filters.category) {
+        params.category = filters.category;
+      }
+      
+      // Handle status filter
+      if (filters.status) {
+        params.status = filters.status;
+      }
+      
+      // Handle stock status filter
+      if (filters.stock_status) {
+        params.stock_status = filters.stock_status;
+      }
+      
+      // Handle unit filter
+      if (filters.unit) {
+        params.unit = filters.unit;
+      }
+      
+      // Handle brand filter
+      if (filters.brand) {
+        params.brand = filters.brand;
       }
       
       console.log("📦 Fetching all products with params:", params);

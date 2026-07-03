@@ -93,6 +93,11 @@ const Products = () => {
   const [endDate, setEndDate] = useState(filters.end_date || "");
   const [minPrice, setMinPrice] = useState(filters.min_price || "");
   const [maxPrice, setMaxPrice] = useState(filters.max_price || "");
+  const [selectedCategory, setSelectedCategory] = useState(filters.category || "");
+  const [selectedStatus, setSelectedStatus] = useState(filters.status || "");
+  const [selectedStockStatus, setSelectedStockStatus] = useState(filters.stock_status || "");
+  const [selectedUnit, setSelectedUnit] = useState(filters.unit || "");
+  const [selectedBrand, setSelectedBrand] = useState(filters.brand || "");
 
   // Function to get total stock quantity for a product from its stocks array
   const getProductTotalStock = (product) => {
@@ -148,11 +153,16 @@ const Products = () => {
         end_date: endDate,
         min_price: minPrice,
         max_price: maxPrice,
+        category: selectedCategory,
+        status: selectedStatus,
+        stock_status: selectedStockStatus,
+        unit: selectedUnit,
+        brand: selectedBrand,
       });
     }, 500);
 
     return () => clearTimeout(debounceTimer);
-  }, [startDate, endDate, minPrice, maxPrice, setFilters]);
+  }, [startDate, endDate, minPrice, maxPrice, selectedCategory, selectedStatus, selectedStockStatus, selectedUnit, selectedBrand, setFilters]);
 
   // Fetch categories, brands and units data
   useEffect(() => {
@@ -256,7 +266,21 @@ const Products = () => {
       clearCache();
       useProductStore.setState({ lastFetchTime: null, cacheKey: null });
 
-      await fetchProducts();
+      // Fetch products with current filters
+      const currentFilters = {
+        search: searchTerm,
+        category: selectedCategory,
+        status: selectedStatus,
+        stock_status: selectedStockStatus,
+        unit: selectedUnit,
+        brand: selectedBrand,
+        start_date: startDate,
+        end_date: endDate,
+        min_price: minPrice,
+        max_price: maxPrice,
+      };
+
+      await fetchProducts(1, currentFilters);
 
       try {
         const [categoriesRes, brandsRes] = await Promise.all([
@@ -314,7 +338,21 @@ const Products = () => {
         clearCache();
         useProductStore.setState({ lastFetchTime: null, cacheKey: null });
 
-        await fetchProducts();
+        // Fetch products with current filters
+        const currentFilters = {
+          search: searchTerm,
+          category: selectedCategory,
+          status: selectedStatus,
+          stock_status: selectedStockStatus,
+          unit: selectedUnit,
+          brand: selectedBrand,
+          start_date: startDate,
+          end_date: endDate,
+          min_price: minPrice,
+          max_price: maxPrice,
+        };
+
+        await fetchProducts(1, currentFilters);
       } catch (error) {
         console.error("Error deleting product:", error);
         toast.error("Failed to delete product. Please try again.");
@@ -370,49 +408,21 @@ const Products = () => {
       // Get the current page from pagination state
       const currentPageNumber = pagination?.current_page || currentPage || 1;
 
-      // Get the full URL for the current page from pagination
-      let currentPageUrl = null;
+      // Fetch products with current filters
+      const currentFilters = {
+        search: searchTerm,
+        category: selectedCategory,
+        status: selectedStatus,
+        stock_status: selectedStockStatus,
+        unit: selectedUnit,
+        brand: selectedBrand,
+        start_date: startDate,
+        end_date: endDate,
+        min_price: minPrice,
+        max_price: maxPrice,
+      };
 
-      if (pagination) {
-        if (currentPageNumber === 1 && pagination.first_page_url) {
-          currentPageUrl = pagination.first_page_url;
-        } else if (
-          currentPageNumber === pagination.last_page &&
-          pagination.last_page_url
-        ) {
-          currentPageUrl = pagination.last_page_url;
-        } else if (pagination.next_page_url) {
-          currentPageUrl = pagination.next_page_url.replace(
-            /page=\d+/,
-            `page=${currentPageNumber}`,
-          );
-        } else if (pagination.prev_page_url) {
-          currentPageUrl = pagination.prev_page_url.replace(
-            /page=\d+/,
-            `page=${currentPageNumber}`,
-          );
-        } else if (pagination.first_page_url) {
-          currentPageUrl = pagination.first_page_url.replace(
-            /page=\d+/,
-            `page=${currentPageNumber}`,
-          );
-        }
-      }
-
-      // If we still don't have a URL, construct from first_page_url
-      if (!currentPageUrl && pagination?.first_page_url) {
-        const baseUrl = pagination.first_page_url.split("?")[0];
-        currentPageUrl = `${baseUrl}?page=${currentPageNumber}`;
-      }
-
-      console.log("Refreshing current page URL:", currentPageUrl);
-
-      // Refresh the products list for the current page
-      if (fetchProductsByUrl && currentPageUrl) {
-        await fetchProductsByUrl(currentPageUrl);
-      } else {
-        await fetchProducts(currentPageNumber);
-      }
+      await fetchProducts(currentPageNumber, currentFilters);
 
       // Close the modal
       setShowStockModal(false);
@@ -437,7 +447,21 @@ const Products = () => {
       clearCache();
       useProductStore.setState({ lastFetchTime: null, cacheKey: null });
 
-      await fetchProducts();
+      // Fetch products with current filters
+      const currentFilters = {
+        search: searchTerm,
+        category: selectedCategory,
+        status: selectedStatus,
+        stock_status: selectedStockStatus,
+        unit: selectedUnit,
+        brand: selectedBrand,
+        start_date: startDate,
+        end_date: endDate,
+        min_price: minPrice,
+        max_price: maxPrice,
+      };
+
+      await fetchProducts(1, currentFilters);
     } catch (error) {
       console.error("Error bulk deleting products:", error);
     }
@@ -445,7 +469,37 @@ const Products = () => {
 
   const handlePageChange = (url) => {
     if (url) {
-      fetchProductsByUrl(url);
+      // Clear cache to ensure fresh data when changing pages
+      const { clearCache } = useProductStore.getState();
+      clearCache();
+      useProductStore.setState({ lastFetchTime: null, cacheKey: null });
+      
+      // Extract page number from URL
+      const urlObj = new URL(url, window.location.origin);
+      const page = urlObj.searchParams.get('page') || 1;
+      
+      // Use filters from store to ensure we have the latest filter state
+      const currentFilters = {
+        search: filters.search || searchTerm,
+        category: filters.category || selectedCategory,
+        status: filters.status || selectedStatus,
+        stock_status: filters.stock_status || selectedStockStatus,
+        unit: filters.unit || selectedUnit,
+        brand: filters.brand || selectedBrand,
+        start_date: filters.start_date || startDate,
+        end_date: filters.end_date || endDate,
+        min_price: filters.min_price || minPrice,
+        max_price: filters.max_price || maxPrice,
+      };
+      
+      // Remove empty filter values
+      Object.keys(currentFilters).forEach(key => {
+        if (currentFilters[key] === '' || currentFilters[key] === null || currentFilters[key] === undefined) {
+          delete currentFilters[key];
+        }
+      });
+      
+      fetchProducts(parseInt(page), currentFilters);
     }
   };
 
@@ -465,45 +519,21 @@ const Products = () => {
     // Get the current page number
     const currentPageNumber = pagination?.current_page || currentPage || 1;
 
-    // Get the full URL for the current page from pagination
-    let currentPageUrl = null;
+    // Fetch products with current filters
+    const currentFilters = {
+      search: searchTerm,
+      category: selectedCategory,
+      status: selectedStatus,
+      stock_status: selectedStockStatus,
+      unit: selectedUnit,
+      brand: selectedBrand,
+      start_date: startDate,
+      end_date: endDate,
+      min_price: minPrice,
+      max_price: maxPrice,
+    };
 
-    if (pagination) {
-      if (currentPageNumber === 1 && pagination.first_page_url) {
-        currentPageUrl = pagination.first_page_url;
-      } else if (
-        currentPageNumber === pagination.last_page &&
-        pagination.last_page_url
-      ) {
-        currentPageUrl = pagination.last_page_url;
-      } else if (pagination.next_page_url) {
-        currentPageUrl = pagination.next_page_url.replace(
-          /page=\d+/,
-          `page=${currentPageNumber}`,
-        );
-      } else if (pagination.prev_page_url) {
-        currentPageUrl = pagination.prev_page_url.replace(
-          /page=\d+/,
-          `page=${currentPageNumber}`,
-        );
-      } else if (pagination.first_page_url) {
-        currentPageUrl = pagination.first_page_url.replace(
-          /page=\d+/,
-          `page=${currentPageNumber}`,
-        );
-      }
-    }
-
-    if (!currentPageUrl && pagination?.first_page_url) {
-      const baseUrl = pagination.first_page_url.split("?")[0];
-      currentPageUrl = `${baseUrl}?page=${currentPageNumber}`;
-    }
-
-    if (fetchProductsByUrl && currentPageUrl) {
-      await fetchProductsByUrl(currentPageUrl);
-    } else {
-      await fetchProducts(currentPageNumber);
-    }
+    await fetchProducts(currentPageNumber, currentFilters);
 
     setRefreshing(false);
   };
@@ -514,7 +544,12 @@ const Products = () => {
     setEndDate("");
     setMinPrice("");
     setMaxPrice("");
-    setFilters({ search: "", category: "", status: "", start_date: "", end_date: "", min_price: "", max_price: "" });
+    setSelectedCategory("");
+    setSelectedStatus("");
+    setSelectedStockStatus("");
+    setSelectedUnit("");
+    setSelectedBrand("");
+    setFilters({ search: "", category: "", status: "", stock_status: "", start_date: "", end_date: "", min_price: "", max_price: "", unit: "", brand: "" });
   };
 
   const toggleProductSelection = (productId) => {
@@ -1134,12 +1169,12 @@ const Products = () => {
                     >
                       <FiFilter className="w-4 h-4" />
                       <span>Filters</span>
-                      {(filters.category || filters.status || startDate || endDate || minPrice || maxPrice) && (
+                      {(filters.category || filters.status || filters.stock_status || filters.unit || filters.brand || startDate || endDate || minPrice || maxPrice) && (
                         <span className="ml-1 w-2 h-2 bg-primary-500 rounded-full" />
                       )}
                     </motion.button>
 
-                    {(searchTerm || filters.category || filters.status || startDate || endDate || minPrice || maxPrice) && (
+                    {(searchTerm || filters.category || filters.status || filters.stock_status || filters.unit || filters.brand || startDate || endDate || minPrice || maxPrice) && (
                       <motion.button
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -1164,24 +1199,20 @@ const Products = () => {
                       className="overflow-hidden"
                     >
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                           <Select
                             label="Category"
                             options={[
                               { value: "", label: "All Categories" },
                               ...(Array.isArray(categories)
                                 ? categories.map((cat) => ({
-                                  value: cat.id,
+                                  value: cat.name,
                                   label: cat.name,
                                 }))
                                 : []),
                             ]}
-                            value={filters.category}
-                            onChange={(e) => {
-                              const selectedCategory = categories.find(cat => cat.id == e.target.value);
-                              setSearchTerm(selectedCategory?.name || "");
-                              setFilters({ category: e.target.value });
-                            }}
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
                           />
                           <Select
                             label="Status"
@@ -1190,15 +1221,8 @@ const Products = () => {
                               { value: "active", label: "Active" },
                               { value: "inactive", label: "Inactive" },
                             ]}
-                            value={filters.status}
-                            onChange={(e) => {
-                              const statusMap = {
-                                "active": "active",
-                                "inactive": "inactive",
-                              };
-                              setSearchTerm(statusMap[e.target.value] || "");
-                              setFilters({ status: e.target.value });
-                            }}
+                            value={selectedStatus}
+                            onChange={(e) => setSelectedStatus(e.target.value)}
                           />
                           <Select
                             label="Stock Status"
@@ -1208,16 +1232,36 @@ const Products = () => {
                               { value: "out", label: "Out of Stock" },
                               { value: "in", label: "In Stock" },
                             ]}
-                            value={filters.stockStatus}
-                            onChange={(e) => {
-                              const stockStatusMap = {
-                                "low": "low-stock",
-                                "out": "out-of-stock",
-                                "in": "in-stock",
-                              };
-                              setSearchTerm(stockStatusMap[e.target.value] || "");
-                              setFilters({ stockStatus: e.target.value });
-                            }}
+                            value={selectedStockStatus}
+                            onChange={(e) => setSelectedStockStatus(e.target.value)}
+                          />
+                          <Select
+                            label="Unit"
+                            options={[
+                              { value: "", label: "All Units" },
+                              ...(Array.isArray(units)
+                                ? units.map((unit) => ({
+                                  value: unit.name,
+                                  label: unit.name,
+                                }))
+                                : []),
+                            ]}
+                            value={selectedUnit}
+                            onChange={(e) => setSelectedUnit(e.target.value)}
+                          />
+                          <Select
+                            label="Brand"
+                            options={[
+                              { value: "", label: "All Brands" },
+                              ...(Array.isArray(brands)
+                                ? brands.map((brand) => ({
+                                  value: brand.name,
+                                  label: brand.name,
+                                }))
+                                : []),
+                            ]}
+                            value={selectedBrand}
+                            onChange={(e) => setSelectedBrand(e.target.value)}
                           />
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
