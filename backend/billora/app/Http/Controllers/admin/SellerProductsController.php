@@ -78,7 +78,7 @@ public function sellerProducts(Request $request, $id){
                 'message' => 'Seller not found'
             ]);
         }
-        $sellerProducts = SellerProducts::where('seller_id',$id)->where('user_id', $user)->with('products', 'stocks','seller')
+        $sellerProducts = SellerProducts::where('seller_id',$id)->where('user_id', $user)->with('products','products.brand','products.category','products.unit','stocks','seller')
         ->when($search, function ($query) use ($search) {
                 $query->whereHas('products', function ($q) use ($search) {
                     $q->where('name', 'LIKE', "%{$search}%")

@@ -38,7 +38,7 @@ class ExpirePlans extends Command
 
         if ($expiredPlans->isEmpty()) {
             $this->info('No expired plans found.');
-            Log::info('No expired plans found.');
+            // Log::info('No expired plans found.');
             return;
         }
 
@@ -94,6 +94,6 @@ class ExpirePlans extends Command
         }
 
         $this->info("Expired {$expiredPlans->count()} plans, deactivated {$deactivatedCount} customers.");
-        Log::info("Plans expired: {$expiredPlans->count()}, Customers deactivated: {$deactivatedCount}");
+        // Log::info("Plans expired: {$expiredPlans->count()}, Customers deactivated: {$deactivatedCount}");
     }
 }
