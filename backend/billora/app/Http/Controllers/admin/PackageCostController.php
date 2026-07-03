@@ -35,7 +35,7 @@ class PackageCostController extends Controller
                 ]);
             }
             $packegesCost = Cache::tags(['package_cost_user_' . $user])->remember($cacheKey, 600, function () use ($id) {
-                return PackageCost::where('user_id', $id)->get();
+                return PackageCost::where('user_id', $id)->paginate(8);
             });
             $executionTime = microtime(true) - $startTime;
             return response()->json([
