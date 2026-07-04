@@ -40,7 +40,7 @@ class SellerController extends Controller
                     });
                 })
                 // Due Amount Filter
-                ->when($due_amount !== '' || $due_amount !== false, function ($query) {
+                ->when($due_amount !== false, function ($query) {
                     $query->where('due_amount', '>', 0);
                 })
 
