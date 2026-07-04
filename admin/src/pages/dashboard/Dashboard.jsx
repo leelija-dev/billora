@@ -257,120 +257,123 @@ const Dashboard = () => {
         className="space-y-6 p-6"
       >
         {/* Welcome Section */}
-        <motion.div 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0"
-        >
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Welcome back, {company?.name || 'User'}!
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
-              <FiClock className="w-4 h-4 mr-2" />
-              {new Date().toLocaleDateString('en-IN', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            {/* Time Range Selector */}
-            <motion.select 
-              whileHover={{ scale: 1.02 }}
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/50 focus:border-transparent outline-none shadow-sm"
+<motion.div 
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.5 }}
+  className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
+>
+  <div className="flex-1 min-w-0">
+    <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate">
+      Welcome back, {company?.name || 'User'}!
+    </h1>
+    <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 flex items-center text-sm sm:text-base">
+      <FiClock className="w-4 h-4 mr-2 flex-shrink-0" />
+      <span className="truncate">
+        {new Date().toLocaleDateString('en-IN', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}
+      </span>
+    </p>
+  </div>
+  
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
+    {/* Time Range Selector */}
+    <motion.select 
+      whileHover={{ scale: 1.02 }}
+      value={timeRange}
+      onChange={(e) => setTimeRange(e.target.value)}
+      className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-primary-500/50 focus:border-transparent outline-none shadow-sm min-w-[120px] sm:min-w-[140px]"
+    >
+      <option value="7d">Last 7 days</option>
+      <option value="30d">Last 30 days</option>
+      <option value="90d">Last 3 months</option>
+      <option value="12m">Last 12 months</option>
+    </motion.select>
+
+    {/* Refresh Button */}
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={handleRefresh}
+      className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm flex-shrink-0"
+    >
+      <FiRefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300 ${refreshing ? 'animate-spin' : ''}`} />
+    </motion.button>
+
+    {/* Export Dropdown */}
+    <div className="relative flex-shrink-0" ref={exportDropdownRef}>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowExportDropdown(!showExportDropdown)}
+        disabled={exporting}
+        className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-xs sm:text-sm font-medium flex items-center space-x-1 sm:space-x-2 shadow-lg shadow-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+      >
+        <FiDownload className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${exporting ? 'animate-pulse' : ''}`} />
+        <span>{exporting ? 'Exporting...' : 'Export'}</span>
+      </motion.button>
+
+      <AnimatePresence>
+        {showExportDropdown && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+          >
+            <button
+              onClick={() => handlePDFExport(exportData, exportCallbacks)}
+              className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
             >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 3 months</option>
-              <option value="12m">Last 12 months</option>
-            </motion.select>
-
-            {/* Refresh Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleRefresh}
-              className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+              <FaFile className="w-4 h-4 text-red-500" />
+              <div className="flex-1">
+                <span>Export as PDF</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Professional report format</p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleExcelExport(exportData, exportCallbacks)}
+              className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors border-t border-gray-100 dark:border-gray-700"
             >
-              <FiRefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? 'animate-spin' : ''}`} />
-            </motion.button>
-
-            {/* Export Dropdown */}
-            <div className="relative" ref={exportDropdownRef}>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowExportDropdown(!showExportDropdown)}
-                disabled={exporting}
-                className="px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-sm font-medium flex items-center space-x-2 shadow-lg shadow-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FiDownload className={`w-4 h-4 ${exporting ? 'animate-pulse' : ''}`} />
-                <span>{exporting ? 'Exporting...' : 'Export'}</span>
-              </motion.button>
-
-              <AnimatePresence>
-                {showExportDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
-                  >
-                    <button
-                      onClick={() => handlePDFExport(exportData, exportCallbacks)}
-                      className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                    >
-                      <FaFile className="w-4 h-4 text-red-500" />
-                      <div className="flex-1">
-                        <span>Export as PDF</span>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Professional report format</p>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleExcelExport(exportData, exportCallbacks)}
-                      className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors border-t border-gray-100 dark:border-gray-700"
-                    >
-                      <FiFileText className="w-4 h-4 text-green-500" />
-                      <div className="flex-1">
-                        <span>Export as Excel</span>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Spreadsheet with multiple sheets</p>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleWordExport(exportData, exportCallbacks)}
-                      className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors border-t border-gray-100 dark:border-gray-700"
-                    >
-                      <FiFile className="w-4 h-4 text-blue-500" />
-                      <div className="flex-1">
-                        <span>Export as DOC</span>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Editable document format</p>
-                      </div>
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Print Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handlePrint(exportData, exportCallbacks)}
-              disabled={isPrinting}
-              className="px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-xl text-sm font-medium flex items-center space-x-2 shadow-lg shadow-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              <FiFileText className="w-4 h-4 text-green-500" />
+              <div className="flex-1">
+                <span>Export as Excel</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Spreadsheet with multiple sheets</p>
+              </div>
+            </button>
+            <button
+              onClick={() => handleWordExport(exportData, exportCallbacks)}
+              className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors border-t border-gray-100 dark:border-gray-700"
             >
-              <FiPrinter className="w-4 h-4" />
-              <span>{isPrinting ? 'Printing...' : 'Print'}</span>
-            </motion.button>
-          </div>
-        </motion.div>
+              <FiFile className="w-4 h-4 text-blue-500" />
+              <div className="flex-1">
+                <span>Export as DOC</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Editable document format</p>
+              </div>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+
+    {/* Print Button */}
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => handlePrint(exportData, exportCallbacks)}
+      disabled={isPrinting}
+      className="px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-xl text-xs sm:text-sm font-medium flex items-center space-x-1 sm:space-x-2 shadow-lg shadow-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+    >
+      <FiPrinter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+      <span className="hidden xs:inline">{isPrinting ? 'Printing...' : 'Print'}</span>
+      <span className="xs:hidden">{isPrinting ? '...' : 'Print'}</span>
+    </motion.button>
+  </div>
+</motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">

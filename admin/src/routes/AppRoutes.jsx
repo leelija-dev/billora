@@ -37,6 +37,7 @@ import APITest from '../components/test/APITest'
 import SocialLink from '../pages/social-link/SocialLink'
 import Sellers from '../pages/seller/Sellers'
 import SellerDetails from '../pages/seller/SellerDetails'
+import NotFound from '../pages/NotFound'
 
 const AppRoutes = () => {
   return (
@@ -81,8 +82,8 @@ const AppRoutes = () => {
         <Route path="settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />
       </Route>
       
-      {/* 404 - Redirect to dashboard */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* 404 - Not Found */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

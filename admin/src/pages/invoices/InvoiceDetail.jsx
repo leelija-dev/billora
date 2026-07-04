@@ -79,6 +79,7 @@ const InvoiceDetail = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [storeNotFound, setStoreNotFound] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Refs for cleanup and preventing duplicate requests
   const isMountedRef = useRef(true);
@@ -616,15 +617,17 @@ const InvoiceDetail = () => {
 
   const handleCancelInvoice = async () => {
     if (!invoice?.id) return;
-    const ok = window.confirm(
-      "Cancel this invoice? Stock will be restored if you have stock permission, customer due and GST records will be adjusted, and the invoice will be marked cancelled.",
-    );
-    if (!ok) return;
+    setShowCancelConfirm(true);
+  };
+
+  const confirmCancelInvoice = async () => {
+    if (!invoice?.id) return;
     setCancelSubmitting(true);
     try {
       const res = await cancelInvoice(invoice.id);
       if (res?.success) {
         setIsEditing(false);
+        setShowCancelConfirm(false);
         setRefetchVersion((v) => v + 1);
         toast.success("Invoice cancelled successfully");
       }
@@ -1962,6 +1965,92 @@ const InvoiceDetail = () => {
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel Invoice Confirmation Modal */}
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => {
+              if (!cancelSubmitting) {
+                setShowCancelConfirm(false);
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex flex-col items-center text-center">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                    className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4"
+                  >
+                    <FiAlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                  </motion.div>
+                  <motion.h3
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+                  >
+                    Cancel Invoice
+                  </motion.h3>
+                  <motion.p
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-gray-600 dark:text-gray-400 mb-6"
+                  >
+                    Are you sure you want to cancel invoice{" "}
+                    <span className="font-semibold">
+                      #{invoice?.invoice_number || invoice?.id}
+                    </span>
+                    ?
+                    <br />
+                    <span className="text-sm mt-2 block">
+                      Stock will be restored if you have stock permission, customer due and GST records will be adjusted, and the invoice will be marked cancelled.
+                    </span>
+                  </motion.p>
+                  <motion.div
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="flex space-x-3 w-full"
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCancelConfirm(false)}
+                      disabled={cancelSubmitting}
+                      className="flex-1"
+                    >
+                      No, Keep Invoice
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={confirmCancelInvoice}
+                      disabled={cancelSubmitting}
+                      isLoading={cancelSubmitting}
+                      className="flex-1"
+                    >
+                      Yes, Cancel
+                    </Button>
+                  </motion.div>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

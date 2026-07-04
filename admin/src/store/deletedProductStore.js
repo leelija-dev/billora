@@ -6,7 +6,7 @@ export const useDeletedProductStore = create((set, get) => ({
   deletedProducts: [],
   totalDeletedProducts: 0,
   currentPage: 1,
-  pageSize: 15,
+  pageSize: 8,
   loading: false,
   pagination: {
     current_page: 1,

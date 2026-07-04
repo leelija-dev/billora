@@ -75,7 +75,7 @@ class ReportController extends Controller
                 $salesInvoice = Invoice::where('user_id', $userId)->with('customer', 'store', 'invoiceItems')
                     ->whereBetween('created_at', [$startDate, $endDate])
                     ->orderBy('id', 'desc')
-                    ->paginate(10);
+                    ->paginate(8);
                 $productSales = DB::table('invoice_items as ii')
                     ->join('products as p', 'ii.product_id', '=', 'p.id')
                     ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')
@@ -126,7 +126,7 @@ class ReportController extends Controller
                     ->get();
                 $salesInvoice = Invoice::where('user_id', $userId)->with('customer', 'store', 'invoiceItems')
                     ->orderBy('id', 'desc')
-                    ->paginate(10);
+                    ->paginate(8);
                 $productSales = DB::table('invoice_items as ii')
                     ->join('products as p', 'ii.product_id', '=', 'p.id')
                     ->join('invoice as i', 'ii.invoice_id', '=', 'i.id')

@@ -26,7 +26,7 @@ const usePackageStore = create((set, get) => ({
   packages: [],
   totalPackages: 0,
   currentPage: 1,
-  pageSize: 15,
+  pageSize: 8,
   loading: false,
   error: null,
   filters: {
@@ -86,7 +86,7 @@ const usePackageStore = create((set, get) => ({
         packages: packagesArray,
         totalPackages: paginationData.total || packagesArray.length,
         currentPage: paginationData.current_page || 1,
-        pageSize: paginationData.per_page || 15,
+        pageSize: paginationData.per_page || 8,
         loading: false,
         lastFetchTime: Date.now()
       })

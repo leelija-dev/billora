@@ -231,7 +231,7 @@ class UserOrdersController extends Controller
          $formCache = Cache::tags(['order_user_' . Auth::user()->id])->has($cacheKey);
              $tag = "order_user_{$user}";
         $orderHistory = Cache::tags([$tag])->remember($cacheKey, 600, function () use ($id, $search,$startDate,$endDate) {
-        return UserOrders::with(['items.product'])
+        return UserOrders::with(['items.product','items.product.brand','items.product.unit','items.product.category'])
             ->where('user_id', $id)->orderBy('id','desc')
             ->when($search, function ($query) use ($search) {
 
@@ -264,7 +264,7 @@ class UserOrdersController extends Controller
                            
                     })
         
-            ->get();
+            ->paginate(8);
         });
         return response()->json([
             'status' => true,
@@ -422,7 +422,7 @@ class UserOrdersController extends Controller
                     'message' => 'User not found'
                 ]);
             }
-            $orders = UserOrders::where('user_id', $user_id)->where('customer_phone',$mobile)->with('items.product','store')->orderBy('id','desc')->get();
+            $orders = UserOrders::where('user_id', $user_id)->where('customer_phone',$mobile)->with('items.product','store')->orderBy('id','desc')->paginate(8);
             
             return response()->json([
                 'status' => true,

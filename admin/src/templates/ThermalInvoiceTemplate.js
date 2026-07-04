@@ -1,6 +1,6 @@
 /**
  * Thermal Invoice Template - Reusable component for generating 3-inch thermal invoice HTML
- * Professional, compact layout optimized for 58mm/80mm thermal paper
+ * Professional receipt-style layout optimized for 58mm/80mm thermal paper
  */
 
 // Helper function to safely parse numbers
@@ -17,11 +17,21 @@ const formatCurrency = (value) => {
   return `₹${num.toFixed(2)}`;
 };
 
-// Helper function to truncate long product names for thermal paper
-const truncateText = (text, maxLength = 20) => {
-  if (!text) return "";
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + "...";
+// Helper function to format attributes
+const formatAttributes = (attributes) => {
+  if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
+    return "";
+  }
+  
+  const attrStrings = attributes.map(attr => {
+    if (typeof attr === 'object') {
+      const entries = Object.entries(attr);
+      return entries.map(([key, value]) => `${key}: ${value}`).join(', ');
+    }
+    return String(attr);
+  });
+  
+  return attrStrings.join(' | ');
 };
 
 // Calculate totals from invoice items
@@ -32,7 +42,7 @@ const calculateSubtotal = (items, packages) => {
     subtotal += items.reduce((sum, item) => {
       const price = parseNumber(item.price);
       const quantity = parseNumber(item.quantity);
-      return sum + price * quantity;
+      return sum + (price * quantity);
     }, 0);
   }
 
@@ -40,7 +50,7 @@ const calculateSubtotal = (items, packages) => {
     subtotal += packages.reduce((sum, pkg) => {
       const price = parseNumber(pkg.price);
       const quantity = parseNumber(pkg.quantity);
-      return sum + price * quantity;
+      return sum + (price * quantity);
     }, 0);
   }
 
@@ -72,7 +82,6 @@ const calculateTotalDiscount = (items) => {
 };
 
 const calculateGrandTotal = (invoice, subtotal, totalGST, totalDiscount) => {
-  // Use invoice total if available, otherwise calculate
   if (invoice.total_amount) return parseNumber(invoice.total_amount);
   if (invoice.totalAmount) return parseNumber(invoice.totalAmount);
   return subtotal - totalDiscount + totalGST;
@@ -81,9 +90,16 @@ const calculateGrandTotal = (invoice, subtotal, totalGST, totalDiscount) => {
 export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   if (!invoice) return "";
 
-  const subtotal = calculateSubtotal(invoice.items, invoice.packages);
-  const totalGST = calculateTotalGST(invoice.items);
-  const totalDiscount = calculateTotalDiscount(invoice.items);
+  // Get items from the correct source
+  const items = invoice.items || invoice.invoice_items || [];
+  const packages = invoice.packages || [];
+
+  console.log("Items found:", items.length);
+  console.log("First item:", items[0]);
+
+  const subtotal = calculateSubtotal(items, packages);
+  const totalGST = calculateTotalGST(items);
+  const totalDiscount = calculateTotalDiscount(items);
   const totalAmount = calculateGrandTotal(
     invoice,
     subtotal,
@@ -108,7 +124,6 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
 
   // Helper function to get unit code
   const getUnitCode = (item) => {
-    // Check various possible locations for unit code
     if (item.product?.unit?.code) return item.product.unit.code;
     if (item.unit_code) return item.unit_code;
     if (item.unit?.code) return item.unit.code;
@@ -116,124 +131,62 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     return "";
   };
 
-  // Render store header conditionally with logo support
+  // Render store header
   const renderStoreHeader = () => {
     if (isOrderDetails) {
       return `
-      <div style="text-align: center; margin-bottom: 12px; margin-top:5px; padding-bottom: 8px; border-bottom: 2px solid #000;">
-        <div style="font-size: 18px; font-weight: bold; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase;">
+      <div style="text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #000;">
+        <div style="font-size: 16px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">
           🧾 ORDER RECEIPT
         </div>
-        <div style="font-size: 10px; color: #2c5f8a; margin-top: 4px;">
+        <div style="font-size: 9px; color: #555; margin-top: 2px;">
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         </div>
       </div>
     `;
     }
 
-    // Store deleted
     if (invoice.store_name === "Store Deleted") {
       return `
-      <div style="
-        text-align:center;
-        margin-bottom:12px;
-        padding:10px 8px;
-        border:1px dashed #666;
-        border-radius:6px;
-        background:#f8f8f8;
-      ">
-        <div style="
-          font-size:18px;
-          font-weight:700;
-          letter-spacing:1px;
-          text-transform:uppercase;
-          color:#444;
-        ">
-          STORE DELETED
-        </div>
-
-        <div style="
-          font-size:11px;
-          color:#777;
-          margin-top:4px;
-          line-height:1.4;
-        ">
-          Original store information is no longer available
-        </div>
-
-        <div style="
-          font-size:10px;
-          color:#999;
-          margin-top:6px;
-        ">
-          Historical Invoice Record
-        </div>
+      <div style="text-align:center; margin-bottom:10px; padding:8px; border:1px dashed #999; background:#f8f8f8;">
+        <div style="font-size:16px; font-weight:700; color:#444;">STORE DELETED</div>
+        <div style="font-size:9px; color:#777;">Original store information unavailable</div>
       </div>
     `;
     }
 
-    // Build store header with logo
     let logoHTML = "";
     if (invoice.store?.logo) {
       logoHTML = `
-        <div style="text-align: center; margin-bottom: 6px;">
-          <img 
-            src="${invoice.store.logo}" 
-            alt="Store Logo" 
-            style="
-              max-width: 80px; 
-              max-height: 60px; 
-              width: auto; 
-              height: auto;
-              display: inline-block;
-              border-radius: 4px;
-            "
-          />
+        <div style="text-align: center; margin-bottom: 4px;">
+          <img src="${invoice.store.logo}" alt="Store Logo" style="max-width:70px; max-height:50px; display:inline-block;"/>
         </div>
       `;
     }
 
     return `
-    <div class="store-header">
+    <div style="text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #000;">
       ${logoHTML}
-      <div class="store-name">${truncateText(invoice.store_name, 30)}</div>
-      <div class="store-details">
-        ${invoice.store_address ? truncateText(invoice.store_address, 35) + "<br>" : ""}
-        ${invoice.store_phone ? `Tel: ${invoice.store_phone}` : ""}
-        ${invoice.store_email ? `&nbsp;| Email: ${truncateText(invoice.store_email, 25)}` : ""}
+      <div style="font-size: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">${invoice.store_name || ""}</div>
+      <div style="font-size: 8px; color: #333; line-height: 1.4; margin-top: 2px;">
+        ${invoice.store_address || ""}
+        ${invoice.store_phone ? `<br>Tel: ${invoice.store_phone}` : ""}
+        ${invoice.store_email ? ` | Email: ${invoice.store_email}` : ""}
         ${invoice.store_gst ? `<br>GST: ${invoice.store_gst}` : ""}
       </div>
     </div>
   `;
   };
 
-  // Render QR code section
+  // Render QR code
   const renderQRCode = () => {
     if (!invoice.store?.bank_qr) return "";
 
     return `
-      <div style="text-align: center; margin: 8px 0; padding: 6px; border: 1px dashed #999; border-radius: 4px;">
-        <div style="font-size: 8px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #333;">
-          Scan to Pay
-        </div>
-        <img 
-          src="${invoice.store.bank_qr}" 
-          alt="Payment QR Code" 
-          style="
-            max-width: 100px; 
-            max-height: 100px; 
-            width: auto; 
-            height: auto;
-            display: inline-block;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 4px;
-            background: white;
-          "
-        />
-        <div style="font-size: 7px; margin-top: 3px; color: #666;">
-          UPI / Bank Transfer
-        </div>
+      <div style="text-align: center; margin: 6px 0; padding: 4px; border: 1px dashed #999;">
+        <div style="font-size: 7px; font-weight: bold; letter-spacing: 0.5px; color: #333;">SCAN TO PAY</div>
+        <img src="${invoice.store.bank_qr}" alt="QR" style="max-width:80px; max-height:80px; display:inline-block; padding:2px; background:white;"/>
+        <div style="font-size: 6px; color: #666;">UPI / Bank Transfer</div>
       </div>
     `;
   };
@@ -241,12 +194,12 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>${isOrderDetails ? "Order Details" : "Thermal Invoice"} #${invoice.invoice_number || invoice.id}</title>
+  <title>${isOrderDetails ? "Order" : "Invoice"} #${invoice.invoice_number || invoice.id}</title>
   <meta charset="utf-8">
   <style>
     @page {
-      margin: 3mm 2mm;
-      size: 80mm auto;
+      margin: 2mm 2mm;
+      size: 76mm auto;
     }
     
     * {
@@ -258,440 +211,412 @@ export const generateThermalInvoiceHTML = (invoice, isOrderDetails = false) => {
     body {
       font-family: 'Courier New', 'Fira Code', monospace;
       margin: 0;
-      padding: 4px;
+      padding: 3px;
       background: #ffffff;
       color: #000000;
-      font-size: 11px;
-      line-height: 1.25;
-      width: 100%;
-      max-width: 80mm;
-    }
-    
-    .thermal-container {
-      width: 100%;
-      margin: 0 auto;
-    }
-    
-    /* Header Styles */
-    .store-header {
-      text-align: center;
-      margin-bottom: 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px dashed #000;
-    }
-    
-    .store-name {
-      font-size: 16px;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-    
-    .store-details {
       font-size: 9px;
       line-height: 1.3;
-      color: #333;
+      width: 100%;
+      max-width: 76mm;
     }
     
-    /* Divider */
-    .divider {
+    .receipt {
+      width: 100%;
+      margin: 0 auto;
+      padding: 2px;
+    }
+    
+    /* Divider styles */
+    .dash {
       border-top: 1px dashed #000;
-      margin: 6px 0;
+      margin: 4px 0;
     }
     
-    .divider-double {
+    .solid {
       border-top: 2px solid #000;
-      margin: 6px 0;
+      margin: 4px 0;
     }
     
-    /* Info Rows */
-    .info-grid {
-      margin: 8px 0;
+    .double {
+      border-top: 3px double #000;
+      margin: 4px 0;
     }
     
+    /* Info rows */
     .info-row {
       display: flex;
       justify-content: space-between;
-      margin: 3px 0;
-      font-size: 10px;
+      padding: 1px 0;
+      font-size: 8px;
     }
     
     .info-label {
-      font-weight: normal;
-      letter-spacing: 0.5px;
+      color: #444;
     }
     
     .info-value {
       font-weight: bold;
     }
     
-    /* Customer Section */
-    .customer-section {
-      margin: 8px 0;
-      padding: 5px;
-      background: #f9f9f9;
+    /* Customer section */
+    .customer-box {
+      margin: 4px 0;
+      padding: 4px 6px;
+      background: #f7f7f7;
       border-left: 2px solid #000;
-      font-size: 9px;
+      font-size: 8px;
     }
     
     .customer-label {
       font-weight: bold;
-      text-transform: uppercase;
-      font-size: 8px;
+      font-size: 7px;
       letter-spacing: 0.5px;
-      margin-bottom: 3px;
+      text-transform: uppercase;
     }
     
-    /* Items Table */
+    /* Items table */
     .items-header {
       display: flex;
-      margin: 6px 0 4px;
-      padding-bottom: 3px;
+      margin: 4px 0 2px;
+      padding: 2px 0;
       border-bottom: 1px solid #000;
       font-weight: bold;
-      font-size: 9px;
+      font-size: 7px;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
     
-    .col-item { flex: 3; text-align: left; }
-    .col-qty { flex: 1; text-align: center; }
-    .col-price { flex: 1.5; text-align: right; }
-    .col-total { flex: 1.5; text-align: right; }
+    .col-item { flex: 2.5; text-align: left; }
+    .col-qty { flex: 0.8; text-align: center; }
+    .col-price { flex: 1.2; text-align: right; }
+    .col-gst { flex: 0.8; text-align: center; }
+    .col-disc { flex: 0.8; text-align: center; }
+    .col-total { flex: 1.2; text-align: right; }
     
     .item-row {
       display: flex;
-      margin: 3px 0;
-      font-size: 9px;
+      padding: 2px 0;
+      font-size: 8px;
+      border-bottom: 1px dotted #eee;
     }
     
     .item-name {
-      flex: 3;
+      flex: 2.5;
       word-break: break-word;
-      padding-right: 4px;
+      padding-right: 3px;
+      font-weight: 500;
     }
     
-    .item-qty {
-      flex: 1;
-      text-align: center;
+    .item-name-details {
+      font-size: 6px;
+      color: #555;
+      font-weight: normal;
+      display: block;
     }
     
-    .item-price {
-      flex: 1.5;
-      text-align: right;
-      padding-right: 4px;
-    }
+    .item-qty { flex: 0.8; text-align: center; }
+    .item-price { flex: 1.2; text-align: right; padding-right: 2px; }
+    .item-gst { flex: 0.8; text-align: center; font-size: 7px; color: #555; }
+    .item-disc { flex: 0.8; text-align: center; font-size: 7px; color: #555; }
+    .item-total { flex: 1.2; text-align: right; font-weight: 600; }
     
-    .item-total {
-      flex: 1.5;
-      text-align: right;
-    }
-    
-    .package-item {
+    .package-row {
       background: #f5f5f5;
-      margin: 2px 0;
       padding: 2px 0;
+      margin: 1px 0;
     }
     
-    /* Summary Section */
-    .summary-section {
-      margin: 10px 0;
+    /* Tags */
+    .tag {
+      display: inline-block;
+      font-size: 6px;
+      padding: 0 3px;
+      margin: 1px 1px 1px 0;
+      border-radius: 2px;
+    }
+    
+    .tag-brand { background: #e8f5e9; color: #2e7d32; }
+    .tag-category { background: #e3f2fd; color: #1565c0; }
+    .tag-sku { background: #f5f5f5; color: #616161; }
+    .tag-attribute { background: #fff3e0; color: #e65100; }
+    
+    /* Summary */
+    .summary {
+      margin: 6px 0 4px;
     }
     
     .summary-row {
       display: flex;
       justify-content: space-between;
-      margin: 3px 0;
-      font-size: 10px;
+      padding: 1px 0;
+      font-size: 8px;
     }
     
     .summary-total {
       font-weight: bold;
-      font-size: 12px;
-      margin-top: 6px;
-      padding-top: 4px;
-      border-top: 1px solid #000;
+      font-size: 11px;
+      margin-top: 3px;
+      padding-top: 3px;
+      border-top: 2px solid #000;
     }
     
     .grand-total {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
-      color: #000;
     }
     
-    /* Payment Section */
-    .payment-section {
-      margin: 8px 0;
-      padding: 6px;
-      background: #f0f0f0;
+    /* Payment */
+    .payment-box {
+      margin: 4px 0;
+      padding: 4px 6px;
+      background: #f5f5f5;
     }
     
     .payment-row {
       display: flex;
       justify-content: space-between;
-      margin: 3px 0;
-      font-size: 10px;
+      padding: 1px 0;
+      font-size: 8px;
     }
     
-    .paid-status {
-      color: #2d6a4f;
-      font-weight: bold;
-    }
-    
-    .due-status {
-      color: #c2412c;
-      font-weight: bold;
-    }
+    .paid { color: #2d6a4f; font-weight: bold; }
+    .due { color: #c2412c; font-weight: bold; }
     
     /* Footer */
     .footer {
       text-align: center;
-      margin-top: 12px;
-      padding-top: 6px;
+      margin-top: 8px;
+      padding-top: 4px;
       border-top: 1px dashed #000;
-      font-size: 8px;
+      font-size: 7px;
       color: #555;
     }
     
     .thankyou {
       font-size: 10px;
       font-weight: bold;
-      margin: 5px 0;
+      letter-spacing: 1px;
       text-transform: uppercase;
+      margin: 3px 0;
     }
     
-    /* Print optimizations */
     @media print {
-      body {
-        margin: 0;
-        padding: 2px;
-      }
-      .no-break {
-        page-break-inside: avoid;
-      }
+      body { margin: 0; padding: 1px; }
+      .item-row { border-bottom: 1px dotted #ddd; }
     }
     
-    /* Small adjustments for 58mm paper */
     @media (max-width: 60mm) {
-      body {
-        font-size: 9px;
-      }
-      .store-name {
-        font-size: 13px;
-      }
-      .item-name {
-        font-size: 8px;
-      }
+      body { font-size: 7px; }
+      .item-name { font-size: 7px; }
+      .item-name-details { font-size: 5px; }
+      .tag { font-size: 5px; padding: 0 2px; }
     }
   </style>
 </head>
 <body>
-<div class="thermal-container">
+<div class="receipt">
   
   ${renderStoreHeader()}
 
-  <!-- Invoice/Order Info -->
-  <div class="info-grid">
+  <!-- Invoice Info -->
+  <div style="margin: 4px 0;">
     <div class="info-row">
-      <span class="info-label">${isOrderDetails ? "ORDER #:" : "INVOICE #:"}</span>
+      <span class="info-label">${isOrderDetails ? "ORDER #" : "INVOICE #"}</span>
       <span class="info-value">${invoice.invoice_number || invoice.id || "N/A"}</span>
     </div>
     <div class="info-row">
-      <span class="info-label">${isOrderDetails ? "ORDER DATE:" : "DATE & TIME:"}</span>
+      <span class="info-label">${isOrderDetails ? "ORDER DATE" : "DATE"}</span>
       <span class="info-value">${formatDate(invoice.created_at)}</span>
     </div>
-    ${
-      invoice.order_id
-        ? `
+    ${invoice.order_id ? `
     <div class="info-row">
-      <span class="info-label">ORDER #:</span>
+      <span class="info-label">ORDER #</span>
       <span class="info-value">${invoice.order_id}</span>
     </div>
-    `
-        : ""
-    }
+    ` : ""}
   </div>
 
-  <div class="divider"></div>
+  <div class="dash"></div>
 
-  <!-- Customer Info -->
-  <div class="customer-section">
-    <div class="customer-label">CUSTOMER</div>
-    <div><strong>${invoice.customer_name ? truncateText(invoice.customer_name, 30) : "Walk-in Customer"}</strong></div>
+  <!-- Customer -->
+  <div class="customer-box">
+    <div class="customer-label">Customer</div>
+    <div><strong>${invoice.customer_name || "Walk-in Customer"}</strong></div>
     ${invoice.customer_phone ? `<div>${invoice.customer_phone}</div>` : ""}
-    ${invoice.customer_email ? `<div style="font-size: 8px;">${truncateText(invoice.customer_email, 30)}</div>` : ""}
-    ${invoice.customer_gst ? `<div>GST: ${invoice?.customer?.gst_number}</div>` : ""}
+    ${invoice.customer_email ? `<div style="font-size:7px;">${invoice.customer_email}</div>` : ""}
+    ${invoice.customer_gst ? `<div>GST: ${invoice?.customer?.gst_number || invoice.customer_gst}</div>` : ""}
   </div>
 
-  <div class="divider"></div>
+  <div class="dash"></div>
 
   <!-- Items Header -->
   <div class="items-header">
     <div class="col-item">ITEM</div>
     <div class="col-qty">QTY</div>
     <div class="col-price">PRICE</div>
+    <div class="col-gst">GST%</div>
+    <div class="col-disc">DISC%</div>
     <div class="col-total">TOTAL</div>
   </div>
 
-  <!-- Products List -->
-  ${
-    invoice.invoice_items && invoice.invoice_items.length > 0
-      ? invoice.invoice_items
-          .map((item, index) => {
-            const itemPrice = parseNumber(item.price);
-            const itemTotal = parseNumber(item.total_price);
-            const quantity = parseNumber(item.quantity);
-            const productName =
-              item.product?.name || item.product_name || item.name || `Product`;
-            const discount = parseNumber(item.discount);
-            const gst = parseNumber(item.gst);
-            const unitCode = getUnitCode(item);
+  <!-- Products -->
+  ${items && items.length > 0 ? items.map((item, index) => {
+    // Calculate values properly
+    const itemPrice = parseNumber(item.price);
+    const quantity = parseNumber(item.quantity);
+    // Calculate total from price * quantity (since total_price might not exist)
+    const itemTotal = itemPrice * quantity;
+    const unitCode = getUnitCode(item);
+    const gst = parseNumber(item.gst);
+    const discount = parseNumber(item.discount);
+    
+    const productName = item.product?.name || item.product_name || item.name || "Product";
+    const productDetails = [];
+    
+    if (item.product?.brand?.name) {
+      productDetails.push(`<span class="tag tag-brand">${item.product.brand.name}</span>`);
+    }
+    if (item.product?.category?.name) {
+      productDetails.push(`<span class="tag tag-category">${item.product.category.name}</span>`);
+    }
+    if (item.product?.attributes && Array.isArray(item.product.attributes) && item.product.attributes.length > 0) {
+      const formattedAttrs = formatAttributes(item.product.attributes);
+      if (formattedAttrs) {
+        productDetails.push(`<span class="tag tag-attribute">${formattedAttrs}</span>`);
+      }
+    }
+    if (item.product?.sku) {
+      productDetails.push(`<span class="tag tag-sku">SKU: ${item.product.sku}</span>`);
+    }
+    
+    const detailsHTML = productDetails.length > 0 
+      ? `<span class="item-name-details">${productDetails.join(' ')}</span>` 
+      : '';
 
-            return `
-      <div class="item-row">
-        <div class="item-name">${truncateText(productName, 25)}${discount > 0 ? ` (-${discount}%)` : ""}${gst > 0 ? ` [+${gst}%]` : ""}</div>
-        <div class="item-qty">${quantity}${unitCode ? ` ${unitCode}` : ""}</div>
-        <div class="item-price">${formatCurrency(itemPrice)}</div>
-        <div class="item-total">${formatCurrency(itemTotal)}</div>
+    return `
+    <div class="item-row">
+      <div class="item-name">
+        ${productName}
+        ${detailsHTML}
       </div>
-    `;
-          })
-          .join("")
-      : ""
-  }
+      <div class="item-qty">${quantity}${unitCode ? unitCode : ""}</div>
+      <div class="item-price">${formatCurrency(itemPrice)}</div>
+      <div class="item-gst">${gst > 0 ? gst + '%' : '—'}</div>
+      <div class="item-disc">${discount > 0 ? discount + '%' : '—'}</div>
+      <div class="item-total">${formatCurrency(itemTotal)}</div>
+    </div>
+  `}).join("") : ""}
 
-  <!-- Packages List -->
-  ${
-    invoice.packages && invoice.packages.length > 0
-      ? `
-    <div style="margin: 5px 0 2px; font-weight: bold; font-size: 9px;">--- PACKAGES ---</div>
-    ${invoice.packages
-      .map((pkg, index) => {
-        const pkgPrice = parseNumber(pkg.price);
-        const pkgTotal = parseNumber(pkg.total_price);
-        const quantity = parseNumber(pkg.quantity);
-        const packageName =
-          pkg.package_name || pkg.name || pkg.product_name || `Package`;
-        const unitCode = getUnitCode(pkg);
+  <!-- Packages -->
+  ${packages && packages.length > 0 ? `
+    <div style="font-weight:bold; font-size:7px; margin:3px 0; text-transform:uppercase; letter-spacing:0.3px;">📦 Packages</div>
+    ${packages.map((pkg) => {
+      const pkgPrice = parseNumber(pkg.price);
+      const quantity = parseNumber(pkg.quantity);
+      const pkgTotal = pkgPrice * quantity;
+      const packageName = pkg.package_name || pkg.name || pkg.product_name || "Package";
+      const unitCode = getUnitCode(pkg);
 
-        return `
-        <div class="item-row package-item">
-          <div class="item-name">📦 ${truncateText(packageName, 23)}</div>
-          <div class="item-qty">${quantity}${unitCode ? ` ${unitCode}` : ""}</div>
-          <div class="item-price">${formatCurrency(pkgPrice)}</div>
-          <div class="item-total">${formatCurrency(pkgTotal)}</div>
-        </div>
-      `;
-      })
-      .join("")}
-  `
-      : ""
-  }
+      return `
+      <div class="item-row package-row">
+        <div class="item-name">📦 ${packageName}</div>
+        <div class="item-qty">${quantity}${unitCode ? unitCode : ""}</div>
+        <div class="item-price">${formatCurrency(pkgPrice)}</div>
+        <div class="item-gst">—</div>
+        <div class="item-disc">—</div>
+        <div class="item-total">${formatCurrency(pkgTotal)}</div>
+      </div>
+    `}).join("")}
+  ` : ""}
 
-  <!-- No items message -->
-  ${
-    (!invoice.items || invoice.items.length === 0) &&
-    (!invoice.packages || invoice.packages.length === 0)
-      ? `
-    <div style="text-align: center; padding: 10px; font-style: italic;">No items in ${isOrderDetails ? "order" : "invoice"}</div>
-  `
-      : ""
-  }
+  <!-- No items -->
+  ${(!items || items.length === 0) && (!packages || packages.length === 0) ? `
+    <div style="text-align:center; padding:10px; font-style:italic; color:#999;">No items</div>
+  ` : ""}
 
-  <div class="divider-double"></div>
+  <div class="solid"></div>
 
   <!-- Summary -->
-  <div class="summary-section">
+  <div class="summary">
     <div class="summary-row">
-      <span>Subtotal:</span>
+      <span>Subtotal</span>
       <span>${formatCurrency(subtotal)}</span>
     </div>
-    ${
-      totalDiscount > 0
-        ? `
+    ${totalDiscount > 0 ? `
     <div class="summary-row">
-      <span>Discount:</span>
-      <span>-${formatCurrency(totalDiscount)}</span>
+      <span style="color:#2d6a4f;">Discount</span>
+      <span style="color:#2d6a4f;">-${formatCurrency(totalDiscount)}</span>
     </div>
-    `
-        : ""
-    }
-    ${
-      totalGST > 0
-        ? `
+    ` : ""}
+    ${totalGST > 0 ? `
     <div class="summary-row">
-      <span>GST:</span>
+      <span>GST</span>
       <span>${formatCurrency(totalGST)}</span>
     </div>
-    `
-        : ""
-    }
+    ` : ""}
     <div class="summary-row summary-total">
-      <span><strong>TOTAL AMOUNT</strong></span>
+      <span><strong>TOTAL</strong></span>
       <span class="grand-total"><strong>${formatCurrency(totalAmount)}</strong></span>
     </div>
   </div>
 
-  <div class="divider"></div>
+  <div class="dash"></div>
 
-  <!-- Payment Section -->
-  <div class="payment-section">
+  <!-- Payment -->
+  <div class="payment-box">
     <div class="payment-row">
-      <span>PAID:</span>
-      <span class="paid-status">${formatCurrency(paidAmount)}</span>
+      <span>Paid</span>
+      <span class="paid">${formatCurrency(paidAmount)}</span>
     </div>
-    ${
-      changeAmount > 0
-        ? `
+    ${changeAmount > 0 ? `
     <div class="payment-row">
-      <span>CHANGE:</span>
+      <span>Change</span>
       <span>${formatCurrency(changeAmount)}</span>
     </div>
-    `
-        : ""
-    }
-    ${
-      dueAmount > 0
-        ? `
+    ` : ""}
+    ${dueAmount > 0 ? `
     <div class="payment-row">
-      <span>DUE:</span>
-      <span class="due-status">${formatCurrency(dueAmount)}</span>
+      <span>Due</span>
+      <span class="due">${formatCurrency(dueAmount)}</span>
     </div>
-    `
-        : ""
-    }
+    ` : ""}
     <div class="payment-row">
-      <span>MODE:</span>
+      <span>Mode</span>
       <span>${invoice.payment_mode || invoice.payment_method || "CASH"}</span>
     </div>
-    ${
-      invoice.transaction_id
-        ? `
-    <div class="payment-row" style="font-size: 8px;">
-      <span>TXN ID:</span>
-      <span>${truncateText(invoice.transaction_id, 20)}</span>
+    ${invoice.transaction_id ? `
+    <div class="payment-row" style="font-size:7px;">
+      <span>Txn ID</span>
+      <span>${invoice.transaction_id}</span>
     </div>
-    `
-        : ""
-    }
+    ` : ""}
+    <div class="payment-row" style="margin-top:2px; padding-top:2px; border-top:1px dashed #ccc; font-size:7px; font-weight:bold;">
+      <span>Status</span>
+      <span>${paidAmount >= totalAmount ? '✅ PAID' : '⚠️ PENDING'}</span>
+    </div>
   </div>
 
-  <div class="divider"></div>
+  <div class="dash"></div>
 
-  <!-- QR Code Section -->
+  <!-- QR Code -->
   ${renderQRCode()}
-
-  ${renderQRCode() ? '<div class="divider"></div>' : ""}
+  ${renderQRCode() ? '<div class="dash"></div>' : ""}
 
   <!-- Footer -->
   <div class="footer">
     <div class="thankyou">Thank You!</div>
-    <div>Visit Again</div>
-    <div style="font-size: 7px; margin-top: 5px;">
-      ${invoice.store_email ? truncateText(invoice.store_email, 30) + "<br>" : ""}
-      ${new Date().toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
+    <div style="font-size:8px;">Visit Again</div>
+    <div style="font-size:6px; margin-top:3px; color:#888;">
+      ${invoice.store_email || ""}
+      ${invoice.store_email ? '<br>' : ''}
+      ${new Date().toLocaleString("en-GB", { 
+        hour: "2-digit", 
+        minute: "2-digit",
+        day: "2-digit", 
+        month: "2-digit", 
+        year: "numeric" 
+      })}
     </div>
-    ${paidAmount >= totalAmount ? '<div style="margin-top: 4px;">✅ PAID</div>' : '<div style="margin-top: 4px;">⚠️ PENDING</div>'}
   </div>
   
 </div>

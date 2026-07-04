@@ -41,7 +41,15 @@ const Pagination = ({
 
   const getPageUrl = (pageNumber) => {
     if (!pagination?.first_page_url) return null
-    return pagination.first_page_url.replace(/page=\d+/, `page=${pageNumber}`)
+    
+    try {
+      const url = new URL(pagination.first_page_url)
+      url.searchParams.set('page', pageNumber)
+      return url.toString()
+    } catch (error) {
+      // Fallback to simple string replacement if URL parsing fails
+      return pagination.first_page_url.replace(/page=\d+/, `page=${pageNumber}`)
+    }
   }
 
   const handlePageChange = (page) => {
@@ -108,7 +116,7 @@ const Pagination = ({
         <div className="flex items-center space-x-2">
           {/* First page button */}
           <button
-            onClick={() => handlePageChange(1)}
+            onClick={() => handlePageChange(getPageUrl(1))}
             disabled={currentPage === 1}
             className="relative inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
           >
@@ -160,7 +168,7 @@ const Pagination = ({
 
           {/* Last page button */}
           <button
-            onClick={() => handlePageChange(totalPages)}
+            onClick={() => handlePageChange(getPageUrl(totalPages))}
             disabled={currentPage === totalPages}
             className="relative inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
           >

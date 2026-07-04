@@ -36,6 +36,7 @@ const Settings = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [regeneratingQR, setRegeneratingQR] = useState(false);
+  const [showQRRegenerateConfirm, setShowQRRegenerateConfirm] = useState(false);
 
   const {
     loading,
@@ -178,13 +179,22 @@ const Settings = () => {
   // Show confirmation dialog for regeneration only if QR already exists
   const action = user?.products_qr ? 'regenerate' : 'generate'
   if (action === 'regenerate') {
-    const confirmed = window.confirm(
-      'Are you sure you want to regenerate your QR code? The old QR code will no longer work.'
-    )
-    if (!confirmed) return
+    setShowQRRegenerateConfirm(true)
+    return
+  }
+  
+  // If generating new QR, proceed directly
+  executeQRGeneration(action)
+}, [user?.id, user?.products_qr])
+
+const executeQRGeneration = useCallback(async (action = 'generate') => {
+  if (!user?.id) {
+    toast.error('User ID not found')
+    return
   }
   
   setRegeneratingQR(true)
+  setShowQRRegenerateConfirm(false)
   
   try {
     // First, fetch CSRF cookie from Sanctum
@@ -243,7 +253,7 @@ const Settings = () => {
   } finally {
     setRegeneratingQR(false)
   }
-}, [user?.id, user?.products_qr, updateUser, loadSettings])
+}, [user?.id, updateUser, loadSettings])
 
   // Memoize the SettingCard component to prevent remounting
   const SettingCard = useCallback(
@@ -850,6 +860,83 @@ const Settings = () => {
                 >
                   Regenerate
                 </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Regenerate Confirmation Modal */}
+      <AnimatePresence>
+        {showQRRegenerateConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => {
+              if (!regeneratingQR) {
+                setShowQRRegenerateConfirm(false)
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                  className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                  <FiAlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                </motion.div>
+                <motion.h3
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+                >
+                  Regenerate QR Code
+                </motion.h3>
+                <motion.p
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-gray-600 dark:text-gray-400 mb-6"
+                >
+                  Are you sure you want to regenerate your QR code? The old QR code will no longer work.
+                </motion.p>
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex space-x-3 w-full"
+                >
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowQRRegenerateConfirm(false)}
+                    disabled={regeneratingQR}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => executeQRGeneration('regenerate')}
+                    disabled={regeneratingQR}
+                    isLoading={regeneratingQR}
+                    className="flex-1"
+                  >
+                    Yes, Regenerate
+                  </Button>
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>

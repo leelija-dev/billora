@@ -1,9 +1,9 @@
 import { apiClient } from './apiClient';
 
 export const orderAPI = {
-  // Get user order history (Admin side)
-  getUserOrderHistory: (userId) => {
-    return apiClient.get(`/invoice/user-order-history/${userId}`)
+  // Get user order history (Admin side) with pagination
+  getUserOrderHistory: (userId, page = 1) => {
+    return apiClient.get(`/invoice/user-order-history/${userId}?page=${page}`)
   },
 
   // Update order status

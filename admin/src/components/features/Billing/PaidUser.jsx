@@ -322,12 +322,13 @@ const PaidUser = () => {
   const fetchPaymentHistory = useCallback(async () => {
     try {
       const userId = getUserId();
-      console.log("🔄 Fetching payment history for page:", currentPage);
+      console.log("🔄 Fetching payment history for page:", currentPage, "search:", paymentStatus);
 
       const historyRes = await billingAPI.getPlanPurchaseHistory(
         userId,
         currentPage,
         pageSize,
+        paymentStatus,
       );
 
       let historyData = [];
@@ -379,7 +380,7 @@ const PaidUser = () => {
       setPayments([]);
       setPaymentsCount(0);
     }
-  }, [getUserId, currentPage, pageSize, mapPaymentStatus]);
+  }, [getUserId, currentPage, pageSize, mapPaymentStatus, paymentStatus]);
 
   // Function to fetch plans
   const fetchPlans = useCallback(async () => {
@@ -601,6 +602,13 @@ const PaidUser = () => {
       fetchPaymentHistory();
     }
   }, [currentPage, fetchPaymentHistory]);
+
+  // When payment status filter changes, reset to page 1 and refetch
+  useEffect(() => {
+    if (initialFetchDoneRef.current) {
+      setCurrentPage(1);
+    }
+  }, [paymentStatus]);
 
   // Refresh function (manual refresh)
   const refreshData = useCallback(async () => {
@@ -1925,10 +1933,10 @@ const PaidUser = () => {
                           <div className="flex items-center space-x-2">
                             <Select
                               value={paymentStatus}
-                              onChange={setPaymentStatus}
+                              onChange={(e) => setPaymentStatus(e.target.value)}
                               options={[
                                 { value: "", label: "All Payments" },
-                                { value: "succeeded", label: "Successful" },
+                                { value: "success", label: "Successful" },
                                 { value: "failed", label: "Failed" },
                                 { value: "pending", label: "Pending" },
                               ]}

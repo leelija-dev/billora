@@ -36,7 +36,7 @@ class TagsController extends Controller
             
         ]);
         $user = Auth::guard('admin')->user();
-        Log::info('logged in super admin user id', ['user_id' => $user]);
+        // Log::info('logged in super admin user id', ['user_id' => $user]);
         $data['slug'] = Str::slug($data['name']);
         try {
             Tags::create($data);    

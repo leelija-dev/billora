@@ -27,12 +27,19 @@ export const useProductStore = create((set, get) => ({
   products: [],
   totalProducts: 0,
   currentPage: 1,
-  pageSize: 15,
+  pageSize: 8,
   loading: false,
   filters: {
     search: '',
     category: '',
     status: '',
+    stock_status: '',
+    unit: '',
+    brand: '',
+    start_date: '',
+    end_date: '',
+    min_price: '',
+    max_price: '',
   },
 
   // Pagination state from API
@@ -51,8 +58,8 @@ export const useProductStore = create((set, get) => ({
   lastFetchTime: null,
   cacheKey: null,
 
-  fetchProducts: async (page = 1, search = '') => {
-    const cacheKey = JSON.stringify({ page, search })
+  fetchProducts: async (page = 1, filters = {}) => {
+    const cacheKey = JSON.stringify({ page, filters })
     const currentState = get()
     
     // Avoid duplicate requests if same data was fetched recently
@@ -80,7 +87,9 @@ export const useProductStore = create((set, get) => ({
 
     set({ loading: true, cacheKey })
     try {
-      const response = await productsAPI.getAll(search)
+      // Pass page parameter to filters for API
+      const apiFilters = { ...filters, page }
+      const response = await productsAPI.getAll(apiFilters)
       
       console.log(' Product Store - Raw API Response:', response)
       
@@ -279,7 +288,7 @@ export const useProductStore = create((set, get) => ({
       
       // Debounce API call
       setTimeout(() => {
-        get().fetchProducts(1, newFilters.search)
+        get().fetchProducts(1, newFilters)
       }, 300)
     } else {
       set({ filters: newFilters })

@@ -113,6 +113,42 @@ const SellerDetails = () => {
 
   const currentUserId = getUserId();
 
+  // Helper function to format attributes
+  const formatAttributes = (attributes) => {
+    if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
+      return "";
+    }
+    
+    const attrStrings = attributes.map(attr => {
+      if (typeof attr === 'object') {
+        const entries = Object.entries(attr);
+        return entries.map(([key, value]) => `${key}: ${value}`).join(', ');
+      }
+      return String(attr);
+    });
+    
+    return attrStrings.join(' | ');
+  };
+
+  // Helper function to calculate product totals
+  const calculateProductTotals = (row) => {
+    const product = row?.products || {};
+    const purchasePrice = parseFloat(product.purchase_price || 0);
+    const quantity = parseFloat(row.qty || 0);
+    const gstPercent = parseFloat(product.gst_percentage || 0);
+
+    const totalExclGST = purchasePrice * quantity;
+    const gstAmount = totalExclGST * (gstPercent / 100);
+    const totalInclGST = totalExclGST + gstAmount;
+
+    return {
+      totalExclGST,
+      gstAmount,
+      totalInclGST,
+      gstPercent
+    };
+  };
+
   // Memoized fetch functions
   const fetchSellerDetails = useCallback(async (showLoading = true) => {
     if (sellerFetchedRef.current && !isUpdatingRef.current) return;
@@ -741,8 +777,9 @@ const SellerDetails = () => {
       accessor: "products",
       cell: (value, row) => {
         const product = value || {};
+        const formattedAttrs = formatAttributes(product.attributes);
         return (
-          <div className="flex items-center space-x-3">
+          <div className="flex items-start space-x-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
               {product.image ? (
                 <img
@@ -754,7 +791,7 @@ const SellerDetails = () => {
                 <FiPackage className="w-6 h-6 text-blue-500 dark:text-blue-400" />
               )}
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-medium text-gray-900 dark:text-white">
                 {product.name || "N/A"}
               </p>
@@ -763,6 +800,28 @@ const SellerDetails = () => {
                   SKU: {product.sku}
                 </p>
               )}
+              <div className="mt-1 space-y-0.5">
+                {product.brand?.name && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    Brand: {product.brand.name}
+                  </p>
+                )}
+                {product.category?.name && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    Category: {product.category.name}
+                  </p>
+                )}
+                {product.unit?.code && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Unit: {product.unit.code}
+                  </p>
+                )}
+                {formattedAttrs && (
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    {formattedAttrs}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -835,6 +894,54 @@ const SellerDetails = () => {
             <FiPercent className="w-3 h-3 text-gray-500 mr-1" />
             <span className="font-medium text-gray-900 dark:text-white">
               {gst.toFixed(2)}%
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "product_total_excl_gst",
+      header: "Total (Excl GST)",
+      accessor: "products",
+      cell: (value, row) => {
+        const totals = calculateProductTotals(row);
+        return (
+          <div className="flex items-center">
+            <FaRupeeSign className="w-3 h-3 text-gray-500 mr-1" />
+            <span className="font-medium text-gray-900 dark:text-white">
+              {totals.totalExclGST.toFixed(2)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "product_gst_amount",
+      header: "GST Amount",
+      accessor: "products",
+      cell: (value, row) => {
+        const totals = calculateProductTotals(row);
+        return (
+          <div className="flex items-center">
+            <FaRupeeSign className="w-3 h-3 text-gray-500 mr-1" />
+            <span className="font-medium text-orange-600 dark:text-orange-400">
+              {totals.gstAmount.toFixed(2)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "product_paid_amount",
+      header: "Paid Amount",
+      accessor: "paid_amount",
+      cell: (value) => {
+        const paidAmount = parseFloat(value || 0);
+        return (
+          <div className="flex items-center">
+            <FaRupeeSign className="w-3 h-3 text-gray-500 mr-1" />
+            <span className="font-medium text-green-600 dark:text-green-400">
+              {paidAmount.toFixed(2)}
             </span>
           </div>
         );
@@ -1641,7 +1748,7 @@ const SellerDetails = () => {
           title="Seller not found"
           description="The seller you're looking for doesn't exist or has been removed."
           action={
-            <Button onClick={() => navigate("/sellers")}>
+            <Button onClick={() => navigate("/seller")}>
               <FiArrowLeft className="w-4 h-4 mr-2" />
               Back to Sellers
             </Button>
@@ -1662,7 +1769,7 @@ const SellerDetails = () => {
         <motion.button
           whileHover={{ scale: 1.05, x: -5 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate("/sellers")}
+          onClick={() => navigate("/seller")}
           className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <FiArrowLeft className="w-5 h-5" />

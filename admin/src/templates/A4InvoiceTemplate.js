@@ -142,6 +142,148 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
       </div>`;
   };
 
+  // Helper function to format attributes
+  const formatAttributes = (attributes) => {
+    if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
+      return "";
+    }
+    
+    const attrStrings = attributes.map(attr => {
+      if (typeof attr === 'object') {
+        const entries = Object.entries(attr);
+        return entries.map(([key, value]) => `${key}: ${value}`).join(', ');
+      }
+      return String(attr);
+    });
+    
+    return attrStrings.join(' | ');
+  };
+
+  // Helper function to get variant information (without unit since it's shown with quantity)
+  const getVariantInfo = (item) => {
+    if (!item.product) return "";
+    
+    const product = item.product;
+    const variantParts = [];
+    
+    // Add SKU if available
+    if (product.sku) {
+      variantParts.push(`SKU: ${product.sku}`);
+    }
+    
+    return variantParts.join(' • ');
+  };
+
+  // Render items section with brand, category, attributes and variants
+  function renderItemsSection(invoice) {
+    let html = "";
+
+    // Determine which items array to use
+    const items = invoice.invoice_items || invoice.items || [];
+    
+    console.log("checking the invoice items", items);
+
+    // Products
+    if (Array.isArray(items) && items.length > 0) {
+      html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
+      
+      items.forEach((item, idx) => {
+        const price = parseNumeric(item.price);
+        const qty = parseNumeric(item.quantity, 1);
+        const total = parseNumeric(item.total_price, price * qty);
+        const gst = parseNumeric(item.gst);
+        const discount = parseNumeric(item.discount);
+        
+        // Get product name
+        let productName = item.product?.name || item.product_name || item.name || "Product";
+        
+        // Build product details with brand, category, attributes, and variants
+        const productDetails = [];
+        
+        // Add brand (only from product.brand)
+        if (item.product?.brand?.name) {
+          productDetails.push(`<span class="product-brand">${escapeHtml(item.product.brand.name)}</span>`);
+        }
+        
+        // Add category (only from product.category)
+        if (item.product?.category?.name) {
+          productDetails.push(`<span class="product-category">${escapeHtml(item.product.category.name)}</span>`);
+        }
+        
+        // Add attributes from product.attributes
+        if (item.product?.attributes && Array.isArray(item.product.attributes) && item.product.attributes.length > 0) {
+          const formattedAttrs = formatAttributes(item.product.attributes);
+          if (formattedAttrs) {
+            productDetails.push(`<span class="product-attributes">${escapeHtml(formattedAttrs)}</span>`);
+          }
+        }
+        
+        // Add variant info (SKU only - no unit since it's shown with quantity)
+        const variantInfo = getVariantInfo(item);
+        if (variantInfo) {
+          productDetails.push(`<span class="product-variant">${escapeHtml(variantInfo)}</span>`);
+        }
+
+        // Build the product display name with all details
+        let displayName = escapeHtml(productName);
+        if (productDetails.length > 0) {
+          displayName += `<br><span style="font-size: 10px; color: #4d637a; font-weight: 400;">${productDetails.join(' • ')}</span>`;
+        }
+
+        html += `<tr>
+          <td style="text-align: left; vertical-align: middle;">${idx + 1}</td>
+          <td style="text-align: left; vertical-align: middle;">${displayName}</td>
+          <td style="text-align: center; vertical-align: middle;">${qty} ${item.product?.unit?.code || ''}</td>
+          <td style="text-align: center; vertical-align: middle;">${formatCurrency(price)}</td>
+          <td style="text-align: center; vertical-align: middle;">${gst > 0 ? `${gst}%` : "—"}</td>
+          <td style="text-align: center; vertical-align: middle;">${discount > 0 ? `${discount}%` : "—"}</td>
+          <td style="text-align: center; font-weight: 600; vertical-align: middle;">${formatCurrency(total)}</td>
+        </tr>`;
+      });
+    }
+
+    // Packages - keep this separate if packages exist
+    if (Array.isArray(invoice.packages) && invoice.packages.length > 0) {
+      html += `<tr><td colspan="7" class="section-header" style="background: #eef3f9 !important;">📦 PACKAGES</td></tr>`;
+      invoice.packages.forEach((pkg, idx) => {
+        const price = parseNumeric(pkg.price);
+        const qty = parseNumeric(pkg.quantity, 1);
+        const total = parseNumeric(pkg.total_price, price * qty);
+        const packageName =
+          pkg.package_name || pkg.name || pkg.product_name || "Package";
+
+        html += `<tr>
+          <td style="text-align: left; vertical-align: middle;">${idx + 1}</td>
+          <td style="text-align: left; vertical-align: middle;">${escapeHtml(packageName)}</td>
+          <td style="text-align: center; vertical-align: middle;">${qty}</td>
+          <td style="text-align: center; vertical-align: middle;">${formatCurrency(price)}</td>
+          <td style="text-align: center; vertical-align: middle;">—</td>
+          <td style="text-align: center; vertical-align: middle;">—</td>
+          <td style="text-align: center; font-weight: 600; vertical-align: middle;">${formatCurrency(total)}</td>
+        </tr>`;
+      });
+    }
+
+    // No items
+    const allItems = [...(items || []), ...(invoice.packages || [])];
+    if (allItems.length === 0) {
+      html += `<tr><td colspan="7" style="text-align: center; padding: 28px; color: #8aa0b5;">No items found</td></tr>`;
+    }
+
+    return html;
+  }
+
+  // Helper function to escape HTML
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -427,6 +569,27 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
       background: #f2f6fc !important;
     }
 
+    /* Product detail styles */
+    .product-brand {
+      color: #1f6e3a;
+      font-weight: 500;
+    }
+    
+    .product-category {
+      color: #2b7ba8;
+      font-weight: 500;
+    }
+    
+    .product-attributes {
+      color: #8a6d3b;
+      font-weight: 400;
+    }
+    
+    .product-variant {
+      color: #4d637a;
+      font-weight: 400;
+    }
+
     /* ===== SUMMARY & PAYMENT ===== */
     .summary-payment-row {
       display: flex;
@@ -652,10 +815,6 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
         <div class="meta-label">${isOrderDetails ? "Order Date" : "Invoice Date"}</div>
         <div class="meta-value">${formatDate(invoice.created_at)}</div>
       </div>
-       <!-- <div class="meta-block">
-        <div class="meta-label">Order / Bill No</div>
-        <div class="meta-value">${escapeHtml(invoice.order_id || invoice.id || "WALK-IN")}</div>
-      </div>  -->
     </div>
 
     <!-- Customer Details -->
@@ -754,11 +913,7 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
       ? `
     <div style="
       width:120px !important;
-      
-      
-      
       text-align:center !important;
-     
     ">
       
       <div style="
@@ -831,79 +986,6 @@ export const generateA4InvoiceHTML = (invoice, isOrderDetails = false) => {
 </div>
 </body>
 </html>`;
-
-  // Helper function to render items section
-  function renderItemsSection(invoice) {
-    let html = "";
-
-    // Products
-    if (Array.isArray(invoice.invoice_items) && invoice.invoice_items.length > 0) {
-      html += `<tr><td colspan="7" class="section-header">🛒 PRODUCTS</td></tr>`;
-      console.log("checking the invoice items", invoice.items);
-      invoice.invoice_items.forEach((item, idx) => {
-        const price = parseNumeric(item.price);
-        const qty = parseNumeric(item.quantity, 1);
-        const total = parseNumeric(item.total_price, price * qty);
-        const gst = parseNumeric(item.gst);
-        const discount = parseNumeric(item.discount);
-        const productName =
-          item.product?.name || item.product_name || item.name || "Product";
-
-        html += `<tr>
-          <td style="text-align: left;">${idx + 1}</td>
-          <td style="text-align: left;">${escapeHtml(productName)}</td>
-          <td style="text-align: center;">${qty} ${item.product?.unit?.code || ''}</td>
-          <td style="text-align: center;">${formatCurrency(price)}</td>
-          <td style="text-align: center;">${gst > 0 ? `${gst}%` : "—"}</td>
-          <td style="text-align: center;">${discount > 0 ? `${discount}%` : "—"}</td>
-          <td style="text-align: center; font-weight: 600;">${formatCurrency(total)}</td>
-        </tr>`;
-      });
-    }
-
-    // Packages
-    if (Array.isArray(invoice.packages) && invoice.packages.length > 0) {
-      html += `<tr><td colspan="7" class="section-header" style="background: #eef3f9 !important;">📦 PACKAGES</td></tr>`;
-      invoice.packages.forEach((pkg, idx) => {
-        const price = parseNumeric(pkg.price);
-        const qty = parseNumeric(pkg.quantity, 1);
-        const total = parseNumeric(pkg.total_price, price * qty);
-        const packageName =
-          pkg.package_name || pkg.name || pkg.product_name || "Package";
-
-        html += `<tr>
-          <td style="text-align: left;">${idx + 1}</td>
-          <td style="text-align: left;">${escapeHtml(packageName)}</td>
-          <td style="text-align: center;">${qty}</td>
-          <td style="text-align: center;">${formatCurrency(price)}</td>
-          <td style="text-align: center;">—</td>
-          <td style="text-align: center;">—</td>
-          <td style="text-align: center; font-weight: 600;">${formatCurrency(total)}</td>
-        </tr>`;
-      });
-    }
-
-    // No items
-    if (
-      (!invoice.items || invoice.items.length === 0) &&
-      (!invoice.packages || invoice.packages.length === 0)
-    ) {
-      html += `<tr><td colspan="7" style="text-align: center; padding: 28px; color: #8aa0b5;">No items found</td></tr>`;
-    }
-
-    return html;
-  }
-
-  // Helper function to escape HTML
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
 };
 
 export default generateA4InvoiceHTML;

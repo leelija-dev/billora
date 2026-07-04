@@ -39,7 +39,7 @@ class UnitController extends Controller
                 });
             })
             ->orderBy('id', 'desc')
-            ->paginate(15);
+            ->paginate(8);
 
         });
         $executionTime = microtime(true) - $sartTime;

@@ -22,7 +22,7 @@ class SocialConnectController extends Controller
             'response_type' => 'code',
             'state' => $userId
         ]);
-        Log::info("redirect url:".$url);
+        // Log::info("redirect url:".$url);
         return redirect($url);
     }
     public function callback(Request $request)

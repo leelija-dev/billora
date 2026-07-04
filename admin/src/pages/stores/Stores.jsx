@@ -62,6 +62,8 @@ const Stores = () => {
   const [selectedStores, setSelectedStores] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [storeToDelete, setStoreToDelete] = useState(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [bulkDeleteSubmitting, setBulkDeleteSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -235,17 +237,22 @@ const Stores = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${selectedStores.length} stores?`,
-      )
-    ) {
+    setShowBulkDeleteConfirm(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    setBulkDeleteSubmitting(true);
+    try {
       for (const id of selectedStores) {
         await deleteStore(id);
       }
       setSelectedStores([]);
-      setShowDeleteConfirm(false);
+      setShowBulkDeleteConfirm(false);
       await fetchStores(currentUserId);
+    } catch (error) {
+      console.error("Failed to delete stores:", error);
+    } finally {
+      setBulkDeleteSubmitting(false);
     }
   };
 
@@ -486,105 +493,107 @@ const Stores = () => {
         className="space-y-6 p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
       >
         {/* Header with Gradient */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+<motion.div
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.5 }}
+  className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+>
+  <div className="flex-1 min-w-0">
+    <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+      Stores
+    </h1>
+    <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 flex items-center text-sm sm:text-base flex-wrap">
+      <FiPackage className="w-4 h-4 mr-2 flex-shrink-0" />
+      <span className="truncate">Manage your store/shop information and settings</span>
+      {getActiveFiltersCount() > 0 && (
+        <span className="ml-2 text-xs sm:text-sm bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 px-2 py-0.5 rounded-full flex-shrink-0">
+          {getActiveFiltersCount()} active filter{getActiveFiltersCount() !== 1 ? 's' : ''}
+        </span>
+      )}
+    </p>
+  </div>
+
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    {!showAddForm && !showEditForm && (
+      <>
+        {/* View Toggle */}
+        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setViewMode("table")}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${viewMode === "table"
+                ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                : "text-gray-600 dark:text-gray-400"
+              }`}
+          >
+            <FiList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${viewMode === "grid"
+                ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                : "text-gray-600 dark:text-gray-400"
+              }`}
+          >
+            <FiGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </motion.button>
+        </div>
+
+        {/* Refresh Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleRefresh}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
         >
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Stores
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
-              <FiPackage className="w-4 h-4 mr-2" />
-              Manage your store/shop information and settings
-              {getActiveFiltersCount() > 0 && (
-                <span className="ml-2 text-sm bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 px-2 py-0.5 rounded-full">
-                  {getActiveFiltersCount()} active filter{getActiveFiltersCount() !== 1 ? 's' : ''}
-                </span>
-              )}
-            </p>
-          </div>
+          <FiRefreshCw
+            className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
+          />
+        </motion.button>
 
-          <div className="flex items-center space-x-3">
-            {!showAddForm && !showEditForm && (
-              <>
-                {/* View Toggle */}
-                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setViewMode("table")}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === "table"
-                        ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                        : "text-gray-600 dark:text-gray-400"
-                      }`}
-                  >
-                    <FiList className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === "grid"
-                        ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                        : "text-gray-600 dark:text-gray-400"
-                      }`}
-                  >
-                    <FiGrid className="w-4 h-4" />
-                  </motion.button>
-                </div>
+        {/* Export Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        >
+          <FiDownload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
+        </motion.button>
 
-                {/* Refresh Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleRefresh}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiRefreshCw
-                    className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                </motion.button>
+        {/* Import Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        >
+          <FiUpload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
+        </motion.button>
+      </>
+    )}
 
-                {/* Export Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </motion.button>
-
-                {/* Import Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiUpload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </motion.button>
-              </>
-            )}
-
-            {/* Add Store Button */}
-            {!showAddForm && !showEditForm && (
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  onClick={handleAddStore}
-                  icon={FiPlus}
-                  className="shadow-lg shadow-primary-500/30"
-                >
-                  Add Store
-                </Button>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
+    {/* Add Store Button */}
+    {!showAddForm && !showEditForm && (
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="flex-shrink-0"
+      >
+        <Button
+          onClick={handleAddStore}
+          icon={FiPlus}
+          className="shadow-lg shadow-primary-500/30 text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2"
+        >
+          <span className="hidden xs:inline">Add Store</span>
+          <span className="xs:hidden">Add</span>
+        </Button>
+      </motion.div>
+    )}
+  </div>
+</motion.div>
 
         {/* Conditional rendering: Show form or table/search */}
         {showAddForm || showEditForm ? (
@@ -629,7 +638,7 @@ const Stores = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowDeleteConfirm(true)}
+                        onClick={handleBulkDelete}
                       >
                         Delete Selected
                       </Button>
@@ -1124,12 +1133,89 @@ const Stores = () => {
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={storeToDelete ? handleDelete : handleBulkDelete}
+                    onClick={handleDelete}
                     className="flex-1"
                   >
                     Delete
                   </Button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showBulkDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              if (!bulkDeleteSubmitting) {
+                setShowBulkDeleteConfirm(false);
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                  className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                  <FiAlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                </motion.div>
+                <motion.h3
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-xl font-bold text-gray-900 dark:text-white mb-2"
+                >
+                  Delete Multiple Stores
+                </motion.h3>
+                <motion.p
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-gray-600 dark:text-gray-400 mb-6"
+                >
+                  Are you sure you want to delete {selectedStores.length} stores? This action cannot be undone.
+                </motion.p>
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex space-x-3 w-full"
+                >
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBulkDeleteConfirm(false)}
+                    disabled={bulkDeleteSubmitting}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={confirmBulkDelete}
+                    disabled={bulkDeleteSubmitting}
+                    isLoading={bulkDeleteSubmitting}
+                    className="flex-1"
+                  >
+                    Delete All
+                  </Button>
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>

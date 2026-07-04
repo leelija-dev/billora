@@ -47,6 +47,66 @@ const OrderDetails = ({
     return value.replace(/[^\d.]/g, '');
   };
 
+  // Helper function to format attributes
+  const formatAttributes = (attributes) => {
+    if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
+      return "";
+    }
+    
+    const attrStrings = attributes.map(attr => {
+      if (typeof attr === 'object') {
+        const entries = Object.entries(attr);
+        return entries.map(([key, value]) => `${key}: ${value}`).join(', ');
+      }
+      return String(attr);
+    });
+    
+    return attrStrings.join(' | ');
+  };
+
+  // Helper function to calculate item total with discount and GST
+  const calculateItemTotal = (item) => {
+    const price = parseFloat(item.price || 0);
+    const quantity = parseFloat(item.quantity || 1);
+    const discountPercent = parseFloat(item.discount || 0);
+    const gstPercent = parseFloat(item.gst || 0);
+
+    // Apply discount first
+    const discountedPrice = price - (price * discountPercent / 100);
+    
+    // Then apply GST on discounted price
+    const gstAmount = discountedPrice * gstPercent / 100;
+    const finalPrice = discountedPrice + gstAmount;
+
+    return finalPrice * quantity;
+  };
+
+  // Helper function to calculate line item breakdown
+  const calculateItemBreakdown = (item) => {
+    const price = parseFloat(item.price || 0);
+    const quantity = parseFloat(item.quantity || 1);
+    const discountPercent = parseFloat(item.discount || 0);
+    const gstPercent = parseFloat(item.gst || 0);
+
+    const discountedPrice = price - (price * discountPercent / 100);
+    const discountAmount = price * discountPercent / 100;
+    const gstAmount = discountedPrice * gstPercent / 100;
+    const finalPrice = discountedPrice + gstAmount;
+    const total = finalPrice * quantity;
+
+    return {
+      basePrice: price,
+      discountedPrice,
+      discountAmount,
+      discountPercent,
+      gstAmount,
+      gstPercent,
+      finalPrice,
+      quantity,
+      total
+    };
+  };
+
   // Handle payment amount change with validation
   const handlePaymentAmountChange = (e) => {
     let value = e.target.value;
@@ -352,60 +412,97 @@ const OrderDetails = ({
                   Price
                 </th>
                 <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Discount
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  GST
+                </th>
+                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Total
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {order.items?.map((item, index) => (
-                <tr key={index}>
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {item.product?.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      SKU: {item.product?.sku}
-                    </p>
-                   </td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
-                    {item.quantity}
-                   </td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
-                    ₹{parseFloat(item.price || 0).toFixed(2)}
-                   </td>
-                  <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                    ₹
-                    {(
-                      parseFloat(item.quantity || 0) *
-                      parseFloat(item.price || 0)
-                    ).toFixed(2)}
-                   </td>
-                 </tr>
-              ))}
+              {order.items?.map((item, index) => {
+                const breakdown = calculateItemBreakdown(item);
+                const formattedAttrs = formatAttributes(item.product?.attributes);
+                
+                return (
+                  <tr key={index}>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {item.product?.name || item.product_name || item.name}
+                      </p>
+                      <div className="mt-1 space-y-0.5">
+                        {item.product?.brand?.name && (
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            Brand: {item.product.brand.name}
+                          </p>
+                        )}
+                        {item.product?.category?.name && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                            Category: {item.product.category.name}
+                          </p>
+                        )}
+                        {item.product?.sku && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            SKU: {item.product.sku}
+                          </p>
+                        )}
+                        {item.product?.unit?.code && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Unit: {item.product.unit.code}
+                          </p>
+                        )}
+                        {formattedAttrs && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400">
+                            {formattedAttrs}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
+                      {breakdown.quantity} {item.product?.unit?.code || ''}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
+                      ₹{breakdown.basePrice.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
+                      {breakdown.discountPercent > 0 ? `${breakdown.discountPercent}%` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">
+                      {breakdown.gstPercent > 0 ? `${breakdown.gstPercent}%` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                      ₹{breakdown.total.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <td
-                  colSpan="3"
+                  colSpan="5"
                   className="px-4 py-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
                   Subtotal:
-                 </td>
+                </td>
                 <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
                   ₹{parseFloat(order.total_amount || 0).toFixed(2)}
-                 </td>
-               </tr>
+                </td>
+              </tr>
               <tr>
                 <td
-                  colSpan="3"
+                  colSpan="5"
                   className="px-4 py-3 text-right text-base font-bold text-gray-900 dark:text-white"
                 >
                   Total:
-                 </td>
+                </td>
                 <td className="px-4 py-3 text-right text-base font-bold text-primary-600">
                   ₹{parseFloat(order.total_amount || 0).toFixed(2)}
-                 </td>
-               </tr>
+                </td>
+              </tr>
             </tfoot>
            </table>
         </div>

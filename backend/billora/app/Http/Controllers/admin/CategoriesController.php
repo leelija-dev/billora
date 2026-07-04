@@ -25,7 +25,7 @@ class CategoriesController extends Controller
     $startTime = microtime(true);
     $categories = Cache::tags(['categories_user_'.$user])
                       ->remember($cacheKey,600, function () use ($user, $search,$status) {
-    Log::info('status'.$status);
+    // Log::info('status'.$status);
     if ($status != null) {
 
         return Categories::where('user_id', $user)
@@ -38,7 +38,7 @@ class CategoriesController extends Controller
                 }
             })
             ->orderBy('id', 'desc')
-            ->paginate(15);
+            ->paginate(8);
     }
     return Categories::where('user_id', $user)
         ->where(function ($query) use ($search) {
@@ -47,7 +47,7 @@ class CategoriesController extends Controller
                 ->orWhere('description', 'like', "%$search%")
                 ->orWhere('slug', 'like', "%$search%");
         })->orderBy('id','Desc')
-        ->paginate(15);
+        ->paginate(8);
 });
     $executionTime = microtime(true) - $startTime;
     return response()->json([
