@@ -493,105 +493,107 @@ const Stores = () => {
         className="space-y-6 p-6 min-h-screen bg-gray-50 dark:bg-gray-900"
       >
         {/* Header with Gradient */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+<motion.div
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.5 }}
+  className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+>
+  <div className="flex-1 min-w-0">
+    <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+      Stores
+    </h1>
+    <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 flex items-center text-sm sm:text-base flex-wrap">
+      <FiPackage className="w-4 h-4 mr-2 flex-shrink-0" />
+      <span className="truncate">Manage your store/shop information and settings</span>
+      {getActiveFiltersCount() > 0 && (
+        <span className="ml-2 text-xs sm:text-sm bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 px-2 py-0.5 rounded-full flex-shrink-0">
+          {getActiveFiltersCount()} active filter{getActiveFiltersCount() !== 1 ? 's' : ''}
+        </span>
+      )}
+    </p>
+  </div>
+
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    {!showAddForm && !showEditForm && (
+      <>
+        {/* View Toggle */}
+        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setViewMode("table")}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${viewMode === "table"
+                ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                : "text-gray-600 dark:text-gray-400"
+              }`}
+          >
+            <FiList className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setViewMode("grid")}
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${viewMode === "grid"
+                ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
+                : "text-gray-600 dark:text-gray-400"
+              }`}
+          >
+            <FiGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </motion.button>
+        </div>
+
+        {/* Refresh Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleRefresh}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
         >
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Stores
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
-              <FiPackage className="w-4 h-4 mr-2" />
-              Manage your store/shop information and settings
-              {getActiveFiltersCount() > 0 && (
-                <span className="ml-2 text-sm bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 px-2 py-0.5 rounded-full">
-                  {getActiveFiltersCount()} active filter{getActiveFiltersCount() !== 1 ? 's' : ''}
-                </span>
-              )}
-            </p>
-          </div>
+          <FiRefreshCw
+            className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
+          />
+        </motion.button>
 
-          <div className="flex items-center space-x-3">
-            {!showAddForm && !showEditForm && (
-              <>
-                {/* View Toggle */}
-                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setViewMode("table")}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === "table"
-                        ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                        : "text-gray-600 dark:text-gray-400"
-                      }`}
-                  >
-                    <FiList className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === "grid"
-                        ? "bg-white dark:bg-gray-700 shadow-sm text-primary-600"
-                        : "text-gray-600 dark:text-gray-400"
-                      }`}
-                  >
-                    <FiGrid className="w-4 h-4" />
-                  </motion.button>
-                </div>
+        {/* Export Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        >
+          <FiDownload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
+        </motion.button>
 
-                {/* Refresh Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleRefresh}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiRefreshCw
-                    className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                </motion.button>
+        {/* Import Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        >
+          <FiUpload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
+        </motion.button>
+      </>
+    )}
 
-                {/* Export Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </motion.button>
-
-                {/* Import Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiUpload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </motion.button>
-              </>
-            )}
-
-            {/* Add Store Button */}
-            {!showAddForm && !showEditForm && (
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  onClick={handleAddStore}
-                  icon={FiPlus}
-                  className="shadow-lg shadow-primary-500/30"
-                >
-                  Add Store
-                </Button>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
+    {/* Add Store Button */}
+    {!showAddForm && !showEditForm && (
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="flex-shrink-0"
+      >
+        <Button
+          onClick={handleAddStore}
+          icon={FiPlus}
+          className="shadow-lg shadow-primary-500/30 text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2"
+        >
+          <span className="hidden xs:inline">Add Store</span>
+          <span className="xs:hidden">Add</span>
+        </Button>
+      </motion.div>
+    )}
+  </div>
+</motion.div>
 
         {/* Conditional rendering: Show form or table/search */}
         {showAddForm || showEditForm ? (

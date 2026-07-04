@@ -720,99 +720,107 @@ const Customers = () => {
         className="space-y-6 p-6"
       >
         {/* Header */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+<motion.div
+  initial={{ y: -20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+  className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+>
+  <div className="flex-1 min-w-0">
+    <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+      Customers
+    </h1>
+    <p className="text-gray-600 dark:text-gray-400 mt-1 sm:mt-2 flex items-center text-sm sm:text-base">
+      <FaUsers className="w-4 h-4 mr-2 flex-shrink-0" />
+      {showAddForm || showEditForm ? (
+        <span className="truncate">
+          {showEditForm ? "Edit Customer" : "Add New Customer"}
+        </span>
+      ) : (
+        <span className="truncate">
+          Manage your customer relationships and view insights
+        </span>
+      )}
+    </p>
+  </div>
+
+  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+    {!showAddForm && !showEditForm && (
+      <>
+        {/* Refresh Button */}
+        <motion.button
+          whileHover={{ scale: 1.1, rotate: 90 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 300 }}
+          onClick={handleRefresh}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
         >
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Customers
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center">
-              <FaUsers className="w-4 h-4 mr-2" />
-              {showAddForm || showEditForm ? (
-                <span>
-                  {showEditForm ? "Edit Customer" : "Add New Customer"}
-                </span>
-              ) : (
-                <span>
-                  Manage your customer relationships and view insights
-                </span>
-              )}
-            </p>
-          </div>
+          <FiRefreshCw
+            className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
+          />
+        </motion.button>
 
-          <div className="flex items-center space-x-3">
-            {!showAddForm && !showEditForm && (
-              <>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  onClick={handleRefresh}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiRefreshCw
-                    className={`w-5 h-5 text-gray-600 dark:text-gray-300 ${refreshing ? "animate-spin" : ""}`}
-                  />
-                </motion.button>
+        {/* Export Button */}
+        <motion.button
+          whileHover={{ scale: 1.1, y: -2 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 300 }}
+          className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+        >
+          <FiDownload className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
+        </motion.button>
 
-                <motion.button
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <FiDownload className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </motion.button>
+        {/* Trashed Customers Button */}
+        <motion.button
+          whileHover={{ scale: 1.1, y: -2 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 300 }}
+          onClick={() => navigate("/customers/trashed")}
+          className="p-2 sm:p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
+          title="View trashed customers"
+        >
+          <FiTrash2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />
+        </motion.button>
+      </>
+    )}
 
-                <motion.button
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  onClick={() => navigate("/customers/trashed")}
-                  className="p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
-                  title="View trashed customers"
-                >
-                  <FiTrash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
-                </motion.button>
-              </>
-            )}
-
-            {!showAddForm && !showEditForm ? (
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <Button
-                  onClick={handleAddClick}
-                  icon={FiPlus}
-                  className="shadow-lg shadow-primary-500/30"
-                >
-                  Add Customer
-                </Button>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ type: "spring", stiffness: 200 }}
-              >
-                <Button
-                  variant="outline"
-                  onClick={handleCancelForm}
-                  icon={FiArrowLeft}
-                >
-                  Back to Customers
-                </Button>
-              </motion.div>
-            )}
-          </div>
-        </motion.div>
+    {!showAddForm && !showEditForm ? (
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 300 }}
+        className="flex-shrink-0"
+      >
+        <Button
+          onClick={handleAddClick}
+          icon={FiPlus}
+          className="shadow-lg shadow-primary-500/30 text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2"
+        >
+          <span className="hidden xs:inline">Add Customer</span>
+          <span className="xs:hidden">Add</span>
+        </Button>
+      </motion.div>
+    ) : (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ type: "spring", stiffness: 200 }}
+        className="flex-shrink-0"
+      >
+        <Button
+          variant="outline"
+          onClick={handleCancelForm}
+          icon={FiArrowLeft}
+          className="text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2"
+        >
+          <span className="hidden xs:inline">Back to Customers</span>
+          <span className="xs:hidden">Back</span>
+        </Button>
+      </motion.div>
+    )}
+  </div>
+</motion.div>
 
         {showAddForm || showEditForm ? (
           <motion.div
