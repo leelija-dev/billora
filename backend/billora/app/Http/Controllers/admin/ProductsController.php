@@ -106,7 +106,10 @@ class ProductsController extends Controller
 
                         $query->where(function ($q) use ($request) {
 
-                            $q->where('name', 'like', '%' . $request->search . '%')
+                            $q->whereRaw(
+                                    "LOWER(REPLACE(REPLACE(name, '''', ''), '’', '')) LIKE ?",
+                                    ["%{$request->search}%"]
+                                )
                                 ->orWhere('sku', 'like', '%' . $request->search . '%')
                                 ->orWhere('category_id', 'like', '%' . $request->search . '%')
                                 ->orWhere('brand_id', 'like', '%' . $request->search . '%')
