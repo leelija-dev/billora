@@ -3,28 +3,6 @@ import { create } from "zustand";
 import { sellerAPI } from "../services/sellerService";
 import toast from "react-hot-toast";
 
-// Cache for seller data
-const sellerCache = new Map();
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
-const productRequestCache = new Map();
-
-const isCacheValid = (cacheEntry) => {
-  return cacheEntry && Date.now() - cacheEntry.timestamp < CACHE_EXPIRY;
-};
-
-const getCachedData = (cacheKey) => {
-  const entry = sellerCache.get(cacheKey);
-  if (isCacheValid(entry)) {
-    return entry.data;
-  }
-  sellerCache.delete(cacheKey);
-  return null;
-};
-
-const setCachedData = (cacheKey, data) => {
-  sellerCache.set(cacheKey, { data, timestamp: Date.now() });
-};
-
 const useSellerStore = create((set, get) => ({
   sellers: [],
   totalSellers: 0,
@@ -34,6 +12,9 @@ const useSellerStore = create((set, get) => ({
   error: null,
   filters: {
     search: "",
+    start_date: "",
+    end_date: "",
+    due_amount: "",
   },
   currentUserId: null,
   pagination: null,
@@ -61,44 +42,10 @@ const useSellerStore = create((set, get) => ({
   paymentHistoryLoading: false,
   paymentHistoryPagination: null,
 
-  // Cache state
-  lastFetchTime: null,
-  cacheKey: null,
 
   // Fetch sellers by user ID with pagination
   fetchSellers: async (userId, page = 1, filters = {}) => {
-    set({ currentUserId: userId });
-
-    const cacheKey = JSON.stringify({ userId, page, filters });
-    const currentState = get();
-
-    if (
-      currentState.cacheKey === cacheKey &&
-      currentState.lastFetchTime &&
-      Date.now() - currentState.lastFetchTime < 2000
-    ) {
-      console.log("Using cached seller data, skipping duplicate request");
-      return;
-    }
-
-    const cached = getCachedData(cacheKey);
-    if (cached) {
-      console.log("Using cached seller data");
-      set({
-        sellers: cached.sellers,
-        totalSellers: cached.total,
-        currentPage: page,
-        pageSize: cached.pageSize || 8,
-        loading: false,
-        cacheKey,
-        lastFetchTime: Date.now(),
-        currentUserId: userId,
-        pagination: cached.pagination || null,
-      });
-      return;
-    }
-
-    set({ loading: true, cacheKey, currentUserId: userId });
+    set({ currentUserId: userId, loading: true });
     try {
       const params = {
         page,
@@ -162,21 +109,12 @@ const useSellerStore = create((set, get) => ({
       console.log("📊 Total sellers:", total);
       console.log("📊 Pagination:", paginationData);
 
-      const cacheData = {
-        sellers: sellersArray,
-        total: total,
-        pageSize: paginationData?.per_page || 8,
-        pagination: paginationData,
-      };
-      setCachedData(cacheKey, cacheData);
-
       set({
         sellers: sellersArray,
         totalSellers: total,
         currentPage: page,
         pageSize: paginationData?.per_page || 8,
         loading: false,
-        lastFetchTime: Date.now(),
         currentUserId: userId,
         pagination: paginationData,
       });
@@ -203,8 +141,6 @@ const useSellerStore = create((set, get) => ({
       console.log("✅ Seller created successfully", response.data);
 
       toast.success("Seller created successfully");
-
-      get().clearCache();
 
       const newSeller = response.data?.data || response.data || sellerData;
 
@@ -263,13 +199,6 @@ const useSellerStore = create((set, get) => ({
 
   // Fetch seller products
   fetchSellerProducts: async (sellerId, page = 1, search = '') => {
-    const cacheKey = `${sellerId}-${page}-${search}`;
-    
-    if (productRequestCache.has(cacheKey)) {
-      console.log('⏳ Skipping duplicate products request (cache hit)');
-      return productRequestCache.get(cacheKey);
-    }
-
     set({ 
       sellerProductsLoading: true, 
       sellerProductsError: null,
@@ -277,127 +206,120 @@ const useSellerStore = create((set, get) => ({
       sellerProductsSearch: search,
     })
     
-    const requestPromise = (async () => {
-      try {
-        const params = { page }
-        if (search) {
-          params.search = search
-        }
-        
-        const response = await sellerAPI.getSellerProducts(sellerId, params)
-        console.log('📦 Seller products fetched:', response.data)
-        
-        let productsArray = []
-        let total = 0
-        let paginationData = null
-        let paymentHistoryArray = []
-        let paymentHistoryPagination = null
-        
-        if (response.data?.sellerProducts?.data) {
-          productsArray = Array.isArray(response.data.sellerProducts.data) ? response.data.sellerProducts.data : []
-          total = response.data.sellerProducts.total || productsArray.length
-          paginationData = {
-            current_page: response.data.sellerProducts.current_page,
-            first_page_url: response.data.sellerProducts.first_page_url,
-            from: response.data.sellerProducts.from,
-            last_page: response.data.sellerProducts.last_page,
-            last_page_url: response.data.sellerProducts.last_page_url,
-            links: response.data.sellerProducts.links,
-            next_page_url: response.data.sellerProducts.next_page_url,
-            path: response.data.sellerProducts.path,
-            per_page: response.data.sellerProducts.per_page,
-            prev_page_url: response.data.sellerProducts.prev_page_url,
-            to: response.data.sellerProducts.to,
-            total: response.data.sellerProducts.total,
-          }
-        } else if (response.data?.data?.data) {
-          productsArray = Array.isArray(response.data.data.data) ? response.data.data.data : []
-          total = response.data.data.total || productsArray.length
-          paginationData = {
-            current_page: response.data.data.current_page,
-            first_page_url: response.data.data.first_page_url,
-            from: response.data.data.from,
-            last_page: response.data.data.last_page,
-            last_page_url: response.data.data.last_page_url,
-            links: response.data.data.links,
-            next_page_url: response.data.data.next_page_url,
-            path: response.data.data.path,
-            per_page: response.data.data.per_page,
-            prev_page_url: response.data.data.prev_page_url,
-            to: response.data.data.to,
-            total: response.data.data.total,
-          }
-        } else if (response.data?.products?.data) {
-          productsArray = Array.isArray(response.data.products.data) ? response.data.products.data : []
-          total = response.data.products.total || productsArray.length
-          paginationData = response.data.products
-        } else if (Array.isArray(response.data)) {
-          productsArray = response.data
-          total = productsArray.length
-        } else if (response.data?.data && Array.isArray(response.data.data)) {
-          productsArray = response.data.data
-          total = productsArray.length
-        } else if (response.data?.sellerProducts && Array.isArray(response.data.sellerProducts)) {
-          productsArray = response.data.sellerProducts
-          total = productsArray.length
-        }
-        
-        // Extract payment history
-        if (response.data?.sellerPaymentHistory?.data) {
-          paymentHistoryArray = Array.isArray(response.data.sellerPaymentHistory.data) ? response.data.sellerPaymentHistory.data : []
-          paymentHistoryPagination = {
-            current_page: response.data.sellerPaymentHistory.current_page,
-            first_page_url: response.data.sellerPaymentHistory.first_page_url,
-            from: response.data.sellerPaymentHistory.from,
-            last_page: response.data.sellerPaymentHistory.last_page,
-            last_page_url: response.data.sellerPaymentHistory.last_page_url,
-            links: response.data.sellerPaymentHistory.links,
-            next_page_url: response.data.sellerPaymentHistory.next_page_url,
-            path: response.data.sellerPaymentHistory.path,
-            per_page: response.data.sellerPaymentHistory.per_page,
-            prev_page_url: response.data.sellerPaymentHistory.prev_page_url,
-            to: response.data.sellerPaymentHistory.to,
-            total: response.data.sellerPaymentHistory.total,
-          }
-        }
-        
-        console.log('📊 Products extracted:', productsArray.length, 'products')
-        console.log('📊 Total products:', total)
-        console.log('📊 Pagination:', paginationData)
-        console.log('💳 Payment history extracted:', paymentHistoryArray.length, 'records')
-        
-        set({
-          sellerProducts: productsArray,
-          sellerProductsTotal: total,
-          sellerProductsCurrentPage: page,
-          sellerProductsPageSize: paginationData?.per_page || 8,
-          sellerProductsLoading: false,
-          sellerProductsPagination: paginationData,
-          sellerProductsSearch: search,
-          currentSellerId: sellerId,
-          sellerPaymentHistory: paymentHistoryArray,
-          sellerPaymentHistoryPagination: paymentHistoryPagination,
-        })
-        
-        return response.data
-      } catch (error) {
-        console.error('❌ Failed to fetch seller products:', error)
-        toast.error(error.response?.data?.message || 'Failed to fetch seller products')
-        set({
-          sellerProducts: [],
-          sellerProductsTotal: 0,
-          sellerProductsLoading: false,
-          sellerProductsError: error.message || 'Failed to fetch seller products',
-          sellerProductsPagination: null,
-        })
-        throw error
-      } finally {
-        productRequestCache.delete(cacheKey);
+    try {
+      const params = { page }
+      if (search) {
+        params.search = search
       }
-    })();
-    
-    productRequestCache.set(cacheKey, requestPromise);
-    return requestPromise;
+      
+      const response = await sellerAPI.getSellerProducts(sellerId, params)
+      console.log('📦 Seller products fetched:', response.data)
+      
+      let productsArray = []
+      let total = 0
+      let paginationData = null
+      let paymentHistoryArray = []
+      let paymentHistoryPagination = null
+      
+      if (response.data?.sellerProducts?.data) {
+        productsArray = Array.isArray(response.data.sellerProducts.data) ? response.data.sellerProducts.data : []
+        total = response.data.sellerProducts.total || productsArray.length
+        paginationData = {
+          current_page: response.data.sellerProducts.current_page,
+          first_page_url: response.data.sellerProducts.first_page_url,
+          from: response.data.sellerProducts.from,
+          last_page: response.data.sellerProducts.last_page,
+          last_page_url: response.data.sellerProducts.last_page_url,
+          links: response.data.sellerProducts.links,
+          next_page_url: response.data.sellerProducts.next_page_url,
+          path: response.data.sellerProducts.path,
+          per_page: response.data.sellerProducts.per_page,
+          prev_page_url: response.data.sellerProducts.prev_page_url,
+          to: response.data.sellerProducts.to,
+          total: response.data.sellerProducts.total,
+        }
+      } else if (response.data?.data?.data) {
+        productsArray = Array.isArray(response.data.data.data) ? response.data.data.data : []
+        total = response.data.data.total || productsArray.length
+        paginationData = {
+          current_page: response.data.data.current_page,
+          first_page_url: response.data.data.first_page_url,
+          from: response.data.data.from,
+          last_page: response.data.data.last_page,
+          last_page_url: response.data.data.last_page_url,
+          links: response.data.data.links,
+          next_page_url: response.data.data.next_page_url,
+          path: response.data.data.path,
+          per_page: response.data.data.per_page,
+          prev_page_url: response.data.data.prev_page_url,
+          to: response.data.data.to,
+          total: response.data.data.total,
+        }
+      } else if (response.data?.products?.data) {
+        productsArray = Array.isArray(response.data.products.data) ? response.data.products.data : []
+        total = response.data.products.total || productsArray.length
+        paginationData = response.data.products
+      } else if (Array.isArray(response.data)) {
+        productsArray = response.data
+        total = productsArray.length
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        productsArray = response.data.data
+        total = productsArray.length
+      } else if (response.data?.sellerProducts && Array.isArray(response.data.sellerProducts)) {
+        productsArray = response.data.sellerProducts
+        total = productsArray.length
+      }
+      
+      // Extract payment history
+      if (response.data?.sellerPaymentHistory?.data) {
+        paymentHistoryArray = Array.isArray(response.data.sellerPaymentHistory.data) ? response.data.sellerPaymentHistory.data : []
+        paymentHistoryPagination = {
+          current_page: response.data.sellerPaymentHistory.current_page,
+          first_page_url: response.data.sellerPaymentHistory.first_page_url,
+          from: response.data.sellerPaymentHistory.from,
+          last_page: response.data.sellerPaymentHistory.last_page,
+          last_page_url: response.data.sellerPaymentHistory.last_page_url,
+          links: response.data.sellerPaymentHistory.links,
+          next_page_url: response.data.sellerPaymentHistory.next_page_url,
+          path: response.data.sellerPaymentHistory.path,
+          per_page: response.data.sellerPaymentHistory.per_page,
+          prev_page_url: response.data.sellerPaymentHistory.prev_page_url,
+          to: response.data.sellerPaymentHistory.to,
+          total: response.data.sellerPaymentHistory.total,
+        }
+      }
+      
+      console.log('📊 Products extracted:', productsArray.length, 'products')
+      console.log('📊 Total products:', total)
+      console.log('📊 Pagination:', paginationData)
+      console.log('💳 Payment history extracted:', paymentHistoryArray.length, 'records')
+      
+      set({
+        sellerProducts: productsArray,
+        sellerProductsTotal: total,
+        sellerProductsCurrentPage: page,
+        sellerProductsPageSize: paginationData?.per_page || 8,
+        sellerProductsLoading: false,
+        sellerProductsPagination: paginationData,
+        sellerProductsSearch: search,
+        currentSellerId: sellerId,
+        sellerPaymentHistory: paymentHistoryArray,
+        sellerPaymentHistoryPagination: paymentHistoryPagination,
+      })
+      
+      return response.data
+    } catch (error) {
+      console.error('❌ Failed to fetch seller products:', error)
+      toast.error(error.response?.data?.message || 'Failed to fetch seller products')
+      set({
+        sellerProducts: [],
+        sellerProductsTotal: 0,
+        sellerProductsLoading: false,
+        sellerProductsError: error.message || 'Failed to fetch seller products',
+        sellerProductsPagination: null,
+      })
+      throw error
+    }
   },
 
   // Update seller
@@ -408,8 +330,6 @@ const useSellerStore = create((set, get) => ({
       console.log("✅ Seller updated successfully", response.data);
 
       toast.success("Seller updated successfully");
-
-      get().clearCache();
 
       const updatedSeller = response.data?.data || response.data || sellerData;
 
@@ -443,8 +363,6 @@ const useSellerStore = create((set, get) => ({
       console.log("✅ Seller deleted successfully");
 
       toast.success("Seller deleted successfully");
-
-      get().clearCache();
 
       const { sellers, currentUserId, currentPage, filters } = get();
       set({
@@ -567,11 +485,6 @@ const useSellerStore = create((set, get) => ({
     }
   },
 
-  // Clear cache data
-  clearCache: () => {
-    sellerCache.clear();
-    console.log("Seller cache cleared");
-  },
 
   // Clear error
   clearError: () => set({ error: null }),
