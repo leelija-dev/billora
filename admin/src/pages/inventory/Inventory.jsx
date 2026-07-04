@@ -78,7 +78,7 @@ const Stock = () => {
         await fetchProducts();
         await fetchUnits();
         // Always force refresh to get latest data from backend
-        await fetchStocks(1, "", true);
+        await fetchStocks(1, "", true, filters);
       } finally {
         setInitialLoading(false);
       }
@@ -90,7 +90,7 @@ const Stock = () => {
     const debounceTimer = setTimeout(() => {
       setFilters({ search: searchTerm });
       // Reset to page 1 when searching
-      fetchStocks(1, searchTerm, false);
+      fetchStocks(1, searchTerm, false, filters);
     }, 500);
 
     return () => clearTimeout(debounceTimer);
@@ -140,13 +140,8 @@ const Stock = () => {
 
       console.log("Stock saved successfully", response);
 
-      // Clear cache and refresh
-      if (useInventoryStore.getState().clearCache) {
-        useInventoryStore.getState().clearCache();
-      }
-
       const currentPageNumber = pagination?.current_page || currentPage || 1;
-      await fetchStocks(currentPageNumber, searchTerm, true);
+      await fetchStocks(currentPageNumber, searchTerm, true, filters);
       handleCancelForm();
     } catch (error) {
       console.error("Error saving stock:", error);
@@ -168,14 +163,9 @@ const Stock = () => {
         setShowDeleteConfirm(false);
         setStockToDelete(null);
 
-        // Clear cache if your store has cache
-        if (useInventoryStore.getState().clearCache) {
-          useInventoryStore.getState().clearCache();
-        }
-
         // Refresh current page after deletion
         const currentPageNumber = pagination?.current_page || currentPage || 1;
-        await fetchStocks(currentPageNumber, searchTerm, true);
+        await fetchStocks(currentPageNumber, searchTerm, true, filters);
       } catch (error) {
         console.error("Error deleting stock:", error);
       }
@@ -200,24 +190,24 @@ const Stock = () => {
     await addStockQuantity(stockId, user.id, quantity);
     // Refresh current page after adding quantity
     const currentPageNumber = pagination?.current_page || currentPage || 1;
-    await fetchStocks(currentPageNumber, searchTerm, true);
+    await fetchStocks(currentPageNumber, searchTerm, true, filters);
   };
 
   const handlePageChange = (page) => {
-    // Pass the current search term as well
-    fetchStocks(page, searchTerm, false);
+    // Pass the current search term and filters as well
+    fetchStocks(page, searchTerm, false, filters);
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
     const currentPageNumber = pagination?.current_page || currentPage || 1;
-    await fetchStocks(currentPageNumber, searchTerm, true); // Force refresh to get latest data
+    await fetchStocks(currentPageNumber, searchTerm, true, filters); // Force refresh to get latest data
     setRefreshing(false);
   };
 
   const clearFilters = () => {
     setSearchTerm("");
-    setFilters({ search: "", product_id: "", unit_id: "" });
+    setFilters({ search: "", product_id: "", unit_id: "", stock: "", product: "", seller: "" });
   };
 
   const toggleStockSelection = (stockId) => {
@@ -290,7 +280,7 @@ const Stock = () => {
       setSelectedStockForDeduction(null);
       // Refresh current page after deduction
       const currentPageNumber = pagination?.current_page || currentPage || 1;
-      await fetchStocks(currentPageNumber, searchTerm, true);
+      await fetchStocks(currentPageNumber, searchTerm, true, filters);
     }
   };
 
@@ -671,7 +661,6 @@ const Stock = () => {
                       className="pl-10"
                     />
                   </div>
-{/* 
                   <div className="flex items-center space-x-2">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
@@ -686,7 +675,7 @@ const Stock = () => {
                       <span>Filters</span>
                     </motion.button>
 
-                    {(searchTerm || filters.product_id || filters.unit_id) && (
+                    {(searchTerm || filters.product_id || filters.unit_id || filters.stock || filters.product || filters.seller) && (
                       <motion.button
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -696,7 +685,7 @@ const Stock = () => {
                         <FiX className="w-5 h-5" />
                       </motion.button>
                     )}
-                  </div> */}
+                  </div>
                 </div>
               )}
 
@@ -711,34 +700,40 @@ const Stock = () => {
                       className="overflow-hidden"
                     >
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <Select
-                            label="Product"
+                            label="Stock Status"
                             options={[
-                              { value: "", label: "All Products" },
-                              ...(products?.map((p) => ({
-                                value: p.id,
-                                label: p.name,
-                              })) || []),
+                              { value: "", label: "All Status" },
+                              { value: "low-stock", label: "Low Stock" },
+                              { value: "out-of-stock", label: "Out of Stock" },
+                              { value: "in-stock", label: "In Stock" },
                             ]}
-                            value={filters.product_id}
-                            onChange={(e) =>
-                              setFilters({ product_id: e.target.value })
-                            }
+                            value={filters.stock}
+                            onChange={(e) => {
+                              setFilters({ stock: e.target.value });
+                              fetchStocks(1, searchTerm, false, { ...filters, stock: e.target.value });
+                            }}
                           />
-                          <Select
-                            label="Unit"
-                            options={[
-                              { value: "", label: "All Units" },
-                              ...(units?.map((u) => ({
-                                value: u.id,
-                                label: u.name,
-                              })) || []),
-                            ]}
-                            value={filters.unit_id}
-                            onChange={(e) =>
-                              setFilters({ unit_id: e.target.value })
-                            }
+                          <Input
+                            label="Product Name"
+                            type="text"
+                            placeholder="Filter by product name..."
+                            value={filters.product}
+                            onChange={(e) => {
+                              setFilters({ product: e.target.value });
+                              fetchStocks(1, searchTerm, false, { ...filters, product: e.target.value });
+                            }}
+                          />
+                          <Input
+                            label="Seller Name"
+                            type="text"
+                            placeholder="Filter by seller name..."
+                            value={filters.seller}
+                            onChange={(e) => {
+                              setFilters({ seller: e.target.value });
+                              fetchStocks(1, searchTerm, false, { ...filters, seller: e.target.value });
+                            }}
                           />
                         </div>
                       </div>

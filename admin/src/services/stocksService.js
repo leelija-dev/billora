@@ -1,8 +1,8 @@
 import { apiClient } from './apiClient';
 
 export const stocksAPI = {
-  // Get all stocks with search
- getAll: (search = '', page = 1) => {
+  // Get all stocks with search and filters
+  getAll: (search = '', page = 1, filters = {}) => {
     const params = new URLSearchParams();
     
     if (search) {
@@ -12,6 +12,20 @@ export const stocksAPI = {
     if (page) {
       params.append('page', page);
     }
+    
+    // Add filter parameters
+    if (filters.stock) {
+      params.append('stock', filters.stock);
+    }
+    
+    if (filters.product) {
+      params.append('product', filters.product);
+    }
+    
+    if (filters.seller) {
+      params.append('seller', filters.seller);
+    }
+    
     const queryString = params.toString();
    
     const url = queryString ? `/stocks?${queryString}` : '/stocks';

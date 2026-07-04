@@ -3,12 +3,6 @@ import { stocksAPI } from '../services'
 import { useProductStore } from './productStore'
 import toast from 'react-hot-toast'
 
-// Cache for stocks data
-const stockCache = new Map()
-const CACHE_EXPIRY = 5 * 60 * 1000 // 5 minutes
-const REQUEST_COOLDOWN = 2000 // 2 seconds
-let lastFetchTime = 0
-
 export const useInventoryStore = create((set, get) => ({
   stocks: [],
   totalStocks: 0,
@@ -19,40 +13,16 @@ export const useInventoryStore = create((set, get) => ({
     search: '',
     product_id: '',
     unit_id: '',
+    stock: '',
+    product: '',
+    seller: '',
   },
 
-  fetchStocks: async (page = 1, search = '', forceRefresh = false) => {
-  const now = Date.now()
-  const cacheKey = `stocks_${page}_${search || ''}`
-  
-  // Check cache first (unless force refresh)
-  if (!forceRefresh && stockCache.has(cacheKey)) {
-    const cached = stockCache.get(cacheKey)
-    if (now - cached.timestamp < CACHE_EXPIRY) {
-      console.log('Stock Store - Using cached data for:', cacheKey)
-      set({
-        stocks: cached.stocks,
-        totalStocks: cached.totalStocks,
-        currentPage: page,
-        loading: false,
-      })
-      return cached.stocks
-    } else {
-      stockCache.delete(cacheKey)
-    }
-  }
-  
-  // Prevent duplicate requests within cooldown period (unless force refresh)
-  if (!forceRefresh && now - lastFetchTime < REQUEST_COOLDOWN) {
-    console.log('Stock Store - Request cooldown active, skipping duplicate fetch')
-    return
-  }
-  
-  lastFetchTime = now
+  fetchStocks: async (page = 1, search = '', forceRefresh = false, filters = {}) => {
   set({ loading: true })
   try {
-    // IMPORTANT: Pass the page parameter to the API
-    const response = await stocksAPI.getAll(search, page)
+    // Pass the page parameter and filters to the API
+    const response = await stocksAPI.getAll(search, page, filters)
     
     console.log('Stock Store - Raw API Response:', response)
     
@@ -76,13 +46,6 @@ export const useInventoryStore = create((set, get) => ({
         product_sku: product?.sku || '',
         unit_id: stock.unit_id,
       }
-    })
-    
-    // Cache the results
-    stockCache.set(cacheKey, {
-      stocks: enrichedStocks,
-      totalStocks: total,
-      timestamp: now
     })
     
     set({
@@ -156,9 +119,6 @@ export const useInventoryStore = create((set, get) => ({
         loading: false,
       }))
 
-      // Clear cache to force refresh on next fetch
-      get().clearCache()
-
       toast.success('Stock created successfully')
       return { success: true }
     } catch (error) {
@@ -222,9 +182,6 @@ export const useInventoryStore = create((set, get) => ({
         }
       })
 
-      // Clear cache to force refresh on next fetch
-      get().clearCache()
-
       // Fetch fresh data after update
       get().fetchStocks()
 
@@ -280,9 +237,6 @@ deductStockQuantity: async (id, userId, quantity) => {
       loading: false,
     }))
 
-    // Clear cache to force refresh on next fetch
-    get().clearCache()
-
     toast.success('Stock deducted successfully')
     return { success: true }
   } catch (error) {
@@ -325,9 +279,6 @@ deductStockQuantity: async (id, userId, quantity) => {
         }
       })
 
-      // Clear cache to force refresh on next fetch
-      get().clearCache()
-
       toast.success('Stock deleted successfully')
       return { success: true }
     } catch (error) {
@@ -365,9 +316,6 @@ deductStockQuantity: async (id, userId, quantity) => {
         loading: false,
       }))
 
-      // Clear cache to force refresh on next fetch
-      get().clearCache()
-
       toast.success('Stock quantity updated successfully')
       return { success: true }
     } catch (error) {
@@ -381,17 +329,5 @@ deductStockQuantity: async (id, userId, quantity) => {
   setFilters: (filters) => {
     set({ filters: { ...get().filters, ...filters } })
     // Don't automatically fetch here - let the component handle it
-  },
-
-  clearCache: () => {
-    console.log('Stock Store - Clearing cache before:', stockCache.size, 'entries')
-    stockCache.forEach((value, key) => {
-      console.log('Clearing cache key:', key, 'timestamp:', value.timestamp)
-    })
-    stockCache.clear()
-    console.log('Stock Store - Cache cleared after:', stockCache.size, 'entries')
-
-    // Also reset last fetch time to allow immediate next request
-    lastFetchTime = 0
   },
 }))
