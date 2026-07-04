@@ -9,6 +9,7 @@ use App\Models\SellerPaymentHistory;
 use App\Models\SellerProducts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class SellerController extends Controller
@@ -16,10 +17,12 @@ class SellerController extends Controller
     public function index(Request $request, $id)
     {
         $user = Auth::user()->id;
+        $startTime = microtime(true);
         $search = $request->search;
         $due_amount = $request->due_amount ?? false;
         $start_date = $request->start_date ?? '';
         $end_date = $request->end_date ?? '';
+        $page = $request->page ?? 1;
         if ($user != $id) {
             return response([
                 'status' => false,
@@ -27,44 +30,58 @@ class SellerController extends Controller
             ]);
         }
         try {
-            $seller = Seller::where('user_id', $id)
-                ->when($search, function ($query) use ($search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->where('name', 'LIKE', "%{$search}%")
-                            ->orWhere('city', 'LIKE', "%{$search}%")
-                            ->orWhere('phone', 'LIKE', "%{$search}%")
-                            ->orWhere('gst_number', 'LIKE', "%{$search}%")
-                            ->orWhere('address', 'LIKE', "%{$search}%")
-                            ->orWhere('state', 'LIKE', "%{$search}%")
-                            ->orWhere('pincode', 'LIKE', "%{$search}%");
-                    });
-                })
-                // Due Amount Filter
-                ->when($due_amount !== false, function ($query) {
-                    $query->where('due_amount', '>', 0);
-                })
+            $cacheKey = "seller_list_{$user}_" . md5(json_encode([
+                'search' => $search,
+                'due_amount' => $due_amount,
+                'start_date' => $start_date,
+                'end_date' => $end_date,
+                'page' => $page
+            ]));
+            $fromCache = Cache::tags(['seller_user_' . $user])->has($cacheKey);
+            $seller = Cache::tags(['seller_user_' . $user])->remember($cacheKey, 600, function () use ($id, $search, $due_amount, $start_date, $end_date) {
 
-                // Date Range Filter
-                ->when($start_date && $end_date, function ($query) use ($start_date, $end_date) {
-                    $query->whereBetween('created_at', [
-                        $start_date . ' 00:00:00',
-                        $end_date . ' 23:59:59'
-                    ]);
-                })
+                return Seller::where('user_id', $id)
+                    ->when($search, function ($query) use ($search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('name', 'LIKE', "%{$search}%")
+                                ->orWhere('city', 'LIKE', "%{$search}%")
+                                ->orWhere('phone', 'LIKE', "%{$search}%")
+                                ->orWhere('gst_number', 'LIKE', "%{$search}%")
+                                ->orWhere('address', 'LIKE', "%{$search}%")
+                                ->orWhere('state', 'LIKE', "%{$search}%")
+                                ->orWhere('pincode', 'LIKE', "%{$search}%");
+                        });
+                    })
+                    // Due Amount Filter
+                    ->when($due_amount !== false, function ($query) {
+                        $query->where('due_amount', '>', 0);
+                    })
 
-                // Only Start Date
-                ->when($start_date && !$end_date, function ($query) use ($start_date) {
-                    $query->whereDate('created_at', '>=', $start_date);
-                })
+                    // Date Range Filter
+                    ->when($start_date && $end_date, function ($query) use ($start_date, $end_date) {
+                        $query->whereBetween('created_at', [
+                            $start_date . ' 00:00:00',
+                            $end_date . ' 23:59:59'
+                        ]);
+                    })
 
-                // Only End Date
-                ->when(!$start_date && $end_date, function ($query) use ($end_date) {
-                    $query->whereDate('created_at', '<=', $end_date);
-                })
-                ->paginate(8);
+                    // Only Start Date
+                    ->when($start_date && !$end_date, function ($query) use ($start_date) {
+                        $query->whereDate('created_at', '>=', $start_date);
+                    })
+
+                    // Only End Date
+                    ->when(!$start_date && $end_date, function ($query) use ($end_date) {
+                        $query->whereDate('created_at', '<=', $end_date);
+                    })
+                    ->paginate(8);
+            });
+            $executionTime = microtime(true) - $startTime;
             return response([
                 'status' => true,
                 'message' => 'seller list',
+                'response_time' => round($executionTime, 4) . ' sec',
+                'response_from' => $fromCache ? 'Cache' : 'Database',
                 'sellers' => $seller
             ]);
         } catch (\Exception $e) {
@@ -106,6 +123,7 @@ class SellerController extends Controller
             }
 
             $seller = Seller::create($data);
+            Cache::tags(['seller_user_' . $user])->flush();
             return response([
                 'status' => true,
                 'message' => 'Seller created successfully',
@@ -147,6 +165,7 @@ class SellerController extends Controller
                 ]);
             }
             $seller->update($data);
+            Cache::tags(['seller_user_' . $user])->flush();
             return response([
                 'status' => true,
                 'message' => 'Seller updated successfully',
@@ -162,6 +181,7 @@ class SellerController extends Controller
     public function edit($id)
     {
         $user = Auth::user()->id;
+        Cache::tags(['seller_user_' . $user])->flush();
         try {
             $seller = Seller::where('id', $id)->where('user_id', $user)->firstOrFail();
             if (!$seller) {
@@ -194,6 +214,7 @@ class SellerController extends Controller
                 ]);
             }
             $seller->delete();
+            Cache::tags(['seller_user_' . $user])->flush();
             return response([
                 'status' => true,
                 'message' => 'Seller deleted successfully',
@@ -209,6 +230,7 @@ class SellerController extends Controller
     public function singleSeller($id)
     {
         $user = Auth::user()->id;
+        Cache::tags(['seller_user_' . $user])->flush();
         try {
             $customer =  Customers::findOrFail($user);
             if (!$customer) {
@@ -324,12 +346,14 @@ class SellerController extends Controller
                 ]);
             }
             DB::commit();
+            Cache::tags(['seller_user_' . $user])->flush();
             return response()->json([
                 'status' => true,
                 'message' => 'Payment completed successfully',
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            Cache::tags(['seller_user_' . $user])->flush();
             return response([
                 'status' => false,
                 'message' => $e->getMessage()

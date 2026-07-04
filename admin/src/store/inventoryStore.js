@@ -32,19 +32,17 @@ export const useInventoryStore = create((set, get) => ({
     const total = apiData.data?.total || stocks.length
     const currentPage = apiData.data?.current_page || page
     
-    // Get products and units data to enrich stock information
-    const productStore = useProductStore.getState()
-    const products = productStore.products || []
-    
-    // Enrich stocks with product information
+    // Use nested product and unit data directly from API response
     const enrichedStocks = stocks.map(stock => {
-      const product = stock.product || products.find(p => p.id === stock.product_id)
+      const product = stock.product || {}
+      const unit = product.unit || {}
       
       return {
         ...stock,
-        product_name: product?.name || `Product ${stock.product_id}`,
-        product_sku: product?.sku || '',
-        unit_id: stock.unit_id,
+        product_name: product.name || `Product ${stock.product_id}`,
+        product_sku: product.sku || '',
+        unit_name: unit.name || unit.code || 'N/A',
+        unit_code: unit.code || '',
       }
     })
     

@@ -54,7 +54,7 @@ class StocksController extends Controller
                 $user = Auth::user()->id; // authenticated user
 
                 $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search,$stock,$product,$seller) {
-                    return Stocks::with('product', 'sellerProduct')
+                    return Stocks::with('product','product.unit', 'sellerProduct')
                         ->where('user_id', $user)
                         ->when($search, function ($query) use ($search) {
 
@@ -286,7 +286,7 @@ class StocksController extends Controller
                 ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 $stocks = Stocks::where('user_id', $user)->get();
-                Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user,'seller_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
                 return response()->json([
                     'status' => true,
@@ -509,7 +509,8 @@ class StocksController extends Controller
                     'stock_user_' . $user,
                     'products_user_' . $user,
                     'gst_collection_user_' . $user,
-                    'billing_user_' . $user
+                    'billing_user_' . $user,
+                    'seller_user_' . $user
                 ])->flush();
 
                 return response()->json([

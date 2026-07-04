@@ -19,7 +19,6 @@ import DeductStockModal from '../../components/features/Stocks/DeductStockModal'
 import { motion, AnimatePresence } from "framer-motion";
 import { useInventoryStore } from "../../store/inventoryStore";
 import { useProductStore } from "../../store/productStore";
-import { useUnits } from "../../hooks/useAPI";
 import { useAuthStore } from "../../store/authStore";
 import Button from "../../components/common/Button/Button";
 import Input from "../../components/common/Input/Input";
@@ -48,7 +47,6 @@ const Stock = () => {
   } = useInventoryStore();
 
   const { products, fetchProducts } = useProductStore();
-  const { units, fetchUnits } = useUnits();
   const { user } = useAuthStore();
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -72,11 +70,10 @@ const Stock = () => {
   const [selectedStockForDeduction, setSelectedStockForDeduction] = useState(null);
 
   useEffect(() => {
-    // Fetch products first, then stocks with force refresh
+    // Fetch products for StockForm dropdown, then stocks with force refresh
     const fetchData = async () => {
       try {
         await fetchProducts();
-        await fetchUnits();
         // Always force refresh to get latest data from backend
         await fetchStocks(1, "", true, filters);
       } finally {
@@ -384,12 +381,10 @@ const Stock = () => {
     {
       header: "Unit",
       accessor: "unit_name",
-      cell: (value, row) => {
-        // Find unit by unit_id from the row data
-        const unit = units.find((u) => u.id === row.unit_id);
+      cell: (value) => {
         return (
           <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-            {unit?.name || unit?.code || "N/A"}
+            {value || "N/A"}
           </span>
         );
       },
@@ -580,7 +575,6 @@ const Stock = () => {
             onCancel={handleCancelForm}
             isSubmitting={formSubmitting}
             products={products}
-            units={units}
           />
         ) : (
           <>
