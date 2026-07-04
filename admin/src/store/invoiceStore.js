@@ -2,35 +2,6 @@ import { create } from "zustand";
 import { invoiceAPI } from "../services";
 import toast from "react-hot-toast";
 
-// Cache for customer and store data
-const customerCache = new Map();
-const storeCache = new Map();
-const productCache = new Map();
-
-// Cache expiration time (5 minutes)
-const CACHE_EXPIRY = 5 * 60 * 1000;
-
-// Request deduplication
-let activeRequests = new Map();
-let abortControllers = new Map();
-
-const isCacheValid = (cacheEntry) => {
-  return cacheEntry && Date.now() - cacheEntry.timestamp < CACHE_EXPIRY;
-};
-
-const getCachedData = (cache, key) => {
-  const entry = cache.get(key);
-  if (isCacheValid(entry)) {
-    return entry.data;
-  }
-  cache.delete(key);
-  return null;
-};
-
-const setCachedData = (cache, key, data) => {
-  cache.set(key, { data, timestamp: Date.now() });
-};
-
 export const useInvoiceStore = create((set, get) => ({
   // State
   invoices: [],
@@ -49,29 +20,6 @@ export const useInvoiceStore = create((set, get) => ({
   },
   billGenerateData: {},
 
-  // Cache state
-  lastFetchTime: null,
-  cacheKey: null,
-
-  // Helper to deduplicate requests
-  dedupeRequest: async (key, requestFn) => {
-    const existingRequest = activeRequests.get(key);
-    if (existingRequest) {
-      console.log(`🔄 Request deduplicated for: ${key}`);
-      return existingRequest;
-    }
-
-    const abortController = new AbortController();
-    abortControllers.set(key, abortController);
-
-    const promise = requestFn(abortController.signal).finally(() => {
-      activeRequests.delete(key);
-      abortControllers.delete(key);
-    });
-
-    activeRequests.set(key, promise);
-    return promise;
-  },
 
   // Helper to extract store data from API response
   extractStoreDataFromResponse: (response, storeId) => {
@@ -133,36 +81,15 @@ export const useInvoiceStore = create((set, get) => ({
     }
   },
 
-  // Fetch invoices/bills history with pagination and search (optimized)
+  // Fetch invoices/bills history with pagination and search
   fetchInvoices: async (page = 1, filters = {}) => {
-    const requestKey = `invoices_${page}_${JSON.stringify(filters)}`;
-
-    // Cancel previous request for the same key
-    const existingController = abortControllers.get(requestKey);
-    if (existingController) {
-      existingController.abort();
-      abortControllers.delete(requestKey);
-    }
-
-    const currentState = get();
-
-    // Avoid duplicate requests if same data was fetched recently
-    if (
-      currentState.cacheKey === requestKey &&
-      currentState.lastFetchTime &&
-      Date.now() - currentState.lastFetchTime < 1000
-    ) {
-      console.log("Using cached invoice data, skipping duplicate request");
-      return currentState.invoices;
-    }
-
-    set({ loading: true, cacheKey: requestKey, error: null });
+    set({ loading: true, error: null });
 
     try {
       const response = await invoiceAPI.getAll(page, filters);
       const invoices = response.data?.data?.data || response.data?.data || [];
 
-      // Batch fetch unique customers and stores to reduce API calls
+      // Batch fetch unique customers and stores
       const uniqueCustomerIds = [
         ...new Set(invoices.map((inv) => inv.customer_id).filter(Boolean)),
       ];
@@ -177,16 +104,10 @@ export const useInvoiceStore = create((set, get) => ({
       const [customersResult, storesResult] = await Promise.allSettled([
         Promise.all(
           uniqueCustomerIds.map(async (customerId) => {
-            const cached = getCachedData(customerCache, customerId);
-            if (cached) {
-              return { id: customerId, data: cached };
-            }
-
             try {
               const response = await invoiceAPI.getCustomer(customerId);
               const customerData = get().extractCustomerDataFromResponse(response, customerId);
               if (customerData) {
-                setCachedData(customerCache, customerId, customerData);
                 return { id: customerId, data: customerData };
               }
               return { id: customerId, data: null };
@@ -198,18 +119,12 @@ export const useInvoiceStore = create((set, get) => ({
         ),
         Promise.all(
           uniqueStoreIds.map(async (storeId) => {
-            const cached = getCachedData(storeCache, storeId);
-            if (cached) {
-              return { id: storeId, data: cached };
-            }
-
             try {
               const response = await invoiceAPI.getStore(storeId);
               const storeData = get().extractStoreDataFromResponse(response, storeId);
               
               if (storeData && storeData.id) {
                 console.log(`✅ Store ${storeId} fetched:`, storeData.name);
-                setCachedData(storeCache, storeId, storeData);
                 return { id: storeId, data: storeData };
               } else {
                 // Store not found, create fallback
@@ -219,7 +134,6 @@ export const useInvoiceStore = create((set, get) => ({
                   name: `Store Deleted`,
                   is_fallback: true
                 };
-                setCachedData(storeCache, storeId, fallbackStore);
                 return { id: storeId, data: fallbackStore };
               }
             } catch (error) {
@@ -230,7 +144,6 @@ export const useInvoiceStore = create((set, get) => ({
                 name: `Store Deleted`,
                 is_fallback: true
               };
-              setCachedData(storeCache, storeId, fallbackStore);
               return { id: storeId, data: fallbackStore };
             }
           }),
@@ -262,7 +175,7 @@ export const useInvoiceStore = create((set, get) => ({
         });
       }
 
-      // Enrich invoices with cached customer and store data
+      // Enrich invoices with customer and store data
       const enrichedInvoices = invoices.map((invoice) => {
         const customer = customerMap[invoice.customer_id] || {};
         const store = storeMap[invoice.store_id] || {
@@ -286,16 +199,11 @@ export const useInvoiceStore = create((set, get) => ({
         currentPage: response.data?.data?.current_page || page,
         pageSize: response.data?.data?.per_page || 8,
         loading: false,
-        lastFetchTime: Date.now(),
       });
 
       console.log(`✅ Fetched ${enrichedInvoices.length} invoices with store data`);
       return enrichedInvoices;
     } catch (error) {
-      if (error.name === "AbortError") {
-        console.log("Request was cancelled");
-        return null;
-      }
       console.error("Failed to fetch invoices:", error);
       toast.error("Failed to fetch invoices");
       set({ loading: false, error: error.message });
@@ -303,22 +211,8 @@ export const useInvoiceStore = create((set, get) => ({
     }
   },
 
-  // Get bill generate page data (optimized with caching)
+  // Get bill generate page data
   fetchBillGenerateData: async () => {
-    const currentState = get();
-
-    // Avoid duplicate requests if data was fetched recently (within 30 seconds)
-    if (
-      currentState.lastFetchTime &&
-      Date.now() - currentState.lastFetchTime < 30000 &&
-      Object.keys(currentState.billGenerateData).length > 0
-    ) {
-      console.log(
-        "Using cached bill generate data, skipping duplicate request",
-      );
-      return currentState.billGenerateData;
-    }
-
     set({ loading: true, error: null });
     try {
       const response = await invoiceAPI.getBillGenerateData();
@@ -327,7 +221,6 @@ export const useInvoiceStore = create((set, get) => ({
       set({
         billGenerateData: data,
         loading: false,
-        lastFetchTime: Date.now(),
       });
 
       return data;
@@ -511,22 +404,4 @@ export const useInvoiceStore = create((set, get) => ({
     }
   },
 
-  // Clear cache function
-  clearCache: () => {
-    customerCache.clear();
-    storeCache.clear();
-    productCache.clear();
-    set({
-      lastFetchTime: null,
-      cacheKey: null,
-      billGenerateData: {},
-    });
-  },
-
-  // Cleanup function for unmount
-  cleanup: () => {
-    abortControllers.forEach((controller) => controller.abort());
-    activeRequests.clear();
-    abortControllers.clear();
-  },
 }));

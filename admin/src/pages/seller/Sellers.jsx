@@ -53,7 +53,6 @@ const Sellers = () => {
     deleteSeller,
     getSellerById,
     setFilters,
-    clearCache,
   } = useSellerStore();
 
   // Ensure sellers is an array
@@ -76,6 +75,10 @@ const Sellers = () => {
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentSeller, setSelectedPaymentSeller] = useState(null);
+
+  const [filterStartDate, setFilterStartDate] = useState(filters.start_date || "");
+  const [filterEndDate, setFilterEndDate] = useState(filters.end_date || "");
+  const [filterDueAmount, setFilterDueAmount] = useState(filters.due_amount || "");
 
   const navigate = useNavigate();
 
@@ -121,7 +124,7 @@ const Sellers = () => {
     fetchData();
 
     return () => {
-      clearCache();
+      // Cleanup
     };
   }, []);
 
@@ -150,6 +153,23 @@ const Sellers = () => {
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterStartDate("");
+    setFilterEndDate("");
+    setFilterDueAmount("");
+    setFilters({ search: "", start_date: "", end_date: "", due_amount: "" });
+  };
+
+  const applyFilters = () => {
+    setFilters({
+      search: searchTerm,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+      due_amount: filterDueAmount,
+    });
+  };
 
   const handleAddSeller = () => {
     setShowAddForm(true);
@@ -278,28 +298,33 @@ const Sellers = () => {
 
     // If it's a number, use it directly
     if (typeof page === "number") {
-      fetchSellers(currentUserId, page, filters);
+      fetchSellers(currentUserId, page, {
+        search: searchTerm,
+        start_date: filterStartDate,
+        end_date: filterEndDate,
+        due_amount: filterDueAmount,
+      });
     } else {
       // If it's a URL with page parameter
       const pageMatch = pageOrUrl.match(/page=(\d+)/);
       if (pageMatch) {
-        fetchSellers(currentUserId, parseInt(pageMatch[1]), filters);
+        fetchSellers(currentUserId, parseInt(pageMatch[1]), {
+          search: searchTerm,
+          start_date: filterStartDate,
+          end_date: filterEndDate,
+          due_amount: filterDueAmount,
+        });
       }
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    clearCache();
     await fetchSellers(currentUserId);
     setRefreshing(false);
     toast.success("Data refreshed");
   };
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setFilters({ search: "" });
-  };
 
   const toggleSellerSelection = (sellerId) => {
     setSelectedSellers((prev) =>
@@ -685,10 +710,32 @@ const Sellers = () => {
               </div>
 
               <div className="flex items-center space-x-2">
-                {searchTerm && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`px-4 py-2 rounded-xl border transition-colors flex items-center space-x-2 ${
+                    showFilters
+                      ? "bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400"
+                      : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  <FiFilter className="w-4 h-4" />
+                  <span>Filters</span>
+                  {(filterStartDate || filterEndDate || filterDueAmount) && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-1 w-2 h-2 bg-primary-500 rounded-full"
+                    />
+                  )}
+                </motion.button>
+
+                {(searchTerm || filterStartDate || filterEndDate || filterDueAmount) && (
                   <motion.button
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
                     onClick={clearFilters}
                     className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                   >
@@ -697,6 +744,60 @@ const Sellers = () => {
                 )}
               </div>
             </div>
+
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Input
+                        label="Start Date"
+                        type="date"
+                        value={filterStartDate}
+                        onChange={(e) => setFilterStartDate(e.target.value)}
+                      />
+
+                      <Input
+                        label="End Date"
+                        type="date"
+                        value={filterEndDate}
+                        onChange={(e) => setFilterEndDate(e.target.value)}
+                      />
+
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filterDueAmount === "true"}
+                            onChange={(e) => setFilterDueAmount(e.target.checked ? "true" : "")}
+                            className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Filter by Due Amount
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-end md:col-span-3">
+                        <Button
+                          onClick={applyFilters}
+                          className="w-full md:w-auto"
+                          icon={FiFilter}
+                        >
+                          Apply Filters
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Content */}

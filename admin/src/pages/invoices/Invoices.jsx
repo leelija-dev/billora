@@ -35,6 +35,7 @@ import { customerAPI } from "../../services/customerService";
 import { storeAPI } from "../../services/storeService";
 import { productsAPI } from "../../services/productsService";
 import { invoiceAPI } from "../../services/invoiceService";
+import { useAuthStore } from "../../store/authStore";
 
 const DUE_PAYMENT_METHOD_OPTIONS = [
   { value: "Cash", label: "Cash" },
@@ -100,6 +101,9 @@ const Invoices = () => {
   const [filterEndDate, setFilterEndDate] = useState(filters.end_date || "");
   const [filterStore, setFilterStore] = useState(filters.store || "");
   const [filterDueAmount, setFilterDueAmount] = useState(filters.due_amount || "");
+  const [stores, setStores] = useState([]);
+  const [storesLoading, setStoresLoading] = useState(false);
+  const { user } = useAuthStore();
 
   // Handle resize events to prevent unnecessary API calls
   useEffect(() => {
@@ -174,6 +178,26 @@ const Invoices = () => {
     };
   }, []); // Empty dependency array - only run once
 
+  // Fetch stores for dropdown filter
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (!user?.id) return;
+      
+      setStoresLoading(true);
+      try {
+        const response = await storeAPI.getByUserId(user.id);
+        const storesData = response.data?.data?.data || response.data?.data || [];
+        setStores(storesData);
+      } catch (error) {
+        console.error("Failed to fetch stores:", error);
+      } finally {
+        setStoresLoading(false);
+      }
+    };
+
+    fetchStores();
+  }, [user?.id]);
+
   // Debounced search with resize protection
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -191,7 +215,14 @@ const Invoices = () => {
       return;
     }
     setPageLoading(true);
-    fetchInvoices(page, { search: searchTerm }).finally(() => {
+    fetchInvoices(page, {
+      search: searchTerm,
+      status: filterStatus,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+      store: filterStore,
+      due_amount: filterDueAmount,
+    }).finally(() => {
       setPageLoading(false);
     });
   };
@@ -1141,21 +1172,31 @@ const handlePrintThermal = async (invoice) => {
                               onChange={(e) => setFilterEndDate(e.target.value)}
                             />
 
-                            <Input
-                              label="Store Name"
-                              type="text"
-                              placeholder="Enter store name..."
+                            <Select
+                              label="Store"
+                              options={[
+                                { value: "", label: "All Stores" },
+                                ...stores.map((store) => ({
+                                  value: store.name || store.store_name,
+                                  label: store.name || store.store_name,
+                                })),
+                              ]}
                               value={filterStore}
                               onChange={(e) => setFilterStore(e.target.value)}
+                              disabled={storesLoading}
                             />
 
-                            <Input
-                              label="Due Amount"
-                              type="number"
-                              placeholder="Enter due amount..."
-                              value={filterDueAmount}
-                              onChange={(e) => setFilterDueAmount(e.target.value)}
-                            />
+                            <label className="flex items-center space-x-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={filterDueAmount === "true"}
+                                onChange={(e) => setFilterDueAmount(e.target.checked ? "true" : "")}
+                                className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              />
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Filter by Due Amount
+                              </span>
+                            </label>
 
                             <div className="flex items-end">
                               <Button

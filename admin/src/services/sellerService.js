@@ -4,7 +4,16 @@ import { apiClient } from './apiClient';
 export const sellerAPI = {
   // Get all sellers by user ID with pagination
   getByUserId: (userId, params = {}) => {
-    return apiClient.get(`/seller/${userId}`, { params })
+    const queryParams = { ...params };
+    
+    // Handle due_amount as boolean
+    if (queryParams.due_amount === true || queryParams.due_amount === 'true') {
+      queryParams.due_amount = 'true';
+    } else if (queryParams.due_amount === false || queryParams.due_amount === 'false' || queryParams.due_amount === '') {
+      delete queryParams.due_amount;
+    }
+    
+    return apiClient.get(`/seller/${userId}`, { params: queryParams })
   },
 
   // Create new seller
