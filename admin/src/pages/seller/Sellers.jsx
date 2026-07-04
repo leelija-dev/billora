@@ -53,6 +53,7 @@ const Sellers = () => {
     deleteSeller,
     getSellerById,
     setFilters,
+    pagination,
   } = useSellerStore();
 
   // Ensure sellers is an array
