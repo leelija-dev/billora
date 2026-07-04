@@ -95,6 +95,11 @@ const Invoices = () => {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [invoiceToCancel, setInvoiceToCancel] = useState(null);
   const [cancellingInvoice, setCancellingInvoice] = useState(false);
+  const [filterStatus, setFilterStatus] = useState(filters.status || "");
+  const [filterStartDate, setFilterStartDate] = useState(filters.start_date || "");
+  const [filterEndDate, setFilterEndDate] = useState(filters.end_date || "");
+  const [filterStore, setFilterStore] = useState(filters.store || "");
+  const [filterDueAmount, setFilterDueAmount] = useState(filters.due_amount || "");
 
   // Handle resize events to prevent unnecessary API calls
   useEffect(() => {
@@ -361,7 +366,23 @@ const Invoices = () => {
 
   const clearFilters = () => {
     setSearchTerm("");
-    setFilters({ search: "", status: "" });
+    setFilterStatus("");
+    setFilterStartDate("");
+    setFilterEndDate("");
+    setFilterStore("");
+    setFilterDueAmount("");
+    setFilters({ search: "", status: "", start_date: "", end_date: "", store: "", due_amount: "" });
+  };
+
+  const applyFilters = () => {
+    setFilters({
+      search: searchTerm,
+      status: filterStatus,
+      start_date: filterStartDate,
+      end_date: filterEndDate,
+      store: filterStore,
+      due_amount: filterDueAmount,
+    });
   };
 
   const handlePrintA4 = async (invoice) => {
@@ -1040,14 +1061,14 @@ const handlePrintThermal = async (invoice) => {
                       <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <Input
                         type="text"
-                        placeholder="Search invoices by number, customer, or amount..."
+                        placeholder="Search by product name, product code, invoice ID, total amount, or store name..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
                       />
                     </div>
 
-                    {/* <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -1060,7 +1081,7 @@ const handlePrintThermal = async (invoice) => {
                       >
                         <FiFilter className="w-4 h-4" />
                         <span>Filters</span>
-                        {filters.status && (
+                        {(filterStatus || filterStartDate || filterEndDate || filterStore || filterDueAmount) && (
                           <motion.span
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -1069,7 +1090,7 @@ const handlePrintThermal = async (invoice) => {
                         )}
                       </motion.button>
 
-                      {(searchTerm || filters.status) && (
+                      {(searchTerm || filterStatus || filterStartDate || filterEndDate || filterStore || filterDueAmount) && (
                         <motion.button
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
@@ -1080,7 +1101,7 @@ const handlePrintThermal = async (invoice) => {
                           <FiX className="w-5 h-5" />
                         </motion.button>
                       )}
-                    </div> */}
+                    </div>
                   </div>
 
                   <AnimatePresence>
@@ -1093,58 +1114,58 @@ const handlePrintThermal = async (invoice) => {
                         className="overflow-hidden"
                       >
                         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <Select
                               label="Status"
                               options={[
                                 { value: "", label: "All Statuses" },
-                                { value: "paid", label: "Paid" },
-                                { value: "unpaid", label: "Unpaid" },
-                                { value: "overdue", label: "Overdue" },
-                                { value: "cancelled", label: "Cancelled" },
-                                { value: "refunded", label: "Refunded" },
+                                { value: "completed", label: "Completed" },
+                                { value: "failed", label: "Failed" },
+                                { value: "pending", label: "Pending" },
                               ]}
-                              value={filters.status}
-                              onChange={(e) =>
-                                setFilters({ status: e.target.value })
-                              }
-                            />
-
-                            <Select
-                              label="Date Range"
-                              options={[
-                                { value: "", label: "All Time" },
-                                { value: "today", label: "Today" },
-                                { value: "week", label: "This Week" },
-                                { value: "month", label: "This Month" },
-                                { value: "quarter", label: "This Quarter" },
-                                { value: "year", label: "This Year" },
-                              ]}
-                              value={filters.dateRange}
-                              onChange={(e) =>
-                                setFilters({ dateRange: e.target.value })
-                              }
+                              value={filterStatus}
+                              onChange={(e) => setFilterStatus(e.target.value)}
                             />
 
                             <Input
-                              label="Min Amount"
-                              type="number"
-                              placeholder="0"
-                              value={filters.minAmount}
-                              onChange={(e) =>
-                                setFilters({ minAmount: e.target.value })
-                              }
+                              label="Start Date"
+                              type="date"
+                              value={filterStartDate}
+                              onChange={(e) => setFilterStartDate(e.target.value)}
                             />
 
                             <Input
-                              label="Max Amount"
-                              type="number"
-                              placeholder="10000"
-                              value={filters.maxAmount}
-                              onChange={(e) =>
-                                setFilters({ maxAmount: e.target.value })
-                              }
+                              label="End Date"
+                              type="date"
+                              value={filterEndDate}
+                              onChange={(e) => setFilterEndDate(e.target.value)}
                             />
+
+                            <Input
+                              label="Store Name"
+                              type="text"
+                              placeholder="Enter store name..."
+                              value={filterStore}
+                              onChange={(e) => setFilterStore(e.target.value)}
+                            />
+
+                            <Input
+                              label="Due Amount"
+                              type="number"
+                              placeholder="Enter due amount..."
+                              value={filterDueAmount}
+                              onChange={(e) => setFilterDueAmount(e.target.value)}
+                            />
+
+                            <div className="flex items-end">
+                              <Button
+                                onClick={applyFilters}
+                                className="w-full"
+                                icon={FiFilter}
+                              >
+                                Apply Filters
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </motion.div>

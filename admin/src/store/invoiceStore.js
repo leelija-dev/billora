@@ -42,6 +42,10 @@ export const useInvoiceStore = create((set, get) => ({
   filters: {
     search: "",
     status: "",
+    start_date: "",
+    end_date: "",
+    store: "",
+    due_amount: "",
   },
   billGenerateData: {},
 

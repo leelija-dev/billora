@@ -12,8 +12,27 @@ export const invoiceAPI = {
     }
 
     if (filters.search) {
-      params.delete("page", page);
       params.append("search", filters.search);
+    }
+
+    if (filters.status) {
+      params.append("status", filters.status);
+    }
+
+    if (filters.start_date) {
+      params.append("start_date", filters.start_date);
+    }
+
+    if (filters.end_date) {
+      params.append("end_date", filters.end_date);
+    }
+
+    if (filters.store) {
+      params.append("store", filters.store);
+    }
+
+    if (filters.due_amount) {
+      params.append("due_amount", filters.due_amount);
     }
 
     return apiClient.get(`/invoice/bill-history?${params.toString()}`);
