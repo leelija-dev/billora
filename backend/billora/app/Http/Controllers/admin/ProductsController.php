@@ -71,7 +71,7 @@ class ProductsController extends Controller
                 ->contains('slug', 'stock-management');
             //    $product = Cache::remember($cacheKey, 600, function () use ($user, $request) {
             $product = Cache::tags(['products_user_' . $user])
-                ->remember($cacheKey, 600, function () use ($user, $request, $hasStockPermission, $min_price, $max_price, $start_date, $end_date) {
+                ->remember($cacheKey, 600, function () use ($user, $request, $hasStockPermission) {
 
                     // $query = Products::with([
                     //  'variants',
@@ -133,6 +133,10 @@ class ProductsController extends Controller
                             $request->min_price,
                             $request->max_price
                         ]);
+                    }elseif($request->filled('min_price')){
+                        $query->where('selling_price', '>=', $request->min_price);
+                    }elseif($request->filled('max_price')){
+                        $query->where('selling_price', '<=', $request->max_price);
                     }
                     if ($request->filled('start_date') && $request->filled('end_date')) {
                         $query->whereBetween('created_at', [
@@ -140,28 +144,28 @@ class ProductsController extends Controller
                             $request->end_date . ' 23:59:59'
                         ]);
                     }
-                    if ($request->filled('status') == 'active') {
-                        $query->orWhere('is_active', 1);
+                    if ($request->status == 'active') {
+                        $query->Where('is_active', 1);
                     }
-                    if ($request->filled('status') == 'inactive') {
-                        $query->orWhere('is_active', 0);
+                    if ($request->status == 'inactive') {
+                        $query->Where('is_active', 0);
                     }
                     
-                    if ($request->filled('stock_status') == 'low-stock') {
-                        $query->orWhereHas('stocks', function ($stocks) {
+                    if ($request->stock_status == 'low') {
+                        $query->WhereHas('stocks', function ($stocks) {
                             $stocks->whereBetween('quantity', [1, 10]);
                         });
                     }
 
 
-                    if ($request->filled('stock_status') == 'out-of-stock') {
-                        $query->orWhereHas('stocks', function ($stocks) {
+                    if ($request->stock_status == 'out') {
+                        $query->WhereHas('stocks', function ($stocks) {
                             $stocks->where('quantity', 0);
                         });
                     }
 
-                    if ($request->filled('stock_status') == 'in-stock') {
-                        $query->orWhereHas('stocks', function ($stocks) {
+                    if ($request->stock_status == 'in') {
+                        $query->WhereHas('stocks', function ($stocks) {
                             $stocks->where('quantity', '>', 0);
                         });
                     }
@@ -175,13 +179,20 @@ class ProductsController extends Controller
                             $brand->where('name','like',"%{$request->brand}%");
                         });
                     }
-                    if($request->filled('unit')){
-                        $query->whereHas('unit',function ($unit) use ($request){
-                            $unit->where('name','like',"%{$request->unit}%")
-                            ->orWhere('slug','like',"%{$request->unit}%")
-                            ->orWhere('code','like',"%{$request->unit}%");
+                    // if($request->filled('unit')){
+                    //     $query->whereHas('unit',function ($unit) use ($request){
+                    //         $unit->where('name','like',"%{$request->unit}%")
+                    //         ->orWhere('slug','like',"%{$request->unit}%")
+                    //         ->orWhere('code','like',"%{$request->unit}%");
+                    //     });
+                    // }
+                    $query->whereHas('unit', function ($q) use ($request) {
+                        $q->where(function ($query) use ($request) {
+                            $query->where('name', 'like', "%{$request->unit}%")
+                                ->orWhere('slug', 'like', "%{$request->unit}%")
+                                ->orWhere('code', 'like', "%{$request->unit}%");
                         });
-                    }
+                    });
                     return $query
                         ->orderBy('id', 'desc')
                         ->paginate(8);
