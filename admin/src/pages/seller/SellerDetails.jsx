@@ -893,7 +893,7 @@ const SellerDetails = () => {
           <div className="flex items-center">
             <FiPercent className="w-3 h-3 text-gray-500 mr-1" />
             <span className="font-medium text-gray-900 dark:text-white">
-              {gst.toFixed(2)}%
+              {gst.toFixed(2)}
             </span>
           </div>
         );
