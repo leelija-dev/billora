@@ -17,6 +17,9 @@ class SellerController extends Controller
     {
         $user = Auth::user()->id;
         $search = $request->search;
+        $due_amount = $request->due_amount ?? false;
+        $start_date = $request->start_date ?? '';
+        $end_date = $request->end_date ?? '';
         if ($user != $id) {
             return response([
                 'status' => false,
@@ -26,14 +29,37 @@ class SellerController extends Controller
         try {
             $seller = Seller::where('user_id', $id)
                 ->when($search, function ($query) use ($search) {
-                    $query->where('name', 'LIKE', "%{$search}%")
-                        ->orWhere('city', 'LIKE', "%{$search}%")
-                        ->orWhere('phone', 'LIKE', "%{$search}%")
-                        ->orWhere('gst_number', 'LIKE', "%{$search}%")
-                        ->orWhere('address', 'LIKE', "%{$search}%")
-                        ->orWhere('state', 'LIKE', "%{$search}%")
-                        ->orWhere('pincode', 'LIKE', "%{$search}%")
-                    ;
+                    $query->where(function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%{$search}%")
+                            ->orWhere('city', 'LIKE', "%{$search}%")
+                            ->orWhere('phone', 'LIKE', "%{$search}%")
+                            ->orWhere('gst_number', 'LIKE', "%{$search}%")
+                            ->orWhere('address', 'LIKE', "%{$search}%")
+                            ->orWhere('state', 'LIKE', "%{$search}%")
+                            ->orWhere('pincode', 'LIKE', "%{$search}%");
+                    });
+                })
+                // Due Amount Filter
+                ->when($due_amount !== '' || $due_amount !== false, function ($query) {
+                    $query->where('due_amount', '>', 0);
+                })
+
+                // Date Range Filter
+                ->when($start_date && $end_date, function ($query) use ($start_date, $end_date) {
+                    $query->whereBetween('created_at', [
+                        $start_date . ' 00:00:00',
+                        $end_date . ' 23:59:59'
+                    ]);
+                })
+
+                // Only Start Date
+                ->when($start_date && !$end_date, function ($query) use ($start_date) {
+                    $query->whereDate('created_at', '>=', $start_date);
+                })
+
+                // Only End Date
+                ->when(!$start_date && $end_date, function ($query) use ($end_date) {
+                    $query->whereDate('created_at', '<=', $end_date);
                 })
                 ->paginate(8);
             return response([
@@ -216,20 +242,20 @@ class SellerController extends Controller
             'user_id' =>   'required',
             'paid_amount' => 'required|numeric|min:0.01',
         ]);
-            
+
         if (!Auth::check()) {
             return response()->json([
                 'status' => false,
                 'message' => 'Authentication required. Please login first.'
-                ], 401);
-            }
+            ], 401);
+        }
         $user = Auth::user()->id;
         if ($data['user_id'] != $user) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized user'
             ]);
-    }
+        }
         DB::beginTransaction();
 
         try {
@@ -249,16 +275,16 @@ class SellerController extends Controller
                 ]);
             }
 
-            if($data['paid_amount'] < 0){
+            if ($data['paid_amount'] < 0) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Paid amount cannot be negative.'
                 ]);
             }
-            if($seller){
-            $seller->update([
-                'due_amount' => $seller->due_amount - $data['paid_amount']
-            ]);
+            if ($seller) {
+                $seller->update([
+                    'due_amount' => $seller->due_amount - $data['paid_amount']
+                ]);
             }
             $paidAmount = $data['paid_amount'];
             foreach ($sellerProducts as $product) {
@@ -287,16 +313,16 @@ class SellerController extends Controller
                     $paidAmount = 0;
                 }
             }
-                if($data['paid_amount'] > 0){
-                    SellerPaymentHistory::create([
-                        'user_id'           => $user,
-                        'seller_id'         => $id,
-                        'invoice_id'        => null,
-                        'paid_amount'       => $data['paid_amount'] ?? 0,
-                        'payment_method'    => 'cash',
-                        'remarks'           => 'Due Payment'
-                    ]);
-                }
+            if ($data['paid_amount'] > 0) {
+                SellerPaymentHistory::create([
+                    'user_id'           => $user,
+                    'seller_id'         => $id,
+                    'invoice_id'        => null,
+                    'paid_amount'       => $data['paid_amount'] ?? 0,
+                    'payment_method'    => 'cash',
+                    'remarks'           => 'Due Payment'
+                ]);
+            }
             DB::commit();
             return response()->json([
                 'status' => true,
