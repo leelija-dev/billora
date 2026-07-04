@@ -74,7 +74,7 @@ class InvoiceController extends Controller
                 //         })
                 //         ->whereHas('stocks')
                 //         ->paginate(5);
-                        
+
 
                 //     // $products = Stocks::where('user_id', $user)
                 //     //     ->with(['brand', 'category', 'unit', 'product'])
@@ -145,10 +145,10 @@ class InvoiceController extends Controller
 
                 $query->where(function ($q) use ($search) {
 
-                     $q->whereRaw(
-                            "REPLACE(LOWER(name), \"'\", '') LIKE ?",
-                            ['%' . str_replace("'", '', strtolower($search)) . '%']
-                        )
+                    $q->whereRaw(
+                        "REPLACE(LOWER(name), \"'\", '') LIKE ?",
+                        ['%' . str_replace("'", '', strtolower($search)) . '%']
+                    )
                         ->orWhere('id', 'like', "%{$search}%")
                         ->orWhere('barcode', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%")
@@ -259,14 +259,14 @@ class InvoiceController extends Controller
                     $price = $item['price']; //$stock->selling_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $item['price'];//$product->selling_price ?? 0;
+                    $price = $item['price']; //$product->selling_price ?? 0;
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
                 $discount = ((($price * $qty) * ($item['discount'] ?? 0)) / 100);
                 $gst = (((($price * $qty) - $discount) * ($item['gst'] ?? 0)) / 100);
 
-                $itemTotal = ((($price * $qty) - $discount) + $gst); 
+                $itemTotal = ((($price * $qty) - $discount) + $gst);
 
                 $totalAmount += $itemTotal;
             }
@@ -295,12 +295,12 @@ class InvoiceController extends Controller
                     $stock = Stocks::where('id', $item['stock_id'])
                         ->where('product_id', $item['product_id'])
                         ->first();
-                    
-                    $price = $item['price'];//$stock->selling_price;
+
+                    $price = $item['price']; //$stock->selling_price;
                     $purchasePrice =  $stock->purchase_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $item['price'];//$product->selling_price ?? 0;
+                    $price = $item['price']; //$product->selling_price ?? 0;
                     $gstPercent = $product->gst_percentage ?? 0;
                     $purchasePrice =  $product->purchase_price;
                 }
@@ -311,19 +311,19 @@ class InvoiceController extends Controller
                 $gst = (((($item['price'] * $qty) - $discount) * $item['gst'] ?? 0) / 100);
                 $totalPrice = ((($item['price'] * $qty) - $discount) + $gst);
                 $product = Products::find($item['product_id']);
-                if($item['gst'] <  $product->gst_percentage){
+                if ($item['gst'] <  $product->gst_percentage) {
                     return response()->json([
                         'status' => false,
                         'message' => 'GST Percentage can not be less than product GST Percentage'
                     ]);
                 }
-                 if($item['price'] <  $purchasePrice){
+                if ($item['price'] <  $purchasePrice) {
                     return response()->json([
                         'status' => false,
                         'message' => 'Selling price can not be less than  purchase price'
                     ]);
                 }
-                
+
                 InvoiceItems::create([
                     'user_id'       => $request->user_id,
                     'invoice_id'    => $invoice->id,
@@ -332,10 +332,10 @@ class InvoiceController extends Controller
                     'quantity'      => $qty,
                     'item_count'    => $qty,
                     'unit_id'       => $item['unit_id'],
-                    'price'         => $item['price'] ?? 0,#$price,
+                    'price'         => $item['price'] ?? 0, #$price,
                     'gst'           => $item['gst'] ?? 0,
                     'discount'      => $item['discount'] ?? 0,
-                    'total_price'   => $totalPrice,//$item['total_price'] ?? 0,#$totalPrice,
+                    'total_price'   => $totalPrice, //$item['total_price'] ?? 0,#$totalPrice,
                     'status'        => 'completed',
                     'created_by'    => $request->created_by
                 ]);
@@ -347,10 +347,10 @@ class InvoiceController extends Controller
                     'purchase_price' => $product->purchase_price ?? 0,
                     'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
                     'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
-                    'selling_price' => $item['price'],//$product->selling_price ?? 0,
-                    'selling_discount_percentage' => $item['discount'],//$product->discount_percentage ?? 0,
-                    'selling_gst_percentage' => $item['gst'],//$product->gst_percentage ?? 0,
-                    'selling_gst_amount' => $gst,//$product->selling_price * $product->gst_percentage / 100 ?? 0,
+                    'selling_price' => $item['price'], //$product->selling_price ?? 0,
+                    'selling_discount_percentage' => $item['discount'], //$product->discount_percentage ?? 0,
+                    'selling_gst_percentage' => $item['gst'], //$product->gst_percentage ?? 0,
+                    'selling_gst_amount' => $gst, //$product->selling_price * $product->gst_percentage / 100 ?? 0,
                     'quantity' => $qty,
                     'govt_pay_status' => false,
                     'invoice_status' => 'completed',
@@ -455,7 +455,7 @@ class InvoiceController extends Controller
                         'message' => 'You do not have any active plan. Please upgrade your plan.'
                     ]);
                 }
-                $bill = Invoice::with('invoiceItems','invoiceItems.product.variants','invoiceItems.product.unit','invoiceItems.product.brand','packages','store','customer','invoiceItems.stock')
+                $bill = Invoice::with('invoiceItems', 'invoiceItems.product.variants', 'invoiceItems.product.unit', 'invoiceItems.product.brand', 'packages', 'store', 'customer', 'invoiceItems.stock')
                     ->where('user_id', $userId)
                     ->where('id', $id)
                     ->first();
@@ -519,14 +519,26 @@ class InvoiceController extends Controller
             $user = Auth::user()->id;
             $search = $request->search ?? '';
             $page = $request->page ?? 1;
-
+            $status = $request->status ?? '';
+            $start_date = $request->start_date ?? '';
+            $end_date = $request->end_date ?? '';
+            $store = $request->store ?? '';
             // Dynamic cache key
-            $cacheKey = "bill_history_{$user}_search_" . md5($search) . "_page_{$page}";
+            // $cacheKey = "bill_history_{$user}_search_" . md5($search) . "_page_{$page}";
+            $cacheKey = "bill_history_{$user}_" . md5(json_encode([
+                'search' => $search,
+                'status' => $status,
+                'store' => $store,
+                'start_date' => $start_date,
+                'end_date' => $end_date,
+                'page' => $page
+            ]));
+
             // Check cache exists
             $fromCache = Cache::tags(['invoice_user_' . $user])->has($cacheKey);
             // $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
             // $billHistory = Cache::remember($cacheKey, 600, function () use ($user, $search) {
-            $billHistory = Cache::tags(['invoice_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search) {
+            $billHistory = Cache::tags(['invoice_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search, $status, $start_date, $end_date, $store) {
 
 
                 return Invoice::with([
@@ -561,10 +573,37 @@ class InvoiceController extends Controller
                                     $subQ->where('name', 'like', "%$search%")
                                         ->orWhere('phone', 'like', "%$search%")
                                         ->orWhere('email', 'like', "%$search%");
+                                })
+                                ->orWhereHas('store', function ($subQ) use ($search) {
+                                    $subQ->where('name', 'like', "%$search%")
+                                        ->orWhere('mobile', 'like', "%$search%")
+                                        ->orWhere('email', 'like', "%$search%");
                                 });
                         });
                     })
+                    ->when($status != '', function ($query) use ($status) {
+                        $query->where('status', $status);
+                    })
+                    ->when($store != '', function ($query) use ($store) {
+                        $query->whereHas('store', function ($q) use ($store) {
+                            $q->where('name', 'like', '%' . $store . '%');
+                        });
+                    })
+                    ->when($start_date && $end_date, function ($query) use ($start_date, $end_date) {
+                        $query->whereBetween('created_at', [
+                            $start_date . ' 00:00:00',
+                            $end_date . ' 23:59:59'
+                        ]);
+                    })
+                    // Only Start Date
+                    ->when($start_date && !$end_date, function ($query) use ($start_date) {
+                        $query->whereDate('created_at', '>=', $start_date);
+                    })
 
+                    // Only End Date
+                    ->when(!$start_date && $end_date, function ($query) use ($end_date) {
+                        $query->whereDate('created_at', '<=', $end_date);
+                    })
                     ->orderBy('created_at', 'desc')
                     ->paginate(8);
             });
@@ -895,10 +934,10 @@ class InvoiceController extends Controller
                             'message' => 'Stock not available'
                         ]);
                     }
-                    $price = $item['price'];//$stock->selling_price;
+                    $price = $item['price']; //$stock->selling_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $item['price'];//$product->selling_price ?? 0;
+                    $price = $item['price']; //$product->selling_price ?? 0;
                 }
                 // $price = $item['price'];
                 $qty = $item['quantity'];
@@ -939,11 +978,11 @@ class InvoiceController extends Controller
                         ->where('product_id', $item['product_id'])
                         ->first();
 
-                    $price = $item['price'] ?? 0;//$stock->selling_price;
+                    $price = $item['price'] ?? 0; //$stock->selling_price;
                     $purchasePrice = $stock->purchase_price;
                 } else {
                     $product = Products::find($item['product_id']);
-                    $price = $item['price'] ?? 0;//$product->selling_price ?? 0;
+                    $price = $item['price'] ?? 0; //$product->selling_price ?? 0;
                     $purchasePrice = $product->purchase_price;
                 }
                 $qty = $item['quantity'];
@@ -976,18 +1015,18 @@ class InvoiceController extends Controller
                             $stock->increment('quantity', abs($differenceQty));
                         }
                     }
-                     if($item['gst'] <  $product->gst_percentage){
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'GST Percentage can not be less than product GST Percentage'
-                    ]);
-                }
-                if($item['price'] <  $purchasePrice){
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Selling price can not be less than  purchase price'
-                    ]);
-                }
+                    if ($item['gst'] <  $product->gst_percentage) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'GST Percentage can not be less than product GST Percentage'
+                        ]);
+                    }
+                    if ($item['price'] <  $purchasePrice) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Selling price can not be less than  purchase price'
+                        ]);
+                    }
                     $exist->update([
                         'quantity' => $item['quantity'],
                         'unit_id'       => $item['unit_id'],
@@ -1009,14 +1048,14 @@ class InvoiceController extends Controller
                             'selling_price'  => $item['price'] ?? 0,
                             'selling_discount_percentage' => $item['discount'] ?? 0,
                             'selling_gst_percentage' => $item['gst'] ?? 0,
-                            'selling_gst_amount' => $gstAmt,//$item['price'] * $item['gst'] / 100,
+                            'selling_gst_amount' => $gstAmt, //$item['price'] * $item['gst'] / 100,
                             'quantity' => $item['quantity'],
                             'govt_pay_status' => false,
                             'invoice_status' => 'completed',
                         ]);
                     } else {
                         // $d
-                       
+
                         GstCollection::create([
                             'user_id' => $data['user_id'],
                             'invoice_id' => $invoice->id,
@@ -1043,7 +1082,7 @@ class InvoiceController extends Controller
                         'invoice_id'    => $invoice->id,
                         'product_id'    => $item['product_id'],
                         'stock_id'      => $item['stock_id'] ?? null,
-                        'quantity'      => $item['quantity'],  
+                        'quantity'      => $item['quantity'],
                         'item_count'    => $item['quantity'],
                         'unit_id'       => $item['unit_id'],
                         'price'         => $item['price'] ?? 0,
@@ -1069,10 +1108,10 @@ class InvoiceController extends Controller
                         'purchase_price' => $product->purchase_price ?? 0,
                         'purchase_gst_percentage' => $product->purchase_gst_percentage ?? 0,
                         'purchase_gst_amount' => $product->purchase_price * $product->purchase_gst_percentage / 100 ?? 0,
-                        'selling_price' => $item['price'] ?? 0,//$product->selling_price ?? 0,
-                        'selling_discount_percentage' => $item['discount'] ?? 0,//$product->discount_percentage ?? 0,
-                        'selling_gst_percentage' => $item['gst'] ?? 0,//$product->gst_percentage ?? 0,
-                        'selling_gst_amount' => $gstAmts,//$product->selling_price * $product->gst_percentage / 100 ?? 0,
+                        'selling_price' => $item['price'] ?? 0, //$product->selling_price ?? 0,
+                        'selling_discount_percentage' => $item['discount'] ?? 0, //$product->discount_percentage ?? 0,
+                        'selling_gst_percentage' => $item['gst'] ?? 0, //$product->gst_percentage ?? 0,
+                        'selling_gst_amount' => $gstAmts, //$product->selling_price * $product->gst_percentage / 100 ?? 0,
                         'quantity' => $qty,
                         'govt_pay_status' => false,
                         'invoice_status' => 'completed',
@@ -1365,10 +1404,11 @@ class InvoiceController extends Controller
     }
 
 
-    public function publicInvoice($id){    //public invoice details from admin created invoice 
-        try{
-            $invoice = Invoice::where('id', $id)->with('invoiceItems.product.variants','packages','customer','store')->firstOrFail();
-            if(!$invoice){
+    public function publicInvoice($id)
+    {    //public invoice details from admin created invoice 
+        try {
+            $invoice = Invoice::where('id', $id)->with('invoiceItems.product.variants', 'packages', 'customer', 'store')->firstOrFail();
+            if (!$invoice) {
                 return response()->json([
                     'status'    => false,
                     'message'   => 'Invoice not found'
@@ -1379,17 +1419,18 @@ class InvoiceController extends Controller
                 'message'   => 'Public invoice details',
                 'data'      => $invoice
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'status'    => false,
                 'message'   => $e->getMessage()
             ]);
         }
     }
-    public function publicUserInvioce($id){
-        try{
-            $userOrder = UserOrders::where('id',$id)->with('items.product.variants','store')->firstOrFail();
-            if(!$userOrder){
+    public function publicUserInvioce($id)
+    {
+        try {
+            $userOrder = UserOrders::where('id', $id)->with('items.product.variants', 'store')->firstOrFail();
+            if (!$userOrder) {
                 return response()->json([
                     'status'    => false,
                     'message'   => 'Invoice not found'
@@ -1401,12 +1442,11 @@ class InvoiceController extends Controller
                 'data'      => $userOrder
 
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'status'    => false,
                 'message'   => $e->getMessage()
             ]);
         }
     }
-    }
-
+}
