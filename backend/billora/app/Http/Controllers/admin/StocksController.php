@@ -54,7 +54,7 @@ class StocksController extends Controller
                 $user = Auth::user()->id; // authenticated user
 
                 $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search,$stock,$product,$seller) {
-                    return Stocks::with('product', 'sellerProduct')
+                    return Stocks::with('product','product.unit', 'sellerProduct')
                         ->where('user_id', $user)
                         ->when($search, function ($query) use ($search) {
 
