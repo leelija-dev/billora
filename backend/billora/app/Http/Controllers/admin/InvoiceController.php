@@ -523,6 +523,7 @@ class InvoiceController extends Controller
             $start_date = $request->start_date ?? '';
             $end_date = $request->end_date ?? '';
             $store = $request->store ?? '';
+            $due_amount = $request->due_amount ?? '';
             // Dynamic cache key
             // $cacheKey = "bill_history_{$user}_search_" . md5($search) . "_page_{$page}";
             $cacheKey = "bill_history_{$user}_" . md5(json_encode([
@@ -531,6 +532,7 @@ class InvoiceController extends Controller
                 'store' => $store,
                 'start_date' => $start_date,
                 'end_date' => $end_date,
+                'due_amount' => $due_amount,
                 'page' => $page
             ]));
 
@@ -538,7 +540,7 @@ class InvoiceController extends Controller
             $fromCache = Cache::tags(['invoice_user_' . $user])->has($cacheKey);
             // $billHistory = Invoice::with(['invoiceItems.product', 'packages'])
             // $billHistory = Cache::remember($cacheKey, 600, function () use ($user, $search) {
-            $billHistory = Cache::tags(['invoice_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search, $status, $start_date, $end_date, $store) {
+            $billHistory = Cache::tags(['invoice_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search, $status, $start_date, $end_date, $store,$due_amount) {
 
 
                 return Invoice::with([
@@ -603,6 +605,9 @@ class InvoiceController extends Controller
                     // Only End Date
                     ->when(!$start_date && $end_date, function ($query) use ($end_date) {
                         $query->whereDate('created_at', '<=', $end_date);
+                    })
+                    ->when($due_amount !== '', function ($query) {
+                        $query->whereColumn('total_amount', '>', 'paid_amount');
                     })
                     ->orderBy('created_at', 'desc')
                     ->paginate(8);
