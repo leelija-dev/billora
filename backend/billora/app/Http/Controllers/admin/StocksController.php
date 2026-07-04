@@ -26,11 +26,12 @@ class StocksController extends Controller
         try {
 
             $startTime = microtime(true);
-
             $customer =  Customers::findOrFail(Auth::user()->id);
 
             $search = $request->search;
-
+            $stock = $request->stock;
+            $product = $request->product;
+            $seller = $request->seller;
             if ($search) {
                 $search = str_replace('-', ' ', $search);
             }
@@ -43,13 +44,16 @@ class StocksController extends Controller
 
             $hasStockPermission = in_array('stock-management', $permissions);
             $page = $request->page ?? 1;
-            $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5($search . '_' . $page);
+            // $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5($search . '_' .$product.'_'.$seller.'_'. $page);
+            $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5(json_encode(['search' => $search,'stock' => $stock,'product' => $product,'seller' => $seller,
+                'page' => $page,
+            ]));
 
             $formCache = Cache::tags(['stock_user_' . Auth::user()->id])->has($cacheKey);
             if ($hasStockPermission) {
                 $user = Auth::user()->id; // authenticated user
 
-                $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search) {
+                $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search,$stock,$product,$seller) {
                     return Stocks::with('product', 'sellerProduct')
                         ->where('user_id', $user)
                         ->when($search, function ($query) use ($search) {
@@ -61,6 +65,27 @@ class StocksController extends Controller
                                     ->orWhereHas('product', function ($q2) use ($search) {
                                         $q2->where('name', 'like', "%$search%");
                                     });
+                            });
+                        })
+                        ->when(!empty($stock), function ($query) use ($stock) {
+
+                                if ($stock == 'low-stock') {
+                                    $query->whereBetween('quantity', [1, 5]);
+                                } elseif ($stock == 'out-of-stock') {
+                                    $query->where('quantity', 0);
+                                } elseif ($stock == 'in-stock') {
+                                    $query->where('quantity', '>', 0);
+                                }
+
+                            })
+                        ->when(!empty($product) , function ($query) use ($product) {
+                            $query->whereHas('product', function ($q) use ($product) {
+                                $q->where('name', 'like', "%$product%");
+                            });
+                        })
+                        ->when(!empty($seller) , function ($query) use ($seller) {
+                            $query->whereHas('sellerProduct.seller', function ($q) use ($seller) {
+                                $q->where('name', 'like', "%$seller%");
                             });
                         })
                         ->orderBy('id', 'desc')
