@@ -47,6 +47,22 @@ const CheckoutForm = ({
     };
   };
 
+  // Handle phone number input - only allow digits
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    // Remove any non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // Create a synthetic event to pass to onFormChange
+    const syntheticEvent = {
+      target: {
+        name: 'phone',
+        value: digitsOnly
+      }
+    };
+    onFormChange(syntheticEvent);
+  };
+
   return (
     <div>
       <button
@@ -205,11 +221,14 @@ const CheckoutForm = ({
             type="tel"
             name="phone"
             value={formData.phone}
-            onChange={onFormChange}
+            onChange={handlePhoneChange}
             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 ${
               validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-200'
             }`}
             placeholder="10-digit mobile number"
+            maxLength={10}
+            inputMode="numeric"
+            pattern="[0-9]*"
           />
           {validationErrors.phone && (
             <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
@@ -236,7 +255,7 @@ const CheckoutForm = ({
               />
               <span className="text-sm text-gray-700 flex items-center gap-1">
                 <FiTruck className="w-4 h-4" />
-                Cash on Delivery
+                Cash
               </span>
             </label>
             <label className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-not-allowed flex-1 opacity-60">

@@ -1,5 +1,6 @@
-import { FiFilter, FiX, FiSliders } from 'react-icons/fi';
-import { MdOutlineCategory, MdSort, MdCheck, MdRefresh } from 'react-icons/md';
+import { FiFilter, FiX, FiSliders, FiRotateCcw, FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import { MdOutlineCategory, MdSort, MdCheck } from 'react-icons/md';
+import { LuRefreshCw, LuArrowUpDown, LuGripVertical } from 'react-icons/lu';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const FilterOverlay = ({ 
@@ -12,6 +13,13 @@ const FilterOverlay = ({
   onSortChange,
   onReset 
 }) => {
+  // Sort options with icons
+  const sortOptions = [
+    { value: "", label: "Default Sorting", icon: <LuArrowUpDown className="w-4 h-4" /> },
+    { value: "low", label: "Price: Low to High", icon: <FiArrowUp className="w-4 h-4" /> },
+    { value: "high", label: "Price: High to Low", icon: <FiArrowDown className="w-4 h-4" /> }
+  ];
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -51,7 +59,7 @@ const FilterOverlay = ({
                     onClick={onReset}
                     className="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
                   >
-                    <MdRefresh className="w-4 h-4" />
+                    <LuRefreshCw className="w-4 h-4" />
                     Reset
                   </button>
                   <button
@@ -171,11 +179,7 @@ const FilterOverlay = ({
                 </div>
                 
                 <div className="space-y-2">
-                  {[
-                    { value: "", label: "Default Sorting", icon: "🔄" },
-                    { value: "low", label: "Price: Low to High", icon: "📈" },
-                    { value: "high", label: "Price: High to Low", icon: "📉" }
-                  ].map((option) => (
+                  {sortOptions.map((option) => (
                     <button
                       key={option.value}
                       onClick={() => onSortChange(option.value)}
@@ -186,7 +190,7 @@ const FilterOverlay = ({
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-lg">{option.icon}</span>
+                        <span className="text-blue-600">{option.icon}</span>
                         <span>{option.label}</span>
                       </div>
                       {sort === option.value && (
@@ -249,7 +253,7 @@ const FilterOverlay = ({
               )}
             </div>
 
-            {/* Footer with Apply Button (optional) */}
+            {/* Footer with Apply Button */}
             <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 p-5 mt-4">
               <button
                 onClick={onClose}
