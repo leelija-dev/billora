@@ -22,16 +22,19 @@ class SocialConnectController extends Controller
             'response_type' => 'code',
             'state' => $userId
         ]);
-        // Log::info("redirect url:".$url);
+        Log::info("redirect url:".$url);
+        Log::info("env('APP_URL')".env('APP_URL'));
+        Log::info("META_CALLBACK_URL:".env('META_CALLBACK_URL'));
+        Log::info("config call back url:".config('app.callback_url'));
         return redirect($url);
     }
     public function callback(Request $request)
     {
-    //      Log::info('Facebook callback hit', [
-    //     'code' => $request->code,
-    //     'state' => $request->state,
-    //     'url' => $request->fullUrl(),
-    // ]);
+         Log::info('Facebook callback hit', [
+        'code' => $request->code,
+        'state' => $request->state,
+        'url' => $request->fullUrl(),
+    ]);
         $userId = $request->state;
         Log::info("called");
         // 1. Exchange CODE → Short-lived token
@@ -41,7 +44,7 @@ class SocialConnectController extends Controller
             'redirect_uri' => env('META_CALLBACK_URL'),
             'code' => $request->code,
         ])->json();
-        // Log::info("token response ".$tokenResponse);
+        Log::info("token response ".$tokenResponse);
         if (!isset($tokenResponse['access_token'])) {
             return response()->json($tokenResponse);
         }
