@@ -33,7 +33,13 @@ class StocksController extends Controller
             $product = $request->product;
             $seller = $request->seller;
             if ($search) {
-                $search = str_replace('-', ' ', $search);
+                $search = strtolower($search);
+                $search = str_replace(['-', "'", "’"], [' ', '', ''], $search);
+            }
+
+            if ($product) {
+                $product = strtolower($product);
+                $product = str_replace(['-', "'", "’"], [' ', '', ''], $product);
             }
             // check permission 
             $permissions = DB::table('plan_permission_details as ppd')
@@ -45,7 +51,11 @@ class StocksController extends Controller
             $hasStockPermission = in_array('stock-management', $permissions);
             $page = $request->page ?? 1;
             // $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5($search . '_' .$product.'_'.$seller.'_'. $page);
-            $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5(json_encode(['search' => $search,'stock' => $stock,'product' => $product,'seller' => $seller,
+            $cacheKey = "stock_list_" . Auth::user()->id . "_" . md5(json_encode([
+                'search' => $search,
+                'stock' => $stock,
+                'product' => $product,
+                'seller' => $seller,
                 'page' => $page,
             ]));
 
@@ -53,8 +63,8 @@ class StocksController extends Controller
             if ($hasStockPermission) {
                 $user = Auth::user()->id; // authenticated user
 
-                $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search,$stock,$product,$seller) {
-                    return Stocks::with('product','product.unit', 'sellerProduct')
+                $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search, $stock, $product, $seller) {
+                    return Stocks::with('product', 'product.unit', 'sellerProduct')
                         ->where('user_id', $user)
                         ->when($search, function ($query) use ($search) {
 
@@ -63,29 +73,42 @@ class StocksController extends Controller
                                     ->orWhere('selling_price', 'like', "%$search%")
                                     ->orWhere('purchase_price', 'like', "%$search%")
                                     ->orWhereHas('product', function ($q2) use ($search) {
-                                        $q2->where('name', 'like', "%$search%");
+                                        // $q2->where('name', 'like', "%$search%");
+                                        $q2->whereRaw(
+                                            "LOWER(REPLACE(REPLACE(name, '''', ''), '’', '')) LIKE ?",
+                                            ["%{$search}%"]
+                                        );
+                                        
                                     });
                             });
                         })
                         ->when(!empty($stock), function ($query) use ($stock) {
 
-                                if ($stock == 'low-stock') {
-                                    $query->whereBetween('quantity', [1, 5]);
-                                } elseif ($stock == 'out-of-stock') {
-                                    $query->where('quantity', 0);
-                                } elseif ($stock == 'in-stock') {
-                                    $query->where('quantity', '>', 0);
-                                }
-
-                            })
-                        ->when(!empty($product) , function ($query) use ($product) {
+                            if ($stock == 'low-stock') {
+                                $query->whereBetween('quantity', [1, 5]);
+                            } elseif ($stock == 'out-of-stock') {
+                                $query->where('quantity', 0);
+                            } elseif ($stock == 'in-stock') {
+                                $query->where('quantity', '>', 0);
+                            }
+                        })
+                        ->when(!empty($product), function ($query) use ($product) {
+                            $product = str_replace(["'", "’"], "", strtolower($product));
                             $query->whereHas('product', function ($q) use ($product) {
-                                $q->where('name', 'like', "%$product%");
+                                // $q->where('name', 'like', "%$product%");
+                                $q->whereRaw(
+                                    "LOWER(REPLACE(REPLACE(name, '''', ''), '’', '')) LIKE ?",
+                                    ["%{$product}%"]
+                                );
                             });
                         })
-                        ->when(!empty($seller) , function ($query) use ($seller) {
+                        ->when(!empty($seller), function ($query) use ($seller) {
+                            $seller = str_replace(["'", "’"], "", strtolower($seller));
                             $query->whereHas('sellerProduct.seller', function ($q) use ($seller) {
-                                $q->where('name', 'like', "%$seller%");
+                                $q->whereRaw(
+                                    "LOWER(REPLACE(REPLACE(name, '''', ''), '’', '')) LIKE ?",
+                                    ["%{$seller}%"]
+                                );
                             });
                         })
                         ->orderBy('id', 'desc')
@@ -244,7 +267,7 @@ class StocksController extends Controller
                     );
                 }
                 $seller = Seller::findOrFail($stocks['seller_id']);
-                if(!$seller){
+                if (!$seller) {
                     return response()->json([
                         'status' => false,
                         'message' => 'Seller not found'
@@ -259,14 +282,14 @@ class StocksController extends Controller
                     'qty'        => $stocks['quantity'] ?? 0,
                     'purchase_price' => $stocks['purchase_price'] ?? 0,
                     'gst_percentage' => $stocks['purchase_gst_percentage'] ?? 0,
-                    'total_amount'   => $totalAmt,//$stocks['total_amount'] ?? 0,
+                    'total_amount'   => $totalAmt, //$stocks['total_amount'] ?? 0,
                     'paid_amount'    => $stocks['paid_amount'] ?? 0,
                     'invoice_number' => $stocks['invoice_number'] ?? 0,
                     'invoice_date'   => $stocks['invoice_date'] ?? 0,
                     'invoice_image'  => $upload['secure_url'] ?? null,
                     'invoice_image_public_url' => $upload['public_id'] ?? null
                 ]);
-                if($stocks['paid_amount'] > 0){
+                if ($stocks['paid_amount'] > 0) {
                     SellerPaymentHistory::create([
                         'user_id'           => $user,
                         'seller_id'         => $stocks['seller_id'],
@@ -276,17 +299,17 @@ class StocksController extends Controller
                         'remarks'           => 'Stock purchase'
                     ]);
                 }
-                if($seller){
-                $seller->update([
-                    'due_amount' => $seller->due_amount + ($totalAmt - $stocks['paid_amount'])
-                ]);
-               } 
+                if ($seller) {
+                    $seller->update([
+                        'due_amount' => $seller->due_amount + ($totalAmt - $stocks['paid_amount'])
+                    ]);
+                }
                 $stock->update([
                     'seller_product_id' => $sellerDetails->id
                 ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 $stocks = Stocks::where('user_id', $user)->get();
-                Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user,'seller_user_' . $user])->flush();
+                Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user, 'seller_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
                 return response()->json([
                     'status' => true,
@@ -453,7 +476,7 @@ class StocksController extends Controller
                     ->where('stock_id', $stock->id)
                     ->first();
                 $prePaid = 0;
-                if($sellerProducts){
+                if ($sellerProducts) {
                     $prePaid = $sellerProducts->paid_amount;
                 }
                 if ($request->deleted_image_id && $sellerProducts) {
@@ -466,7 +489,7 @@ class StocksController extends Controller
                         'invoice_image_public_url' => null
                     ]);
                 }
-                
+
                 $sellerProducts = SellerProducts::updateOrCreate(
                     [
                         'user_id'   => $user,
@@ -487,11 +510,11 @@ class StocksController extends Controller
                     ]
                 );
                 // $sellerProducts
-                if($seller){
-                $new = (float)$prePaid - (float)$request->paid_amount;
-                $seller->update([
-                    'due_amount' => (float)$seller->due_amount + (float)$new
-                ]);
+                if ($seller) {
+                    $new = (float)$prePaid - (float)$request->paid_amount;
+                    $seller->update([
+                        'due_amount' => (float)$seller->due_amount + (float)$new
+                    ]);
                 }
                 $stock->update([
                     'seller_id' => $sellerProducts->seller_id,
@@ -504,7 +527,7 @@ class StocksController extends Controller
                         'gst' => $stock->purchase_gst_percentage
                     ]);
                 }
-            
+
                 Cache::tags([
                     'stock_user_' . $user,
                     'products_user_' . $user,
@@ -635,10 +658,10 @@ class StocksController extends Controller
                 $stock = Stocks::where('id', $id)
                     ->where('user_id', $data['user_id'])
                     ->first();
-                if($stock){
-                $stock->update([
-                    'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
-                ]);
+                if ($stock) {
+                    $stock->update([
+                        'quantity' => ((float)$stock->quantity + (float)$data['quantity']),
+                    ]);
                 }
                 $stockHistory = StockHistory::create([
                     'user_id' => $user,
@@ -650,17 +673,17 @@ class StocksController extends Controller
                     'quantity' => $data['quantity'],
                     'created_by' => $user
                 ]);
-                $sellerProduct = SellerProducts::where('seller_id',$stock->seller_id)->where('stock_id', $stock->id)->where('user_id', $user)->first();
+                $sellerProduct = SellerProducts::where('seller_id', $stock->seller_id)->where('stock_id', $stock->id)->where('user_id', $user)->first();
                 $seller = Seller::where('id', $stock->seller_id)->first();
                 if ($sellerProduct) {
                     $sellerProduct->update([
                         'qty' => ((float)$sellerProduct->qty + (float)$data['quantity'])
                     ]);
                 }
-                if($seller){
-                $seller->update([
-                    'due_amount' => ((float)$seller->due_amount + ((float)$stock->purchase_price * (float)$data['quantity'])+(float)$data['quantity'] * ((float)$stock->purchase_price*(float)$stock->purchase_gst_percentage/100))
-                ]);
+                if ($seller) {
+                    $seller->update([
+                        'due_amount' => ((float)$seller->due_amount + ((float)$stock->purchase_price * (float)$data['quantity']) + (float)$data['quantity'] * ((float)$stock->purchase_price * (float)$stock->purchase_gst_percentage / 100))
+                    ]);
                 }
                 Cache::tags(['stock_user_' . Auth::user()->id, 'products_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'_page_'.$request->page
@@ -682,7 +705,7 @@ class StocksController extends Controller
             ]);
         }
     }
-     // stock alert send from customer controller login function
+    // stock alert send from customer controller login function
     // public function stockalert($id)  
     // {
     //     $user =  Auth::user()->id;
@@ -766,14 +789,13 @@ class StocksController extends Controller
                                 ]);
 
                                 $removeQty -= $availableQty;
-                               
                             } else {
-                                $userSeller = Seller::where('id',$seller->seller_id)->where('user_id',$data['user_id'])->first();
+                                $userSeller = Seller::where('id', $seller->seller_id)->where('user_id', $data['user_id'])->first();
                                 // Remove only required quantity
                                 $seller->update([
                                     'qty' => $availableQty - $removeQty
                                 ]);
-                               $amount = $stock->purchase_price * $removeQty;
+                                $amount = $stock->purchase_price * $removeQty;
                                 $totalAmount = $amount + ($amount * ($stock->purchase_gst_percentage / 100));
 
                                 $userSeller->update([
