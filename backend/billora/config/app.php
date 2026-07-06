@@ -127,6 +127,8 @@ return [
     'admin_mail' => env('ADMIN_MAIL','lakshman.leelija@gmail.com'),
     'admin_mobile'=> env('ADMIN_MOBILE','6296214817'),
     'days_reminder' => env('REMIND_DAYS_BEFORE', 7),
-    'free_trial_days' => env('FREE_TRIAL_DAYS', 7)
+    'free_trial_days' => env('FREE_TRIAL_DAYS', 7),
+    
+    'callback_url' =>env('META_CALLBACK_URL', 'https://api.thefastbill.com/social-connect/callback'),
 
 ];
