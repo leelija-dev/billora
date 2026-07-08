@@ -12,13 +12,14 @@ class PackageCostController extends Controller
 
 
 {
-    public function index($id)
+    public function index(Request $request, $id)
     {
 
         try {
             $user = Auth::user()->id;
             $startTime = microtime(true);
-            $cacheKey = "package_cost_list_{$user}";
+            $page = $request->page ?? 1;
+            $cacheKey = "package_cost_list_{$user}_page_{$page}";
             $formCache = Cache::tags(['package_cost_user_' . $user])->has($cacheKey);
             if (!Auth::check()) {
                 return response()->json([
@@ -35,7 +36,7 @@ class PackageCostController extends Controller
                 ]);
             }
             $packegesCost = Cache::tags(['package_cost_user_' . $user])->remember($cacheKey, 600, function () use ($id) {
-                return PackageCost::where('user_id', $id)->paginate(8);
+                return PackageCost::where('user_id', $id)->orderBy('created_at', 'desc')->paginate(8);
             });
             $executionTime = microtime(true) - $startTime;
             return response()->json([

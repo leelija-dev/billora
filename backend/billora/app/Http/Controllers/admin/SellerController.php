@@ -82,7 +82,7 @@ class SellerController extends Controller
                 'message' => 'seller list',
                 'response_time' => round($executionTime, 4) . ' sec',
                 'response_from' => $fromCache ? 'Cache' : 'Database',
-                'sellers' => $seller
+                'data' => $seller
             ]);
         } catch (\Exception $e) {
             return response([
@@ -193,7 +193,7 @@ class SellerController extends Controller
             return response([
                 'status' => true,
                 'message' => 'Seller details',
-                'seller' => $seller
+                'data' => $seller
             ]);
         } catch (\Exception $e) {
             return response([
@@ -218,7 +218,7 @@ class SellerController extends Controller
             return response([
                 'status' => true,
                 'message' => 'Seller deleted successfully',
-                'seller' => $seller
+                'data' => $seller
             ]);
         } catch (\Exception $e) {
             return response([
@@ -249,7 +249,7 @@ class SellerController extends Controller
             return response([
                 'status' => true,
                 'message' => 'Single seller details',
-                'seller' => $seller
+                'data' => $seller
             ]);
         } catch (\Exception $e) {
             return response([

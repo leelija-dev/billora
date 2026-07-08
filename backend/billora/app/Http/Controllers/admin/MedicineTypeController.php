@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 class MedicineTypeController extends Controller
 {
-    public function index($id){
+    public function index(Request $request, $id){
         if(!Auth::check()){
             return response()->json([
                 'status'    => false,
@@ -17,6 +17,7 @@ class MedicineTypeController extends Controller
             ]);
         }
         $sartTime = microtime(true);
+        $page = $request->page ?? 1;
         $user=Auth::user()->id;
         if($id != $user){
             return response()->json([
@@ -24,11 +25,11 @@ class MedicineTypeController extends Controller
                 'message'   => 'You are not authorized to access this resource.'
             ]);
         }
-        $cacheKey = "medicine_types_{$user}";
+        $cacheKey = "medicine_types_{$user}_page_{$page}";
         $fromCache = Cache::tags(['medicine_types_user_' . $user])->has($cacheKey);
         try{
         $medicineType = Cache::tags(['medicine_types_user_' . $user])->remember($cacheKey, 600, function () use ($id) {
-            return MedicineType::where('user_id', $id)->get();
+            return MedicineType::where('user_id', $id)->orderBy('created_at', 'desc')->paginate(8);
         });
         $executionTime = microtime(true) - $sartTime;
         return response()->json([
