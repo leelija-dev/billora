@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 class MedicineTypeController extends Controller
 {
-    public function index(Request $request,$id){
+    public function index(Request $request, $id){
         if(!Auth::check()){
             return response()->json([
                 'status'    => false,
@@ -17,6 +17,7 @@ class MedicineTypeController extends Controller
             ]);
         }
         $sartTime = microtime(true);
+        $page = $request->page ?? 1;
         $user=Auth::user()->id;
         if($id != $user){
             return response()->json([

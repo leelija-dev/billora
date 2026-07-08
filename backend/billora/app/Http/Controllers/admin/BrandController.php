@@ -23,7 +23,7 @@ class BrandController extends Controller
         $user = Auth::user()->id;
         $search = $request->search;
         $status = $request->status;
-
+        $page = $request->page ?? 1;
         $startTime = microtime(true);
 
         $query = Brand::where('user_id', $user);
@@ -47,7 +47,7 @@ class BrandController extends Controller
         } else {
 
             // cache only for default listing
-            $cacheKey = "brands_{$user}";
+            $cacheKey = "brands_{$user}_search_{$search}_page_{$page}";
 
             $brands = Cache::tags(['brands_user_' . $user])
                 ->remember($cacheKey, 600, function () use ($user) {
