@@ -198,7 +198,7 @@ class ProductsController extends Controller
                     });
                     return $query
                         ->orderBy('id', 'desc')
-                        ->paginate(8);
+                        ->paginate(8);              
                 });
             $executionTime = microtime(true) - $startTime;
             return response()->json([
@@ -561,12 +561,12 @@ class ProductsController extends Controller
                     if ($stock) {
                         $stockHistory = StockHistory::create([
                             'user_id' => $user,
-                            'product_id' => $product->id,
-                            'stock_id' => $stock->id,
-                            'price' => $product->purchase_price,
-                            'gst' => $product->purchase_gst_percentage,
-                            'quantity' => 0,
-                            'created_by' => $user
+                            'product_id'=> $product->id,
+                            'stock_id'=> $stock->id,
+                            'price' => $product->purchase_price ? $product->purchase_price : 0,
+                            'gst' => $product->purchase_gst_percentage ? $product->purchase_gst_percentage : 0,
+                            'quantity'=> 0,
+                            'created_by'=> $user
                         ]);
                     }
                     $stocks = Stocks::where('user_id', $user)->get();
