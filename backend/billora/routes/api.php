@@ -95,6 +95,7 @@ Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
    Route::get('/stock-alert', [StocksController::class, 'stockalert']);
    Route::post('/delete-stock/{id}',[StocksController::class,'stockRemove']);
+   Route::get('/qr-regenerate/{id}',[StocksController::class,'reGenerateQrAndBar']);
 });
 //units
 Route::middleware('auth:sanctum')->prefix('units')->group(function () {
@@ -123,7 +124,9 @@ Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::delete('/{id}', [InvoiceController::class, 'destroy']);
    Route::get('/customer-invoices/{id}',[InvoiceController::class, 'customerInvoices']);
    Route::put('/invoice-due-pay/{id}', [InvoiceController::class, 'invoiceDuePay']);
-
+   Route::get('/scanned/product/{id}',[InvoiceController::class,'scannedProduct']);  // this is from product table
+   Route::get('/scanned/stock/{id}',[InvoiceController::class,'scannedStock']);  // this is from stock table
+   
    // user order hisrtory
    Route::get('/user-order-history/{id}', [UserOrdersController::class, 'userOrderHistory']);
    Route::put('/update-order-status/{id}', [UserOrdersController::class, 'updateOrderStatus']);

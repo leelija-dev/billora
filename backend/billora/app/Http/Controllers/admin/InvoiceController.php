@@ -1454,4 +1454,50 @@ class InvoiceController extends Controller
             ]);
         }
     }
+
+    public function scannedProduct($id){
+        try{
+            $user = Auth::user()->id;
+            $product = Products::where('id',$id)->where('user_id',$user)->with('brand','category','unit','variants')->first();
+            if(!$product){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Product not found'
+                ]);
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Product details',
+                'data' => $product
+            ]);
+
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function scannedStock($id){
+        $user = Auth::user()->id;
+        try{
+            $stock = Stocks::where('id',$id)->where('user_id',$user)->with('product:id,name,sku,slug,brand_id,category_id,unit_id,attributes','product.brand','product.category','product.unit','product.variants')->first();
+            if(!$stock){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Stock not found'
+                ]);
+            }
+            return response()->json([
+               'status' => true,
+               'message' => 'Stock details',
+               'data' => $stock
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }

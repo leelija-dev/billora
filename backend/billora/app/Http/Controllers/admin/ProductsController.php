@@ -107,9 +107,9 @@ class ProductsController extends Controller
                         $query->where(function ($q) use ($request) {
 
                             $q->whereRaw(
-                                    "LOWER(REPLACE(REPLACE(name, '''', ''), '’', '')) LIKE ?",
-                                    ["%{$request->search}%"]
-                                )
+                                "LOWER(REPLACE(REPLACE(name, '''', ''), '’', '')) LIKE ?",
+                                ["%{$request->search}%"]
+                            )
                                 ->orWhere('sku', 'like', '%' . $request->search . '%')
                                 ->orWhere('category_id', 'like', '%' . $request->search . '%')
                                 ->orWhere('brand_id', 'like', '%' . $request->search . '%')
@@ -124,7 +124,6 @@ class ProductsController extends Controller
                                     $brand->where('name', 'like', "%{$request->search}%")
                                         ->orWhere('slug', 'like', "%{$request->search}%");
                                 });
-                            
                         });
                     }
                     if ($request->filled('min_price') && $request->max_price == 'above') {
@@ -136,9 +135,9 @@ class ProductsController extends Controller
                             $request->min_price,
                             $request->max_price
                         ]);
-                    }elseif($request->filled('min_price')){
+                    } elseif ($request->filled('min_price')) {
                         $query->where('selling_price', '>=', $request->min_price);
-                    }elseif($request->filled('max_price')){
+                    } elseif ($request->filled('max_price')) {
                         $query->where('selling_price', '<=', $request->max_price);
                     }
                     if ($request->filled('start_date') && $request->filled('end_date')) {
@@ -153,7 +152,7 @@ class ProductsController extends Controller
                     if ($request->status == 'inactive') {
                         $query->Where('is_active', 0);
                     }
-                    
+
                     if ($request->stock_status == 'low') {
                         $query->WhereHas('stocks', function ($stocks) {
                             $stocks->whereBetween('quantity', [1, 10]);
@@ -177,9 +176,9 @@ class ProductsController extends Controller
                             $category->where('name', 'like', "%{$request->category}%");
                         });
                     }
-                    if($request->filled('brand')){
-                        $query->whereHas('brand',function ($brand) use ($request){
-                            $brand->where('name','like',"%{$request->brand}%");
+                    if ($request->filled('brand')) {
+                        $query->whereHas('brand', function ($brand) use ($request) {
+                            $brand->where('name', 'like', "%{$request->brand}%");
                         });
                     }
                     // if($request->filled('unit')){
@@ -198,7 +197,7 @@ class ProductsController extends Controller
                     });
                     return $query
                         ->orderBy('id', 'desc')
-                        ->paginate(8);              
+                        ->paginate(8);
                 });
             $executionTime = microtime(true) - $startTime;
             return response()->json([
@@ -301,7 +300,7 @@ class ProductsController extends Controller
     {
         try {
 
-            $qrData = "ID:{$product->id}";
+            $qrData = "product/{$product->id}";
 
             $renderer = new ImageRenderer(
                 new RendererStyle(200),
@@ -341,6 +340,96 @@ class ProductsController extends Controller
             ];
         }
     }
+    # stock qr generate and upload
+    private function StockQrAndUpload($id)
+    {
+       
+        try {
+
+            $qrData = "stock/{$id}";
+
+            $renderer = new ImageRenderer(
+                new RendererStyle(200),
+                new SvgImageBackEnd()
+            );
+
+            $writer = new Writer($renderer);
+
+            $qrContent = $writer->writeString($qrData);
+
+            $tempPath = storage_path('app/temp_stock_qr_' . time() . '.svg');
+
+            file_put_contents($tempPath, $qrContent);
+
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempPath,
+                [
+                    'folder' => 'Thefastbill/stock_qr'
+                ]
+            );
+
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id']
+            ];
+        } catch (\Exception $e) {
+
+            Log::error('QR Error: ' . $e->getMessage());
+
+            return [
+                'url' => null,
+                'public_id' => null
+            ];
+        }
+    }
+    private function stockBarcodeAndUpload($id)
+    {
+        // $stock = Stocks::findOrFail($id);
+        try {
+
+            $barcodeBase64 = DNS1D::getBarcodePNG(
+                (string)'stock/'.$id,
+                'C128'
+            );
+
+            $imageData = base64_decode($barcodeBase64);
+
+            $tempPath = storage_path(
+                'app/temp_stock_barcode_' . time() . '.png'
+            );
+
+            file_put_contents($tempPath, $imageData);
+
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempPath,
+                [
+                    'folder' => 'Thefastbill/stock_barcodes'
+                ]
+            );
+
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id']
+            ];
+        } catch (\Exception $e) {
+
+            Log::error('Barcode Error: ' . $e->getMessage());
+
+            return [
+                'url' => null,
+                'public_id' => null
+            ];
+        }
+    }
+
     public function show($id)
     {
         if (!Auth::check()) {
@@ -375,7 +464,7 @@ class ProductsController extends Controller
         try {
 
             $barcodeBase64 = DNS1D::getBarcodePNG(
-                (string)$product->id,
+                (string)'product/'.$product->id,
                 'C128'
             );
 
@@ -558,15 +647,26 @@ class ProductsController extends Controller
                     $stocks['user_id'] = $user;
                     $stocks['created_by'] = $user;
                     $stock = Stocks::create($stocks);
+                    if($stock){
+                    $stock_qr = $this->StockQrAndUpload($stock->id);
+                    $stock_bar_code = $this->stockBarcodeAndUpload($stock->id);
+                    $stock->update([
+                        'qr_code'         => $stock_qr['url'] ?? null,
+                        'qr_code_public_id' => $stock_qr['public_id'] ?? null,
+                        'bar_code'         => $stock_bar_code['url'] ?? null,
+                        'bar_code_public_id' => $stock_bar_code['public_id'] ?? null
+
+                        ]);
+                    }
                     if ($stock) {
                         $stockHistory = StockHistory::create([
                             'user_id' => $user,
-                            'product_id'=> $product->id,
-                            'stock_id'=> $stock->id,
+                            'product_id' => $product->id,
+                            'stock_id' => $stock->id,
                             'price' => $product->purchase_price ? $product->purchase_price : 0,
                             'gst' => $product->purchase_gst_percentage ? $product->purchase_gst_percentage : 0,
-                            'quantity'=> 0,
-                            'created_by'=> $user
+                            'quantity' => 0,
+                            'created_by' => $user
                         ]);
                     }
                     $stocks = Stocks::where('user_id', $user)->get();

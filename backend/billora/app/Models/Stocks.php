@@ -19,6 +19,10 @@ class Stocks extends Model
         'unit_id',
         'seller_id',
         'seller_product_id',
+        'qr_code',
+        'qr_code_public_id',
+        'bar_code',
+        'bar_code_public_id',
         'created_by' 
     ];
     public function product(){
@@ -35,6 +39,9 @@ class Stocks extends Model
     }
     public function user(){
         return $this->belongsTo(Customers::class);
+    }
+    public function variant(){
+        return $this->belongsTo(ProductVariant::class, 'product_id');
     }
     public function sellerProduct(){
         return $this->belongsTo(SellerProducts::class, 'seller_product_id');
