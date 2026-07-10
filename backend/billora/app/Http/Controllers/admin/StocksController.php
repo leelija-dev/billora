@@ -22,7 +22,7 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Writer;
-
+use App\Jobs\GenerateStockQrJob;
 class StocksController extends Controller
 {
 
@@ -241,15 +241,18 @@ class StocksController extends Controller
                 $stocks['user_id'] = $user;
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
-                if($stock){
-                    $stock_qr = $this->stockQrAndUpload($stock->id);
-                    $stock_bar_code = $this->stockBarcodeAndUpload($stock->id);
-                    $stock->update([
-                        'qr_code' => $stock_qr['url'],
-                        'qr_code_public_id' => $stock_qr['public_id'],
-                        'bar_code' => $stock_bar_code['url'],
-                        'bar_code_public_id' => $stock_bar_code['public_id']
-                    ]);
+                // if($stock){
+                //     $stock_qr = $this->stockQrAndUpload($stock->id);
+                //     $stock_bar_code = $this->stockBarcodeAndUpload($stock->id);
+                //     $stock->update([
+                //         'qr_code' => $stock_qr['url'],
+                //         'qr_code_public_id' => $stock_qr['public_id'],
+                //         'bar_code' => $stock_bar_code['url'],
+                //         'bar_code_public_id' => $stock_bar_code['public_id']
+                //     ]);
+                // }
+                if ($stock) {
+                    GenerateStockQrJob::dispatch($stock->id);
                 }
                 $stockHistory = StockHistory::create([
                     'user_id' => $user,
@@ -323,13 +326,13 @@ class StocksController extends Controller
                     'seller_product_id' => $sellerDetails->id
                 ]);
                 // Log::info('Stock created: ' . json_encode($stock));
-                $stocks = Stocks::where('user_id', $user)->get();
+                // $stocks = Stocks::where('user_id', $user)->get();
                 Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user, 'seller_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock created successfully',
-                    'data' => $stocks
+                    'data' => $stock->fresh()
                 ]);
             } else {
                 return response()->json([
@@ -856,7 +859,7 @@ class StocksController extends Controller
     }
 
 
-     private function StockQrAndUpload($id)
+     public function StockQrAndUpload($id)
     {
        
         try {
@@ -901,7 +904,7 @@ class StocksController extends Controller
             ];
         }
     }
-    private function stockBarcodeAndUpload($id)
+    public function stockBarcodeAndUpload($id)
     {
         // $stock = Stocks::findOrFail($id);
         try {
