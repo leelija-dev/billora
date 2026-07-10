@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Writer;
 
 class StocksController extends Controller
 {
@@ -236,6 +241,16 @@ class StocksController extends Controller
                 $stocks['user_id'] = $user;
                 $stocks['created_by'] = $user;
                 $stock = Stocks::create($stocks);
+                if($stock){
+                    $stock_qr = $this->stockQrAndUpload($stock->id);
+                    $stock_bar_code = $this->stockBarcodeAndUpload($stock->id);
+                    $stock->update([
+                        'qr_code' => $stock_qr['url'],
+                        'qr_code_public_id' => $stock_qr['public_id'],
+                        'bar_code' => $stock_bar_code['url'],
+                        'bar_code_public_id' => $stock_bar_code['public_id']
+                    ]);
+                }
                 $stockHistory = StockHistory::create([
                     'user_id' => $user,
                     'product_id' => $stocks['product_id'],
@@ -839,4 +854,129 @@ class StocksController extends Controller
             ]);
         }
     }
+
+
+     private function StockQrAndUpload($id)
+    {
+       
+        try {
+
+            $qrData = "stock/{$id}";
+
+            $renderer = new ImageRenderer(
+                new RendererStyle(200),
+                new SvgImageBackEnd()
+            );
+
+            $writer = new Writer($renderer);
+
+            $qrContent = $writer->writeString($qrData);
+
+            $tempPath = storage_path('app/temp_stock_qr_' . time() . '.svg');
+
+            file_put_contents($tempPath, $qrContent);
+
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempPath,
+                [
+                    'folder' => 'Thefastbill/stock_qr'
+                ]
+            );
+
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id']
+            ];
+        } catch (\Exception $e) {
+
+            Log::error('QR Error: ' . $e->getMessage());
+
+            return [
+                'url' => null,
+                'public_id' => null
+            ];
+        }
+    }
+    private function stockBarcodeAndUpload($id)
+    {
+        // $stock = Stocks::findOrFail($id);
+        try {
+
+            $barcodeBase64 = DNS1D::getBarcodePNG(
+                (string)'stock/'.$id,
+                'C128'
+            );
+
+            $imageData = base64_decode($barcodeBase64);
+
+            $tempPath = storage_path(
+                'app/temp_stock_barcode_' . time() . '.png'
+            );
+
+            file_put_contents($tempPath, $imageData);
+
+            $upload = Cloudinary::uploadApi()->upload(
+                $tempPath,
+                [
+                    'folder' => 'Thefastbill/stock_barcodes'
+                ]
+            );
+
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+
+            return [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id']
+            ];
+        } catch (\Exception $e) {
+
+            Log::error('Barcode Error: ' . $e->getMessage());
+
+            return [
+                'url' => null,
+                'public_id' => null
+            ];
+        }
+    }
+
+    public function reGenerateQrAndBar($id){
+        $user = Auth::user()->id;
+        try{
+        $stock = Stocks::where('user_id',$user)->where('id',$id);
+        
+        if($stock){
+            $stock_qr = $this->StockQrAndUpload($id);
+            $stokc_bar_code = $this->stockBarcodeAndUpload($id);
+            $stock([
+                'qr_code' => $stock_qr['url'],
+                'qr_code_public_id' => $stock_qr['public_id'],
+                'bar_code' => $stokc_bar_code['url'],
+                'bar_code_public_id' => $stokc_bar_code['public_id'],
+            ]);
+        }else{
+             return response()->json([
+                'status' => false,
+                'message' => 'Stock not found'
+            ]);
+        }
+         return response()->json([
+                'status' => true,
+                'message' => 'QR and Bar code generate successfully',
+                'stock' => $stock
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+        
+    }
+
 }
