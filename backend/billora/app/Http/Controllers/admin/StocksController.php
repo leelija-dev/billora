@@ -911,7 +911,7 @@ class StocksController extends Controller
 
             $barcodeBase64 = DNS1D::getBarcodePNG(
                 (string)'stock/'.$id,
-                'C128'
+                'C128',2,60
             );
 
             $imageData = base64_decode($barcodeBase64);
