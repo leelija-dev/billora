@@ -374,313 +374,291 @@ const ProductDetails = () => {
         setShowQrBarcodeModal(false)
     }
 
-    const handlePrintQrBarcode = () => {
-        const quantity = printSettings.quantity || getProductTotalStock(product) || 1
-        const isQR = activeQrTab === 'qr'
-        const imageUrl = isQR ? product.qr_code : product.barcode
-        const label = isQR ? 'QR Code' : 'Barcode'
+   const handlePrintQrBarcode = () => {
+    const quantity = printSettings.quantity || getProductTotalStock(product) || 1
+    const isQR = activeQrTab === 'qr'
+    const imageUrl = isQR ? product.qr_code : product.barcode
+    const label = isQR ? 'QR Code' : 'Barcode'
+    
+    if (!imageUrl) {
+        toast.error(`${label} not available for this product`)
+        return
+    }
+    
+    setIsPrinting(true)
+    
+    const isA4 = printSettings.pageSize === 'A4'
+    
+    let htmlContent = ''
+    
+    function escapeHtml(str) {
+        if (!str) return ''
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+    }
+    
+    if (isA4) {
+        const itemsPerPage = isQR ? 28 : 30 // 28 QR codes per page, 9 barcodes per page (3x3)
+        const totalPages = Math.ceil(quantity / itemsPerPage)
+        const gridCols = isQR ? 4 : 3 // 4 columns for QR, 3 for barcode
         
-        if (!imageUrl) {
-            toast.error(`${label} not available for this product`)
-            return
-        }
-        
-        setIsPrinting(true)
-        
-        const isA4 = printSettings.pageSize === 'A4'
-        
-        let htmlContent = ''
-        
-        function escapeHtml(str) {
-            if (!str) return ''
-            return str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;')
-        }
-        
-        if (isA4) {
-            const itemsPerPage = 12
-            const totalPages = Math.ceil(quantity / itemsPerPage)
+        for (let page = 0; page < totalPages; page++) {
+            const startIdx = page * itemsPerPage
+            const endIdx = Math.min(startIdx + itemsPerPage, quantity)
+            const itemsOnPage = endIdx - startIdx
             
-            for (let page = 0; page < totalPages; page++) {
-                const startIdx = page * itemsPerPage
-                const endIdx = Math.min(startIdx + itemsPerPage, quantity)
-                const itemsOnPage = endIdx - startIdx
-                const rowsNeeded = Math.ceil(itemsOnPage / 3)
-                
+            htmlContent += `
+                <div class="a4-page">
+                    <div class="qr-grid" style="grid-template-columns: repeat(${gridCols}, 1fr);">
+            `
+            
+            for (let i = 0; i < itemsOnPage; i++) {
                 htmlContent += `
-                    <div class="a4-page">
-                        <div class="page-header">
-                            <h2>${label}s - ${escapeHtml(product.name)}</h2>
-                            <p class="page-number">Page ${page + 1} of ${totalPages}</p>
-                        </div>
-                        <div class="qr-grid" style="--rows: ${rowsNeeded};">
-                `
-                
-                for (let i = 0; i < itemsOnPage; i++) {
-                    const itemNumber = startIdx + i + 1
-                    htmlContent += `
-                        <div class="qr-item">
-                            <div class="qr-image-wrapper">
-                                <img src="${imageUrl}" class="qr-image ${isQR ? 'qr-type' : 'barcode-type'}" />
-                            </div>
-                            <div class="qr-info">
-                                <div class="product-name">${escapeHtml(product.name)}</div>
-                                <div class="product-sku">SKU: ${product.sku}</div>
-                                <div class="product-number">#${itemNumber}</div>
-                            </div>
-                        </div>
-                    `
-                }
-                
-                if (page === totalPages - 1 && itemsOnPage < itemsPerPage) {
-                    const remainingSlots = itemsPerPage - itemsOnPage
-                    for (let i = 0; i < remainingSlots; i++) {
-                        htmlContent += `<div class="qr-item empty-item"></div>`
-                    }
-                }
-                
-                htmlContent += `
+                    <div class="qr-item">
+                        <div class="qr-image-wrapper">
+                            <img src="${imageUrl}" class="qr-image ${isQR ? 'qr-type' : 'barcode-type'}" />
                         </div>
                     </div>
                 `
             }
-        } else {
-            for (let i = 0; i < quantity; i++) {
-                htmlContent += `
-                    <div class="thermal-page">
-                        <div class="thermal-content">
-                            <div class="thermal-image-wrapper">
-                                <img src="${imageUrl}" class="thermal-image ${isQR ? 'qr-type' : 'barcode-type'}" />
-                            </div>
-                            <div class="thermal-info">
-                                <div class="thermal-product-name">${escapeHtml(product.name)}</div>
-                                <div class="thermal-sku">SKU: ${product.sku}</div>
-                                <div class="thermal-number">#${i + 1} of ${quantity}</div>
-                            </div>
+            
+            if (page === totalPages - 1 && itemsOnPage < itemsPerPage) {
+                const remainingSlots = itemsPerPage - itemsOnPage
+                for (let i = 0; i < remainingSlots; i++) {
+                    htmlContent += `<div class="qr-item empty-item"></div>`
+                }
+            }
+            
+            htmlContent += `
+                    </div>
+                </div>
+            `
+        }
+    } else {
+        // Thermal - 1 item per page
+        for (let i = 0; i < quantity; i++) {
+            htmlContent += `
+                <div class="thermal-page">
+                    <div class="thermal-content">
+                        <div class="thermal-image-wrapper">
+                            <img src="${imageUrl}" class="thermal-image ${isQR ? 'qr-type' : 'barcode-type'}" />
                         </div>
                     </div>
-                `
-            }
-        }
-        
-        const styles = `
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Arial, sans-serif; background: white; margin: 0; padding: 0; }
-                
-                .a4-page {
-                    page-break-after: always;
-                    page-break-inside: avoid;
-                    min-height: 297mm;
-                    padding: 15mm;
-                    background: white;
-                    position: relative;
-                }
-                .a4-page:last-child { page-break-after: auto; }
-                
-                .page-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    padding-bottom: 10px;
-                    border-bottom: 2px solid #e5e7eb;
-                }
-                .page-header h2 { font-size: 18px; color: #1f2937; margin-bottom: 5px; }
-                .page-number { font-size: 12px; color: #6b7280; }
-                
-                .qr-grid {
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 20px;
-                    align-items: start;
-                }
-                
-                .qr-item {
-                    break-inside: avoid;
-                    page-break-inside: avoid;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 12px;
-                    padding: 15px;
-                    text-align: center;
-                    background: white;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-                }
-                .qr-item.empty-item {
-                    visibility: hidden;
-                    border: 1px dashed #e5e7eb;
-                    background: transparent;
-                    box-shadow: none;
-                }
-                
-                .qr-image-wrapper {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    margin-bottom: 12px;
-                }
-                
-                .qr-image.qr-type { width: 120px; height: 120px; }
-                .qr-image.barcode-type { width: 220px; height: 70px; }
-                
-                .qr-info { text-align: center; }
-                .product-name {
-                    font-weight: 600;
-                    font-size: 13px;
-                    color: #1f2937;
-                    margin-bottom: 4px;
-                    word-break: break-word;
-                }
-                .product-sku {
-                    font-size: 10px;
-                    color: #6b7280;
-                    font-family: monospace;
-                    margin-bottom: 4px;
-                }
-                .product-number { font-size: 10px; color: #9ca3af; }
-                
-                .thermal-page {
-                    page-break-after: always;
-                    page-break-inside: avoid;
-                    width: 3in;
-                    height: 5in;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    background: white;
-                    margin: 0;
-                    padding: 0.2in;
-                    box-sizing: border-box;
-                }
-                .thermal-page:last-child { page-break-after: auto; }
-                
-                .thermal-content {
-                    text-align: center;
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    background: white;
-                    padding: 10px;
-                }
-                
-                .thermal-image-wrapper { flex-shrink: 0; margin-bottom: 15px; }
-                .thermal-image.qr-type { width: 1.4in; height: 1.4in; }
-                .thermal-image.barcode-type { width: 2.2in; height: 0.8in; }
-                
-                .thermal-info { flex-shrink: 0; }
-                .thermal-product-name {
-                    font-weight: 600;
-                    font-size: 11px;
-                    color: #1f2937;
-                    text-align: center;
-                    margin-bottom: 6px;
-                    word-break: break-word;
-                    max-width: 2.5in;
-                }
-                .thermal-sku {
-                    font-size: 9px;
-                    color: #6b7280;
-                    font-family: monospace;
-                    margin-bottom: 6px;
-                    text-align: center;
-                }
-                .thermal-number { font-size: 8px; color: #9ca3af; text-align: center; }
-                
-                @media print {
-                    body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                    .a4-page { page-break-after: always; page-break-inside: avoid; }
-                    .thermal-page { page-break-after: always; page-break-inside: avoid; }
-                    img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                    .empty-item { display: block !important; visibility: hidden !important; }
-                    .qr-grid { page-break-inside: avoid; }
-                }
-                
-                @media screen and (max-width: 768px) {
-                    .qr-grid { gap: 12px; }
-                    .qr-item { padding: 10px; }
-                    .qr-image.qr-type { width: 80px; height: 80px; }
-                    .qr-image.barcode-type { width: 160px; height: 50px; }
-                }
-            </style>
-        `
-        
-        const fullHtml = `<!DOCTYPE html>
-        <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Print ${label}s - ${escapeHtml(product.name)}</title>
-                ${styles}
-            </head>
-            <body>
-                ${htmlContent}
-            </body>
-        </html>`
-        
-        const iframe = document.createElement('iframe')
-        iframe.style.position = 'fixed'
-        iframe.style.right = 0
-        iframe.style.bottom = 0
-        iframe.style.width = 0
-        iframe.style.height = 0
-        iframe.style.border = 'none'
-        iframe.style.visibility = 'hidden'
-        
-        document.body.appendChild(iframe)
-        
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
-        iframeDoc.open()
-        iframeDoc.write(fullHtml)
-        iframeDoc.close()
-        
-        const images = iframeDoc.querySelectorAll('img')
-        let imagesLoaded = 0
-        
-        if (images.length === 0) {
-            performPrint()
-        } else {
-            images.forEach(img => {
-                if (img.complete && img.naturalHeight !== 0) {
-                    imagesLoaded++
-                    if (imagesLoaded === images.length) performPrint()
-                } else {
-                    img.onload = () => {
-                        imagesLoaded++
-                        if (imagesLoaded === images.length) performPrint()
-                    }
-                    img.onerror = () => {
-                        imagesLoaded++
-                        if (imagesLoaded === images.length) performPrint()
-                    }
-                }
-            })
-        }
-        
-        function performPrint() {
-            setTimeout(() => {
-                try {
-                    iframe.contentWindow.focus()
-                    iframe.contentWindow.print()
-                    toast.success(`Printing ${quantity} ${label.toLowerCase()}(s) on ${printSettings.pageSize === 'A4' ? 'A4' : 'Thermal (3x5")'} paper`)
-                } catch (error) {
-                    console.error('Print error:', error)
-                    toast.error('Failed to print. Please try again.')
-                } finally {
-                    setTimeout(() => {
-                        document.body.removeChild(iframe)
-                        setIsPrinting(false)
-                    }, 500)
-                }
-            }, 500)
+                </div>
+            `
         }
     }
+    
+    const styles = `
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; background: white; margin: 0; padding: 0; }
+            
+            .a4-page {
+                page-break-after: always;
+                page-break-inside: avoid;
+                min-height: 297mm;
+                padding: 10mm 8mm;
+                background: white;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+            }
+            .a4-page:last-child { page-break-after: auto; }
+            
+            .qr-grid {
+                display: grid;
+                gap: 8px 12px;
+                justify-items: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .qr-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                break-inside: avoid;
+                page-break-inside: avoid;
+                padding: 6px;
+                background: white;
+            }
+            .qr-item.empty-item {
+                visibility: hidden;
+            }
+            
+            .qr-image-wrapper {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+            }
+            
+            .qr-image.qr-type {
+                width: 100%;
+                max-width: 130px;
+                height: auto;
+                aspect-ratio: 1/1;
+                object-fit: contain;
+            }
+            
+            .qr-image.barcode-type {
+                width: 100%;
+                max-width: 260px;
+                height: auto;
+                min-height: 80px;
+                object-fit: contain;
+            }
+            
+            .thermal-page {
+                page-break-after: always;
+                page-break-inside: avoid;
+                width: 3in;
+                height: 5in;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                background: white;
+                margin: 0;
+                padding: 0.2in;
+                box-sizing: border-box;
+            }
+            .thermal-page:last-child { page-break-after: auto; }
+            
+            .thermal-content {
+                text-align: center;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                background: white;
+                padding: 10px;
+            }
+            
+            .thermal-image-wrapper {
+                flex-shrink: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .thermal-image.qr-type {
+                width: 1.4in;
+                height: 1.4in;
+                object-fit: contain;
+            }
+            
+            .thermal-image.barcode-type {
+                width: 2.6in;
+                height: auto;
+                max-height: 1.2in;
+                object-fit: contain;
+            }
+            
+            @media print {
+                body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .a4-page { page-break-after: always; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .a4-page:last-child { page-break-after: auto !important; }
+                .thermal-page { page-break-after: always; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .thermal-page:last-child { page-break-after: auto !important; }
+                img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .empty-item { display: block !important; visibility: hidden !important; }
+            }
+            
+            @media screen and (max-width: 768px) {
+                .qr-grid { gap: 6px 8px; }
+                .qr-image.qr-type { max-width: 90px; }
+                .qr-image.barcode-type { max-width: 200px; min-height: 60px; }
+                .thermal-image.qr-type { width: 1in; height: 1in; }
+                .thermal-image.barcode-type { width: 2.2in; max-height: 0.8in; }
+            }
+        </style>
+    `
+    
+    const fullHtml = `<!DOCTYPE html>
+    <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Print ${label}s</title>
+            ${styles}
+        </head>
+        <body>
+            ${htmlContent}
+        </body>
+    </html>`
+    
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = 0
+    iframe.style.bottom = 0
+    iframe.style.width = 0
+    iframe.style.height = 0
+    iframe.style.border = 'none'
+    iframe.style.visibility = 'hidden'
+    
+    document.body.appendChild(iframe)
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
+    iframeDoc.open()
+    iframeDoc.write(fullHtml)
+    iframeDoc.close()
+    
+    const images = iframeDoc.querySelectorAll('img')
+    let imagesLoaded = 0
+    
+    if (images.length === 0) {
+        performPrint()
+    } else {
+        images.forEach(img => {
+            if (img.complete && img.naturalHeight !== 0) {
+                imagesLoaded++
+                if (imagesLoaded === images.length) performPrint()
+            } else {
+                img.onload = () => {
+                    imagesLoaded++
+                    if (imagesLoaded === images.length) performPrint()
+                }
+                img.onerror = () => {
+                    imagesLoaded++
+                    if (imagesLoaded === images.length) performPrint()
+                }
+            }
+        })
+    }
+    
+    function performPrint() {
+        setTimeout(() => {
+            try {
+                iframe.contentWindow.focus()
+                iframe.contentWindow.print()
+                toast.success(`Printing ${quantity} ${label.toLowerCase()}(s) on ${printSettings.pageSize === 'A4' ? 'A4' : 'Thermal (3x5")'} paper`)
+            } catch (error) {
+                console.error('Print error:', error)
+                toast.error('Failed to print. Please try again.')
+            } finally {
+                setTimeout(() => {
+                    document.body.removeChild(iframe)
+                    setIsPrinting(false)
+                }, 500)
+            }
+        }, 500)
+    }
+}
 
     const getStockStatus = (quantity) => {
         const lowStockThreshold = parseFloat(product?.minimum_stock_quantity) || 10
