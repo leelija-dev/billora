@@ -24,7 +24,7 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
   const entityId = isProductMode ? product?.id : stock?.id;
   const entityName = isProductMode 
     ? product?.name || `Product #${product?.id}`
-    : stock?.product?.name || stock?.name || `Stock #${stock?.id}`;
+    : stock?.product?.name || stock?.name || `Stock`;
   const entitySku = isProductMode 
     ? product?.sku 
     : stock?.product?.sku || '';
@@ -604,7 +604,7 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
                     {isMode === 'Product' ? 'Product QR & Barcode' : 'Stock QR & Barcode'}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {isMode === 'Product' ? `Product #${entityId}` : `Stock #${entityId}`} - {entityName}
+                    {isMode === 'Product' ? `Product` : `Stock`} - {entityName}
                   </p>
                 </div>
               </div>
