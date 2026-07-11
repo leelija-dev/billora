@@ -73,6 +73,12 @@ deleteStockQuantity: (id, userId, quantity) => {
     return apiClient.post(`/stocks/${id}`, stockData)
   },
 
+  // Regenerate QR and Barcode
+regenerateQR: (id) => {
+  console.log('🔁 Regenerating QR and Barcode for stock:', id);
+  return apiClient.post(`/stocks/qr-regenerate/${id}`);
+},
+
   // Delete stock
   delete: (id, userId) => {
     console.log(' Stocks API - Deleting stock:', id, 'User ID:', userId)

@@ -95,7 +95,7 @@ Route::middleware('auth:sanctum')->prefix('stocks')->group(function () {
    Route::post('/add-stock/{id}', [StocksController::class, 'addStock']);
    Route::get('/stock-alert', [StocksController::class, 'stockalert']);
    Route::post('/delete-stock/{id}',[StocksController::class,'stockRemove']);
-   Route::get('/qr-regenerate/{id}',[StocksController::class,'reGenerateQrAndBar']);
+   Route::post('/qr-regenerate/{id}',[StocksController::class,'reGenerateQrAndBar']);
 });
 //units
 Route::middleware('auth:sanctum')->prefix('units')->group(function () {

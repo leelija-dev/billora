@@ -960,7 +960,7 @@ class StocksController extends Controller
         if($stock){
             $stock_qr = $this->StockQrAndUpload($id);
             $stokc_bar_code = $this->stockBarcodeAndUpload($id);
-            $stock([
+            $stock->update([
                 'qr_code' => $stock_qr['url'],
                 'qr_code_public_id' => $stock_qr['public_id'],
                 'bar_code' => $stokc_bar_code['url'],
@@ -972,6 +972,7 @@ class StocksController extends Controller
                 'message' => 'Stock not found'
             ]);
         }
+        Cache::tags(['stock_user_' . $user])->flush();
          return response()->json([
                 'status' => true,
                 'message' => 'QR and Bar code generate successfully',
