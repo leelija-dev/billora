@@ -462,9 +462,9 @@ class ProductsController extends Controller
     private function generateBarcodeAndUpload($product)
     {
         try {
-
+            $barcodeNumber = str_pad($product->id, 10, '0', STR_PAD_LEFT);
             $barcodeBase64 = DNS1D::getBarcodePNG(
-                (string)'product/'.$product->id,
+                (string)'product/'.$barcodeNumber,
                 'C128',2,60
             );
 
