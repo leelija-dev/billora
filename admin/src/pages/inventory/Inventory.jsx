@@ -505,14 +505,14 @@ const Stock = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleOpenQRModal(row)}
+            onClick={() => handleOpenQRPrintModal(row)}
             className="p-2 text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
             title="View QR Code & Barcode"
           >
             <FaQrcode className="w-4 h-4" />
           </motion.button>
 
-          {/* Print QR/Barcode Button */}
+          {/* Print QR/Barcode Button
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -521,7 +521,7 @@ const Stock = () => {
             title="Print QR Code & Barcode"
           >
             <FiPrinter className="w-4 h-4" />
-          </motion.button>
+          </motion.button> */}
 
           {/* Regenerate QR Code Button */}
           <motion.button
@@ -928,6 +928,7 @@ const Stock = () => {
           isOpen={showQRPrintModal}
           onClose={handleCloseQRPrintModal}
           stock={selectedStockForPrint}
+          isMode="Stock"
           product={selectedStockForPrint?.product}
         />
       )}
