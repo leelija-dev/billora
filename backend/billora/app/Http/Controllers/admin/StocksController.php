@@ -235,7 +235,7 @@ class StocksController extends Controller
                 if ($customer->plan_id == null || $customer->is_active == false) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'You do not have any active plan. Please upgrade your plan.'
+                        'message' => 'You do not have any active plan.Please upgrade your plan.'
                     ]);
                 }
                 $stocks['user_id'] = $user;
@@ -284,6 +284,7 @@ class StocksController extends Controller
                         ]
                     );
                 }
+                if($stocks['seller_id']){
                 $seller = Seller::findOrFail($stocks['seller_id']);
                 if (!$seller) {
                     return response()->json([
@@ -327,8 +328,11 @@ class StocksController extends Controller
                 ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 // $stocks = Stocks::where('user_id', $user)->get();
+                Log::info('Before Flush');
+                }
                 Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user, 'seller_user_' . $user])->flush();
                 // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
+                Log::info('After Flush');
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock created successfully',
@@ -908,9 +912,9 @@ class StocksController extends Controller
     {
         // $stock = Stocks::findOrFail($id);
         try {
-
+            $barcodeNumber = str_pad($id, 10, '0', STR_PAD_LEFT);
             $barcodeBase64 = DNS1D::getBarcodePNG(
-                (string)'stock/'.$id,
+                (string)'stock/'.$barcodeNumber,
                 'C128',2,60
             );
 

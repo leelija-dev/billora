@@ -390,9 +390,9 @@ class ProductsController extends Controller
     {
         // $stock = Stocks::findOrFail($id);
         try {
-
+            $barcodeNumber = str_pad($id, 10, '0', STR_PAD_LEFT);
             $barcodeBase64 = DNS1D::getBarcodePNG(
-                (string)'stock/'.$id,
+                (string)'stock/'.$barcodeNumber,
                 'C128',2,60
             );
 
