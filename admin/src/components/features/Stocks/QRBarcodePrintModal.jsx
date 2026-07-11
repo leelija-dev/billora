@@ -14,6 +14,7 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
     quantity: 1
   });
   const [isPrinting, setIsPrinting] = useState(false);
+  const [quantityInput, setQuantityInput] = useState('1'); // New state for input value
 
   // Determine mode and get appropriate data
   const isProductMode = isMode === 'Product';
@@ -31,7 +32,7 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
   
   // Get quantity based on mode
   const entityQuantity = isProductMode 
-    ? 0 // Products don't have quantity
+    ? 1000 // Products default to 1000 max
     : parseFloat(stock?.quantity) || 0;
   
   // Get QR and Barcode URLs based on mode
@@ -60,13 +61,63 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
   // Update quantity when stock changes (only in stock mode)
   useEffect(() => {
     if (isStockMode && entityQuantity > 0) {
-      const maxQuantity = Math.min(entityQuantity, 100);
+      const maxQuantity = Math.min(entityQuantity, 1000);
+      const newQuantity = Math.min(printSettings.quantity || 1, maxQuantity);
       setPrintSettings(prev => ({ 
         ...prev, 
-        quantity: Math.min(prev.quantity || 1, maxQuantity) 
+        quantity: newQuantity
       }));
+      setQuantityInput(String(newQuantity));
     }
   }, [entityQuantity, isStockMode]);
+
+  // Get max quantity based on mode
+  const maxQuantity = isProductMode ? 1000 : Math.min(entityQuantity || 1000, 1000);
+
+  // Handle quantity input change
+  const handleQuantityChange = (e) => {
+    const value = e.target.value;
+    
+    // Allow empty string for typing
+    if (value === '') {
+      setQuantityInput('');
+      return;
+    }
+    
+    // Only allow numbers
+    if (!/^\d+$/.test(value)) {
+      return;
+    }
+    
+    const numValue = parseInt(value, 10);
+    
+    // Check if within limits
+    if (numValue > maxQuantity) {
+      toast.error(isStockMode 
+        ? `Cannot print more than available stock (${maxQuantity})`
+        : `Maximum quantity is ${maxQuantity}`
+      );
+      return;
+    }
+    
+    setQuantityInput(value);
+    setPrintSettings(prev => ({ ...prev, quantity: numValue }));
+  };
+
+  // Handle blur event to ensure valid value
+  const handleQuantityBlur = () => {
+    if (quantityInput === '' || parseInt(quantityInput, 10) === 0) {
+      setQuantityInput('1');
+      setPrintSettings(prev => ({ ...prev, quantity: 1 }));
+    }
+  };
+
+  // Update quantity input when printSettings changes externally
+  useEffect(() => {
+    if (printSettings.quantity) {
+      setQuantityInput(String(printSettings.quantity));
+    }
+  }, [printSettings.quantity]);
 
   // Handle print
   const handlePrint = () => {
@@ -97,8 +148,8 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
     }
     
     if (isA4) {
-      // A4 Layout: 4 columns for QR (28 per page), 3 columns for barcode (30 per page)
-      const itemsPerPage = isQR ? 28 : 33;
+      // A4 Layout: 4 columns for QR (24 per page), 3 columns for barcode (30 per page)
+      const itemsPerPage = isQR ? 24 : 30;
       const totalPages = Math.ceil(quantity / itemsPerPage);
       const gridCols = isQR ? 4 : 3;
       
@@ -234,13 +285,17 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
         .a4-page {
           page-break-after: always;
           page-break-inside: avoid;
-          min-height: 297mm;
-          padding: 12mm 10mm;
+          min-height: 100vh;
+          height: 297mm;
+          width: 210mm;
+          padding: 8mm;
           background: white;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
+          margin: 0 auto;
+          box-sizing: border-box;
         }
         .a4-page:last-child {
           page-break-after: auto;
@@ -248,7 +303,7 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
         
         .qr-grid {
           display: grid;
-          gap: 10px 14px;
+          gap: 5px;
           justify-items: center;
           align-items: center;
           width: 100%;
@@ -263,7 +318,7 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
           width: 100%;
           break-inside: avoid;
           page-break-inside: avoid;
-          padding: 8px 4px;
+          padding: 4px;
           background: white;
           border-radius: 4px;
         }
@@ -283,7 +338,7 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
         /* QR Code - A4 */
         .qr-image.qr-type {
           width: 100%;
-          max-width: 120px;
+          max-width: 155px;
           height: auto;
           aspect-ratio: 1/1;
           object-fit: contain;
@@ -378,9 +433,11 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
         
         /* ===== PRINT STYLES ===== */
         @media print {
-          body {
+          html, body {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -388,21 +445,33 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
           .a4-page {
             page-break-after: always;
             page-break-inside: avoid;
+            break-after: page;
+            break-inside: avoid;
+            height: 297mm;
+            width: 210mm;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 8mm !important;
           }
           .a4-page:last-child {
             page-break-after: auto !important;
+            break-after: auto !important;
           }
           
           .thermal-page {
             page-break-after: always;
             page-break-inside: avoid;
+            break-after: page;
+            break-inside: avoid;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0.15in !important;
           }
           .thermal-page:last-child {
             page-break-after: auto !important;
+            break-after: auto !important;
           }
           
           img {
@@ -419,13 +488,13 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
         /* ===== SCREEN STYLES (Preview) ===== */
         @media screen {
           .a4-page {
-            margin: 0 auto 20px auto;
+            margin: 10px auto;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             border-radius: 4px;
           }
           
           .thermal-page {
-            margin: 0 auto 12px auto;
+            margin: 10px auto;
             box-shadow: 0 2px 12px rgba(0,0,0,0.06);
             border-radius: 4px;
           }
@@ -642,31 +711,25 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
                       Quantity
                     </label>
                     <input
-                      type="number"
-                      min="1"
-                      max={isStockMode ? Math.min(entityQuantity || 50, 100) : 100}
-                      value={printSettings.quantity}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value) || 1;
-                        const maxQuantity = isStockMode ? Math.min(entityQuantity || 50, 100) : 100;
-                        if (value > maxQuantity && maxQuantity > 0) {
-                          toast.error(isStockMode 
-                            ? `Cannot print more than available stock (${maxQuantity})`
-                            : `Maximum quantity is ${maxQuantity}`
-                          );
-                          return;
-                        }
-                        setPrintSettings(prev => ({ ...prev, quantity: Math.max(1, value) }));
-                      }}
+                      type="text"
+                      value={quantityInput}
+                      onChange={handleQuantityChange}
+                      onBlur={handleQuantityBlur}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-800 dark:text-white text-sm"
+                      placeholder="Enter quantity"
                     />
                     {isStockMode && entityQuantity > 0 && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Available: {entityQuantity} units
                       </p>
                     )}
+                    {isProductMode && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Max: 1000 copies
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-end">
+                  <div className="flex items-center">
                     <Button
                       onClick={handlePrint}
                       icon={FiPrinter}
@@ -697,12 +760,17 @@ const QRBarcodePrintModal = ({ isOpen, onClose, stock, product, isMode }) => {
                   )}
                   {printSettings.pageSize === 'A4' && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                      💡 {activeTab === 'qr' ? '4 columns • 28 per page' : '3 columns • 30 per page'}
+                      💡 {activeTab === 'qr' ? '4 columns • 24 per page' : '3 columns • 30 per page'}
                     </span>
                   )}
                   {isStockMode && entityQuantity > 0 && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                       📦 Stock: {entityQuantity}
+                    </span>
+                  )}
+                  {isProductMode && (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                      🏷️ Product: Unlimited copies
                     </span>
                   )}
                 </div>
