@@ -13,13 +13,19 @@ import {
   FiHash,
   FiTag,
   FiGrid,
+  FiRefreshCw as FiRefreshQr,
+  FiPrinter,
+  FiLoader,
 } from "react-icons/fi";
 import { FiMinus } from 'react-icons/fi';
 import DeductStockModal from '../../components/features/Stocks/DeductStockModal';
+
+import QRBarcodePrintModal from '../../components/features/Stocks/QRBarcodePrintModal';
 import { motion, AnimatePresence } from "framer-motion";
 import { useInventoryStore } from "../../store/inventoryStore";
 import { useProductStore } from "../../store/productStore";
 import { useAuthStore } from "../../store/authStore";
+import { stocksAPI } from "../../services";
 import Button from "../../components/common/Button/Button";
 import Input from "../../components/common/Input/Input";
 import Table from "../../components/common/Table/Table";
@@ -27,6 +33,8 @@ import Pagination from "../../components/common/Pagination/Pagination";
 import Select from "../../components/common/Select/Select";
 import StockForm from "../../components/features/Stocks/StockForm";
 import AddStockModal from "../../components/features/Stocks/AddStockModal";
+import toast from 'react-hot-toast';
+import { FaQrcode } from "react-icons/fa";
 
 const Stock = () => {
   const {
@@ -52,8 +60,7 @@ const Stock = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
-  const [selectedStockWithProduct, setSelectedStockWithProduct] =
-    useState(null);
+  const [selectedStockWithProduct, setSelectedStockWithProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
   const [showFilters, setShowFilters] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -65,7 +72,16 @@ const Stock = () => {
   const [stockToDelete, setStockToDelete] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  // Add these state variables after other state declarations
+  // QR/Barcode related state
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedStockForQR, setSelectedStockForQR] = useState(null);
+  const [regeneratingQRIds, setRegeneratingQRIds] = useState(new Set());
+
+  // QR/Barcode Print related state
+  const [showQRPrintModal, setShowQRPrintModal] = useState(false);
+  const [selectedStockForPrint, setSelectedStockForPrint] = useState(null);
+
+  // Deduct stock related state
   const [showDeductStockModal, setShowDeductStockModal] = useState(false);
   const [selectedStockForDeduction, setSelectedStockForDeduction] = useState(null);
 
@@ -215,6 +231,86 @@ const Stock = () => {
     );
   };
 
+  // QR/Barcode handler functions
+  const handleOpenQRModal = (stock) => {
+    console.log('👁️ Opening QR modal for stock:', stock);
+    setSelectedStockForQR(stock);
+    setShowQRModal(true);
+  };
+
+  const handleCloseQRModal = () => {
+    setShowQRModal(false);
+    setSelectedStockForQR(null);
+  };
+
+  // QR/Barcode Print handler functions
+  const handleOpenQRPrintModal = (stock) => {
+    console.log('🖨️ Opening QR print modal for stock:', stock);
+    setSelectedStockForPrint(stock);
+    setShowQRPrintModal(true);
+  };
+
+  const handleCloseQRPrintModal = () => {
+    setShowQRPrintModal(false);
+    setSelectedStockForPrint(null);
+  };
+
+  const handleRegenerateQR = async (stock) => {
+    console.log('🔁 Regenerating QR for stock:', stock);
+    setRegeneratingQRIds(prev => new Set(prev).add(stock.id));
+    try {
+      const response = await stocksAPI.regenerateQR(stock.id);
+      console.log('Regenerate QR Response:', response);
+      
+      // Show success message
+      toast.success('QR and Barcode regenerated successfully!');
+      
+      // Refresh current page to get updated data with new QR/Barcode
+      const currentPageNumber = pagination?.current_page || currentPage || 1;
+      await fetchStocks(currentPageNumber, searchTerm, true, filters);
+      
+      // If QR modal is open, update the selected stock with new data
+      if (showQRModal && selectedStockForQR?.id === stock.id) {
+        // Get the updated stock from the store
+        const updatedStock = useInventoryStore.getState().stocks.find(s => s.id === stock.id);
+        if (updatedStock) {
+          setSelectedStockForQR(updatedStock);
+        }
+      }
+    } catch (error) {
+      console.error('Error regenerating QR code:', error);
+      toast.error(error.response?.data?.message || 'Failed to regenerate QR code');
+    } finally {
+      setRegeneratingQRIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(stock.id);
+        return newSet;
+      });
+    }
+  };
+
+  // Deduct stock handler functions
+  const handleDeductStock = async (stockId, quantity) => {
+    const result = await useInventoryStore.getState().deductStockQuantity(
+      stockId,
+      user.id,
+      quantity
+    );
+
+    if (result.success) {
+      setShowDeductStockModal(false);
+      setSelectedStockForDeduction(null);
+      // Refresh current page after deduction
+      const currentPageNumber = pagination?.current_page || currentPage || 1;
+      await fetchStocks(currentPageNumber, searchTerm, true, filters);
+    }
+  };
+
+  const handleOpenDeductStockModal = (stock) => {
+    setSelectedStockForDeduction(stock);
+    setShowDeductStockModal(true);
+  };
+
   // Helper function to format attributes (handles dynamic key-value pairs)
   const formatAttributes = (attributes) => {
     if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
@@ -263,29 +359,6 @@ const Stock = () => {
       stocks?.filter((s) => (parseInt(s.quantity) || 0) < 10).length || 0,
   };
 
-
-  // Add the deduction handler function
-  const handleDeductStock = async (stockId, quantity) => {
-    const result = await useInventoryStore.getState().deductStockQuantity(
-      stockId,
-      user.id,
-      quantity
-    );
-
-    if (result.success) {
-      setShowDeductStockModal(false);
-      setSelectedStockForDeduction(null);
-      // Refresh current page after deduction
-      const currentPageNumber = pagination?.current_page || currentPage || 1;
-      await fetchStocks(currentPageNumber, searchTerm, true, filters);
-    }
-  };
-
-  // Add the handler to open the deduction modal
-  const handleOpenDeductStockModal = (stock) => {
-    setSelectedStockForDeduction(stock);
-    setShowDeductStockModal(true);
-  };
   const columns = [
     {
       header: (
@@ -408,14 +481,14 @@ const Stock = () => {
       ),
     },
     {
-   header: (
-      <div>
-        <div>Total Value</div>
-        <div style={{ fontSize: "9px", color: "#191b1f" }}>
-          (Excluding GST)
+      header: (
+        <div>
+          <div>Total Value</div>
+          <div style={{ fontSize: "9px", color: "#191b1f" }}>
+            (Excluding GST)
+          </div>
         </div>
-      </div>
-    ),
+      ),
       accessor: "total_value",
       cell: (_, row) => {
         const quantity = parseInt(row.quantity) || 0;
@@ -432,7 +505,45 @@ const Stock = () => {
       header: "Actions",
       accessor: "id",
       cell: (_, row) => (
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1 flex-wrap gap-1">
+          {/* View QR Code Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleOpenQRPrintModal(row)}
+            className="p-2 text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+            title="View QR Code & Barcode"
+          >
+            <FaQrcode className="w-4 h-4" />
+          </motion.button>
+
+          {/* Print QR/Barcode Button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleOpenQRPrintModal(row)}
+            className="p-2 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+            title="Print QR Code & Barcode"
+          >
+            <FiPrinter className="w-4 h-4" />
+          </motion.button> */}
+
+          {/* Regenerate QR Code Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleRegenerateQR(row)}
+            disabled={regeneratingQRIds.has(row.id)}
+            className="p-2 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Regenerate QR Code & Barcode"
+          >
+            {regeneratingQRIds.has(row.id) ? (
+              <FiLoader className="w-4 h-4 animate-spin" />
+            ) : (
+              <FiRefreshQr className="w-4 h-4" />
+            )}
+          </motion.button>
+
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -442,6 +553,7 @@ const Stock = () => {
           >
             <FiEdit className="w-4 h-4" />
           </motion.button>
+          
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -451,7 +563,8 @@ const Stock = () => {
           >
             <FiPlus className="w-4 h-4" />
           </motion.button>
-          {/* New Deduct Stock Button */}
+          
+          {/* Deduct Stock Button */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -461,6 +574,7 @@ const Stock = () => {
           >
             <FiMinus className="w-4 h-4" />
           </motion.button>
+          
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -766,7 +880,6 @@ const Stock = () => {
                       onPageChange={handlePageChange}
                     />
                   </div>
-
                 </>
               ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center">
@@ -790,35 +903,45 @@ const Stock = () => {
             </motion.div>
           </>
         )}
-
-        
       </motion.div>
 
       {/* Add Stock Modal */}
-        {selectedStockForModal && (
-          <AddStockModal
-            isOpen={showAddStockModal}
-            onClose={handleCloseAddStockModal}
-            stock={selectedStockForModal}
-            onAddStock={handleAddStockFromModal}
-            isSubmitting={loading}
-          />
-        )}
+      {selectedStockForModal && (
+        <AddStockModal
+          isOpen={showAddStockModal}
+          onClose={handleCloseAddStockModal}
+          stock={selectedStockForModal}
+          onAddStock={handleAddStockFromModal}
+          isSubmitting={loading}
+        />
+      )}
 
+      {/* Deduct Stock Modal */}
+      {selectedStockForDeduction && (
+        <DeductStockModal
+          isOpen={showDeductStockModal}
+          onClose={() => {
+            setShowDeductStockModal(false);
+            setSelectedStockForDeduction(null);
+          }}
+          stock={selectedStockForDeduction}
+          onDeductStock={handleDeductStock}
+          isSubmitting={loading}
+        />
+      )}
 
-        {/* Deduct Stock Modal */}
-        {selectedStockForDeduction && (
-          <DeductStockModal
-            isOpen={showDeductStockModal}
-            onClose={() => {
-              setShowDeductStockModal(false);
-              setSelectedStockForDeduction(null);
-            }}
-            stock={selectedStockForDeduction}
-            onDeductStock={handleDeductStock}
-            isSubmitting={loading}
-          />
-        )}
+    
+
+      {/* QR/Barcode Print Modal */}
+      {selectedStockForPrint && (
+        <QRBarcodePrintModal
+          isOpen={showQRPrintModal}
+          onClose={handleCloseQRPrintModal}
+          stock={selectedStockForPrint}
+          isMode="Stock"
+          product={selectedStockForPrint?.product}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

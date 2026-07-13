@@ -122,7 +122,7 @@ class BrandController extends Controller
         }
         $user =Auth::user()->id;
         try {
-            $brand = Brand::where('id',$id)->where('user_id',$user)->get();
+            $brand = Brand::where('id',$id)->where('user_id',$user)->first();
              Cache::tags(['brands_user_'.$user])->flush();
             return response()->json([
                 'status' => 'success',
@@ -188,7 +188,7 @@ class BrandController extends Controller
             ], 401);
             }
             $user =Auth::user()->id;
-            $brand = Brand::where('id',$id)->where('user_id',$user);
+            $brand = Brand::where('id',$id)->where('user_id',$user)->first();
             $brand->delete();
              Cache::tags(['brands_user_'.$user])->flush();
             return response()->json([

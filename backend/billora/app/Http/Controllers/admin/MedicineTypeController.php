@@ -25,11 +25,19 @@ class MedicineTypeController extends Controller
                 'message'   => 'You are not authorized to access this resource.'
             ]);
         }
-        $cacheKey = "medicine_types_{$user}_page_{$page}";
+        $search = $request->search ?? null;
+        $page = $request->page ?? 1;
+        $cacheKey = "medicine_types_{$user}_search_{$search}_page_{$page}";
         $fromCache = Cache::tags(['medicine_types_user_' . $user])->has($cacheKey);
         try{
-        $medicineType = Cache::tags(['medicine_types_user_' . $user])->remember($cacheKey, 600, function () use ($id) {
-            return MedicineType::where('user_id', $id)->orderBy('created_at', 'desc')->paginate(8);
+        $medicineType = Cache::tags(['medicine_types_user_' . $user])->remember($cacheKey, 600, function () use ($id, $search) {
+            $query =  MedicineType::where('user_id', $id);
+            if (!empty($search)) {
+                $query->where('name', 'like', "%{$search}%")
+                ->orWhere('slug','like',"%{$search}%");
+            }
+            // return MedicineType::where('user_id', $id)->get();
+            return $query->orderBy('id', 'desc')->paginate(8);
         });
         $executionTime = microtime(true) - $sartTime;
         return response()->json([

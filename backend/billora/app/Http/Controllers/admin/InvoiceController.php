@@ -1454,4 +1454,97 @@ class InvoiceController extends Controller
             ]);
         }
     }
+
+    public function scannedProduct($id){
+        try{
+            $startTime = microtime(true);
+            $user = Auth::user()->id;
+            $cacheKey = "scanned_product_data_{$user}_{$id}";
+            $fromCache = Cache::tags(['scanned_product_user_' . $user])->has($cacheKey);
+            $product = Cache::tags(['scanned_product_user_' . $user])->remember($cacheKey, 600, function () use ($id,$user) {
+            return Products::where('id',$id)->where('user_id',$user)->with(['brand','category','unit','variants'])->first();
+              
+                
+            });
+            $executionTime = round(microtime(true) - $startTime, 4);
+            if (!$product) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product not found',
+                'from_cache' => $fromCache,
+                'execution_time' => $executionTime . ' sec'
+            ], 404);
+        }
+          return response()->json([
+            'status' => true,
+            'message' => 'Product details',
+            'source' => $fromCache ? 'Cache' : 'Database',
+            'execution_time' => $executionTime . ' sec',
+            'data' => $product
+        ]);
+
+
+        }catch(\Exception $e){
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function scannedStock($id)
+{
+    $startTime = microtime(true);
+
+    try {
+        $user = Auth::id();
+
+        $cacheKey = "scanned_stock_data_{$user}_{$id}";
+        $cacheTag = "scanned_stock_user_{$user}";
+
+        $fromCache = Cache::tags([$cacheTag])->has($cacheKey);
+
+        $stock = Cache::tags([$cacheTag])->remember(
+            $cacheKey,
+            now()->addMinutes(10),
+            function () use ($id, $user) {
+                return Stocks::where('id', $id)
+                    ->where('user_id', $user)
+                    ->with([
+                        'product:id,name,sku,slug,brand_id,category_id,unit_id,attributes',
+                        'product.brand',
+                        'product.category',
+                        'product.unit',
+                        'product.variants',
+                    ])
+                    ->first();
+            }
+        );
+
+        $executionTime = round(microtime(true) - $startTime, 4);
+
+        if (!$stock) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Stock not found',
+                'from_cache' => $fromCache,
+                'execution_time' => $executionTime . ' sec'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Stock details',
+            'source' => $fromCache ? 'Cache' : 'Database',
+            'execution_time' => $executionTime . ' sec',
+            'data' => $stock
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
 }

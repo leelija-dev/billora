@@ -18,8 +18,9 @@ class PackageCostController extends Controller
         try {
             $user = Auth::user()->id;
             $startTime = microtime(true);
+            $search = $request->search ?? null;
             $page = $request->page ?? 1;
-            $cacheKey = "package_cost_list_{$user}_page_{$page}";
+            $cacheKey = "package_cost_list_{$user}_{search}_{$search}_page_{$page}";
             $formCache = Cache::tags(['package_cost_user_' . $user])->has($cacheKey);
             if (!Auth::check()) {
                 return response()->json([
@@ -35,8 +36,21 @@ class PackageCostController extends Controller
 
                 ]);
             }
-            $packegesCost = Cache::tags(['package_cost_user_' . $user])->remember($cacheKey, 600, function () use ($id) {
-                return PackageCost::where('user_id', $id)->orderBy('created_at', 'desc')->paginate(8);
+            $packegesCost = Cache::tags(['package_cost_user_' . $user])->remember($cacheKey, 600, function () use ($id,$search) {
+                  $query = PackageCost::where('user_id', $id);
+                  if (!empty($search)) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('package_price', 'like', "%{$search}%")
+                            ->orWhere('package_name', 'like', "%{$search}%")
+                            ->orWhere('package_size', 'like', "%{$search}%");
+                            // Add other searchable columns here
+                        });
+                    }
+                // return PackageCost::where('user_id', $id)->paginate(8);
+                return $query->orderBy('id', 'desc')->paginate(8);
+
+
+
             });
             $executionTime = microtime(true) - $startTime;
             return response()->json([
