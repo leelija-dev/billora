@@ -299,8 +299,8 @@ class ProductsController extends Controller
     private function generateQrAndUpload($product)
     {
         try {
-
-            $qrData = "product/{$product->id}";
+            $qrCodeNumber = str_pad($product->id, 10, '0', STR_PAD_LEFT);
+            $qrData = "PRD{$qrCodeNumber}";
 
             $renderer = new ImageRenderer(
                 new RendererStyle(200),
@@ -345,8 +345,8 @@ class ProductsController extends Controller
     {
        
         try {
-
-            $qrData = "stock/{$id}";
+            $qrCodeNumber = str_pad($id, 10, '0', STR_PAD_LEFT);
+            $qrData = "STK{$qrCodeNumber}";
 
             $renderer = new ImageRenderer(
                 new RendererStyle(200),
@@ -392,7 +392,7 @@ class ProductsController extends Controller
         try {
             $barcodeNumber = str_pad($id, 10, '0', STR_PAD_LEFT);
             $barcodeBase64 = DNS1D::getBarcodePNG(
-                (string)'stock/'.$barcodeNumber,
+                (string)'STK'.$barcodeNumber,
                 'C128',2,60
             );
 
@@ -464,7 +464,7 @@ class ProductsController extends Controller
         try {
             $barcodeNumber = str_pad($product->id, 10, '0', STR_PAD_LEFT);
             $barcodeBase64 = DNS1D::getBarcodePNG(
-                (string)'product/'.$barcodeNumber,
+                (string)'PRD'.$barcodeNumber,
                 'C128',2,60
             );
 

@@ -867,8 +867,8 @@ class StocksController extends Controller
     {
        
         try {
-
-            $qrData = "stock/{$id}";
+            $qrCodeNumber = str_pad($id, 10, '0', STR_PAD_LEFT);
+            $qrData = "STK{$qrCodeNumber}";
 
             $renderer = new ImageRenderer(
                 new RendererStyle(200),
@@ -914,7 +914,7 @@ class StocksController extends Controller
         try {
             $barcodeNumber = str_pad($id, 10, '0', STR_PAD_LEFT);
             $barcodeBase64 = DNS1D::getBarcodePNG(
-                (string)'stock/'.$barcodeNumber,
+                (string)'STK'.$barcodeNumber,
                 'C128',2,60
             );
 

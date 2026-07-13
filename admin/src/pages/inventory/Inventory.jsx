@@ -15,6 +15,7 @@ import {
   FiGrid,
   FiRefreshCw as FiRefreshQr,
   FiPrinter,
+  FiLoader,
 } from "react-icons/fi";
 import { FiMinus } from 'react-icons/fi';
 import DeductStockModal from '../../components/features/Stocks/DeductStockModal';
@@ -74,7 +75,7 @@ const Stock = () => {
   // QR/Barcode related state
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedStockForQR, setSelectedStockForQR] = useState(null);
-  const [regeneratingQR, setRegeneratingQR] = useState(false);
+  const [regeneratingQRIds, setRegeneratingQRIds] = useState(new Set());
 
   // QR/Barcode Print related state
   const [showQRPrintModal, setShowQRPrintModal] = useState(false);
@@ -256,7 +257,7 @@ const Stock = () => {
 
   const handleRegenerateQR = async (stock) => {
     console.log('🔁 Regenerating QR for stock:', stock);
-    setRegeneratingQR(true);
+    setRegeneratingQRIds(prev => new Set(prev).add(stock.id));
     try {
       const response = await stocksAPI.regenerateQR(stock.id);
       console.log('Regenerate QR Response:', response);
@@ -280,7 +281,11 @@ const Stock = () => {
       console.error('Error regenerating QR code:', error);
       toast.error(error.response?.data?.message || 'Failed to regenerate QR code');
     } finally {
-      setRegeneratingQR(false);
+      setRegeneratingQRIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(stock.id);
+        return newSet;
+      });
     }
   };
 
@@ -505,14 +510,14 @@ const Stock = () => {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleOpenQRModal(row)}
+            onClick={() => handleOpenQRPrintModal(row)}
             className="p-2 text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
             title="View QR Code & Barcode"
           >
             <FaQrcode className="w-4 h-4" />
           </motion.button>
 
-          {/* Print QR/Barcode Button */}
+          {/* Print QR/Barcode Button
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -521,17 +526,22 @@ const Stock = () => {
             title="Print QR Code & Barcode"
           >
             <FiPrinter className="w-4 h-4" />
-          </motion.button>
+          </motion.button> */}
 
           {/* Regenerate QR Code Button */}
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => handleRegenerateQR(row)}
-            className="p-2 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+            disabled={regeneratingQRIds.has(row.id)}
+            className="p-2 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Regenerate QR Code & Barcode"
           >
-            <FiRefreshQr className="w-4 h-4" />
+            {regeneratingQRIds.has(row.id) ? (
+              <FiLoader className="w-4 h-4 animate-spin" />
+            ) : (
+              <FiRefreshQr className="w-4 h-4" />
+            )}
           </motion.button>
 
           <motion.button
@@ -928,6 +938,7 @@ const Stock = () => {
           isOpen={showQRPrintModal}
           onClose={handleCloseQRPrintModal}
           stock={selectedStockForPrint}
+          isMode="Stock"
           product={selectedStockForPrint?.product}
         />
       )}
