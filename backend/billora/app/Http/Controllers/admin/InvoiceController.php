@@ -1462,7 +1462,13 @@ class InvoiceController extends Controller
             $cacheKey = "scanned_product_data_{$user}_{$id}";
             $fromCache = Cache::tags(['scanned_product_user_' . $user])->has($cacheKey);
             $product = Cache::tags(['scanned_product_user_' . $user])->remember($cacheKey, 600, function () use ($id,$user) {
-            return Products::where('id',$id)->where('user_id',$user)->with(['brand','category','unit','variants'])->first();
+            return Products::where('id',$id)->where('user_id',$user)
+            ->with([
+                'brand:id,name,slug',
+                'category:id,name,slug',
+                'unit:id,name,code',
+                'variants:product_id,size,color,material,gender',
+                ])->first();
               
                 
             });
@@ -1512,10 +1518,10 @@ class InvoiceController extends Controller
                     ->where('user_id', $user)
                     ->with([
                         'product:id,name,sku,slug,brand_id,category_id,unit_id,attributes',
-                        'product.brand',
-                        'product.category',
-                        'product.unit',
-                        'product.variants',
+                        'product.brand:id,name,slug',
+                        'product.category:id,name,slug',
+                        'product.unit:id,name,code',
+                        'product.variants:product_id,size,color,material,gender',
                     ])
                     ->first();
             }
