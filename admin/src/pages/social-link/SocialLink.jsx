@@ -31,6 +31,9 @@ const SocialLink = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
+  // Get API base URL from environment variables
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.thefastbill.com/api';
+
   // Fetch connected accounts on mount
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -58,8 +61,8 @@ const SocialLink = () => {
     try {
       setIsConnecting(true);
       
-      // Direct redirect to the backend endpoint
-      const redirectUrl = `http://localhost:8000/api/social/facebook/redirect`;
+      // Use environment variable for the redirect URL
+      const redirectUrl = `${API_BASE_URL}/social/facebook/redirect`;
       window.location.href = redirectUrl;
       
     } catch (error) {
