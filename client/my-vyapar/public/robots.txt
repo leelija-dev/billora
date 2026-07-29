@@ -1,0 +1,18 @@
+https://thefastbill.com/sitemap.xml
+
+User-agent: Googlebot
+Allow: /
+User-Agent: bingbot
+Allow: /
+User-agent: msnbot
+Allow: /
+User-agent: Googlebot-Image
+Disallow: /personal
+User-agent: Mediapartners-Google
+Disallow:
+
+User-agent: *
+Allow: /
+Disallow: /wp-admin/
+Allow: /wp-admin/admin-ajax.php
+Allow: /feed
