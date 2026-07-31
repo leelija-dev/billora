@@ -27,9 +27,9 @@ class AdminUserController extends Controller
     }
     public function store(Request $request)
     {
-        try {
+        
             $data = $request->validate([
-                'name'        => 'required|string|max:255',
+                'name'        => 'required|string|unique:admin_users,username|max:255',
                 'email'       => 'required|email|unique:admin_users,email',
                 'image'       => 'nullable|image',
                 'fname'       => 'required|string|max:255',
@@ -39,6 +39,7 @@ class AdminUserController extends Controller
                 'roles'       => 'required|array',
                 'roles.*'     => 'exists:roles,name',
             ]);
+            try {
             //   dd($data);
             $folderPath = public_path('uploads/admin_images');
 
@@ -73,8 +74,8 @@ class AdminUserController extends Controller
 
             return redirect()->route('admin.admin-users.index')->with('success', 'Admin User Created Successfully');
         } catch (\Exception $e) {
-            dd($e->getMessage());
-            return redirect()->route('admin.admin-users.index')->with('error', $e->getMessage());
+            // dd($e->getMessage());
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
     public function edit($id)
@@ -146,14 +147,15 @@ class AdminUserController extends Controller
 
     public function updatePassword($id, Request $request)
     {
-        try {
-            $admin = AdminUser::findOrFail($id);
+        
+           
             $data = $request->validate([
                 'current_password' => 'required',
                 'new_password'     => 'required',
                 'confirm_password' => 'required|same:new_password',
             ]);
-           
+            $admin = AdminUser::findOrFail($id);
+           try {
             if (!Hash::check($data['current_password'], $admin->password)) {
                 return back()->withErrors([
                     'current_password' => 'Current password is incorrect'
