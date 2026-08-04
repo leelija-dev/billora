@@ -41,8 +41,8 @@ const Sidebar = () => {
     loading: permissionsLoading,
     permissionsFetched,
   } = usePermissionStore();
-  const { user } = useAuthStore();
-  const { planExpireReminder } = useNotificationStore();
+  const { user, logout } = useAuthStore();
+  const { planExpireReminder, clearNotifications } = useNotificationStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -73,6 +73,14 @@ const Sidebar = () => {
       fetchUserPermissions(user.id);
     }
   }, [user?.plan_id, permissionsFetched, permissionsLoading]);
+
+  // Handle logout
+  const handleLogout = () => {
+    clearNotifications();
+    logout();
+    localStorage.setItem("logout-event", Date.now().toString());
+    navigate('/login');
+  };
 
   // Icon mapping for dynamic menu items
   const iconMap = {
@@ -357,6 +365,7 @@ const Sidebar = () => {
                 <motion.button
                   whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={handleLogout}
                   className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
                 >
                   <FiLogOut className="w-4 h-4" />

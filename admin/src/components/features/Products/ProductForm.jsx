@@ -1537,10 +1537,10 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <SearchSelect
   label="Medicine Type"
   options={createPageData.medicineTypes?.map((type) => ({
-    value: type.id,
-    label: type.name,
-    description: type.code ? `Code: ${type.code}` : null,
-    subtext: type.category ? `Category: ${type.category}` : null,
+    value: type?.id,
+    label: type?.name,
+    description: type?.code ? `Code: ${type?.code}` : null,
+    subtext: type?.category ? `Category: ${type?.category}` : null,
   })) || []}
   value={watch("medicine_type_id") || ""}
   onChange={(value) => setValue("medicine_type_id", value, { shouldValidate: true })}

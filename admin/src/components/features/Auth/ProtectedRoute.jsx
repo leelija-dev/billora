@@ -238,7 +238,15 @@ const ProtectedRoute = ({
     const requiredPermission = permissionMap[feature]
     
     // Allow access to features that are available in the user's sidebar API
-    const hasBasicAccess = sidebarPermissions.some(p => p.slug === feature)
+    // Also check for feature aliases (e.g., "plans" for "billing")
+    const featureAliases = {
+      'billing': ['plans'],
+      'invoices': ['bill-generation']
+    }
+    const aliases = featureAliases[feature] || []
+    const hasBasicAccess = sidebarPermissions.some(p => 
+      p.slug === feature || aliases.includes(p.slug)
+    )
     
     // Debug logging for billing access
     if (feature === 'billing') {
