@@ -596,6 +596,27 @@
                         <span>💡</span> Use lowercase with underscores (e.g., manage_users)
                     </div>
                 </div>
+                <div class="form-group-modern">
+                    <label class="form-label-modern">
+                        Permission Slug <span>*</span>
+                    </label>
+                    <div class="input-wrapper-modern">
+                        <span class="input-icon-modern">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
+                            </svg>
+                        </span>
+                        <input type="text" name="slug" class="form-input-modern with-icon"
+                            placeholder="Enter permission slug (e.g., manage-users, view-reports)" 
+                            value="{{ $planPermission->slug ?? '' }}" required>
+                    </div>
+                    @error('slug')
+                        <span class="text-danger">{{ $message }}</span>
+                    @enderror
+                    <div class="helper-text-modern">
+                        <span>💡</span> Use lowercase with hyphens (e.g., manage-users)
+                    </div>
+                </div>
 
                 <!-- Description - Full Width -->
                 <div class="form-group-modern form-group-full">

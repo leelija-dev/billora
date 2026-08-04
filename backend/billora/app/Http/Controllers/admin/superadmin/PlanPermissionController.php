@@ -29,12 +29,13 @@ class PlanPermissionController extends Controller
         try {
             $permission = $request->validate([
                 'name' => 'required',
+                'slug' => 'required',
                 'description' => 'nullable',
                 'is_active' => 'required',
                 'permissions' => 'required|array'
             ]);
             // dd($permission);
-            $permission['slug'] = Str::slug($permission['name']);
+            // $permission['slug'] = Str::slug($permission['name']);
 
             $planPermission = PlanPermission::create([
                 'permission_name' => $permission['name'],
@@ -84,6 +85,7 @@ class PlanPermissionController extends Controller
         try {
             $data = $request->validate([
                 'name' => 'required',
+                'slug' => 'required',
                 'description' => 'nullable',
                 'is_active' => 'required',
                 'permissions' => 'required|array'
@@ -95,7 +97,8 @@ class PlanPermissionController extends Controller
             // Update main table
             $planPermission->update([
                 'permission_name' => $data['name'],
-                'slug' => Str::slug($data['name']),
+                // 'slug' => Str::slug($data['name']),
+                'slug' => $data['slug'],
                 'description' => $data['description'] ?? null,
                 'is_active' => $data['is_active'],
             ]);
