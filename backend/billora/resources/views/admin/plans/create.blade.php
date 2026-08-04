@@ -582,47 +582,48 @@
         .form-grid {
             gap: 25px;
         }
+
         .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
-}
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
 
-.feature-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    background: #fff;
-    cursor: pointer;
-    transition: all .25s ease;
-}
+        .feature-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            cursor: pointer;
+            transition: all .25s ease;
+        }
 
-.feature-card:hover {
-    border-color: #2563eb;
-    box-shadow: 0 4px 12px rgba(37,99,235,.12);
-}
+        .feature-card:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, .12);
+        }
 
-.feature-card input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #2563eb;
-    cursor: pointer;
-}
+        .feature-card input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #2563eb;
+            cursor: pointer;
+        }
 
-.check-icon {
-    color: #22c55e;
-    font-size: 15px;
-}
+        .check-icon {
+            color: #22c55e;
+            font-size: 15px;
+        }
 
-.feature-name {
-    font-size: 15px;
-    font-weight: 500;
-    color: #374151;
-}
+        .feature-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #374151;
+        }
     </style>
 
     {{-- @include('admin.sidebar') --}}
@@ -776,32 +777,28 @@
 
 
                 <!-- Features -->
-            <div class="form-group">
-                <div class="form-title" style="margin-top:0;">Features</div>
+                <div class="form-group">
+                    <div class="form-title" style="margin-top:0;">Features</div>
 
-                <div class="features-grid">
-                    @foreach ($features as $feature)
-                        <label class="feature-card" for="feature_{{ $feature->id }}">
-                            <input
-                                type="checkbox"
-                                id="feature_{{ $feature->id }}"
-                                name="features[]"
-                                value="{{ $feature->id }}"
-                                {{ in_array($feature->id, old('features', [])) ? 'checked' : '' }}
->
+                    <div class="features-grid">
+                        @foreach ($features as $feature)
+                            <label class="feature-card" for="feature_{{ $feature->id }}">
+                                <input type="checkbox" id="feature_{{ $feature->id }}" name="features[]"
+                                    value="{{ $feature->id }}"
+                                    {{ in_array($feature->id, old('features', [])) ? 'checked' : '' }}>
 
 
-                            <span class="feature-name">
-                                {{ $feature->name }}
-                            </span>
-                        </label>
-                    @endforeach
+                                <span class="feature-name">
+                                    {{ $feature->name }}
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+
+                    @error('features')
+                        <span class="text-danger" style="color:red">{{ $message }}</span>
+                    @enderror
                 </div>
-
-                @error('features')
-                    <span class="text-danger" style="color:red">{{ $message }}</span>
-                @enderror
-            </div>
 
                 <div class="form-title" style="margin-top: 10px;">Permissions</div>
                 <div class="features-section">
@@ -824,8 +821,36 @@
                         @endforeach
                     </div>
                 </div>
-                <!-- Status Toggle -->
                 <div class="form-group">
+                    <label for="platform" class="block text-sm font-medium text-gray-700 mb-2">
+                        Platform<span class="text-red-500">*</span> (for screen type)
+                    </label>
+
+                    <select id="platform" name="screen_type" required
+                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="" disable hidden>Select Platform</option>
+
+                        <option value="mobile" {{ old('screen_type') == 'mobile' ? 'selected' : '' }}>
+                            Mobile
+                        </option>
+
+                        <option value="desktop"
+                            {{ old('screen_type') == 'desktop' ? 'selected' : '' }}>
+                            Desktop
+                        </option>
+
+                        <option value="mobile_with_desktop"
+                            {{ old('screen_type') == 'mobile_with_desktop' ? 'selected' : '' }}>
+                            Mobile + Desktop
+                        </option>
+                    </select>
+
+                    @error('screen_type')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <!-- Status Toggle -->
+                <div class="form-group mt-4">
                     <div class="toggle-group">
                         <div>
                             <div class="toggle-label">Active Status</div>
@@ -841,6 +866,7 @@
                         <span class="text-danger" style="color: red">{{ $message }}</span>
                     @enderror
                 </div>
+
 
                 <!-- Form Actions -->
                 <div class="form-actions">

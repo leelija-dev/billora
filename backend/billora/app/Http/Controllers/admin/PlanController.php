@@ -245,16 +245,23 @@ class PlanController extends Controller
         $plans = Cache::tags(['plans_search'])->remember($cacheKey, 600, function () use ($search) {
             
         if ($search == 'all') {
-            return  Plans::with('permissions', 'business_types.businessType')
+            return  Plans::with('permissions', 'business_types.businessType','features')
                 ->where('is_active', true)
                 ->get();
         } else {
-            return Plans::with('permissions', 'business_types.businessType')
-                ->where('is_active', true)
-                ->whereHas('business_types', function ($q) use ($search) {
-                    $q->where('business_type_id', $search);
-                })
-                ->get();
+            // return Plans::with('permissions', 'business_types.businessType')
+            //     ->where('is_active', true)
+            //     ->whereHas('business_types', function ($q) use ($search) {
+            //         $q->where('business_type_id', $search);
+            //     })
+            //     ->get();
+          return Plans::with('permissions', 'business_types.businessType', 'features')
+            ->where('is_active', true)
+            ->where(function ($query) use ($search) {
+                $query->where('screen_type', 'LIKE', "%{$search}%")
+                    ->orWhere('duration_days', '>=', $search);
+            })
+            ->get();
         }
     });
         $executionTime = microtime(true) - $startTime;

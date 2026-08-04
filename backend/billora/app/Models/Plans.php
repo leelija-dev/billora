@@ -21,6 +21,7 @@ class Plans extends Model
         'is_active',
         'duration_days',
         'currency',
+        'screen_type',
         'gst',
         'discount'
     ];

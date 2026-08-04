@@ -76,7 +76,8 @@ class PlansController extends Controller
             'duration_days' => 'required',
             'currency'      => 'nullable',
             'permissions'    => 'nullable|array',
-            'business_types' => 'required|array'
+            'business_types' => 'required|array',
+            'screen_type'    => 'required|in:mobile,desktop,mobile_with_desktop'
         ]);
         $admin = Auth::guard('admin')->user();
 
@@ -145,7 +146,8 @@ class PlansController extends Controller
             'duration_days' => 'required',
             'currency'      => 'nullable',
             'permissions'   => 'nullable|array',
-            'business_types' => 'required|array'
+            'business_types' => 'required|array',
+            'screen_type'    => 'required|in:mobile,desktop,mobile_with_desktop'
         ]);
 
         try {
