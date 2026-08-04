@@ -1042,10 +1042,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <Input
             label="Unit Amount"
             type="number"
-            step="0.0001"
+            step="any"
             placeholder="Enter unit amount"
             error={errors.unit_amount?.message}
-            onInput={(e) => handleDecimalInput(e, 4)}
             {...register("unit_amount", {
               required: "Unit amount is required",
               valueAsNumber: true,
@@ -1081,10 +1080,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <Input
             label="Purchase Price / Costing Price"
             type="number"
-            step="0.01"
+            step="any"
             placeholder="Enter purchase price"
             error={errors.purchase_price?.message}
-            onInput={(e) => handleDecimalInput(e, 2)}
             {...register("purchase_price", {
               valueAsNumber: true,
               min: { value: 0, message: "Purchase price must be positive" },
@@ -1106,10 +1104,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <Input
             label="Selling Price"
             type="number"
-            step="0.01"
+            step="any"
             placeholder="Enter selling price"
             error={errors.selling_price?.message}
-            onInput={(e) => handleDecimalInput(e, 2)}
             {...register("selling_price", {
               valueAsNumber: true,
               min: { value: 0, message: "Selling price must be positive" },
@@ -1131,10 +1128,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <Input
       label="GST Percentage (Sales)"
       type="number"
-      step="0.01"
+      step="any"
       placeholder="Enter GST percentage for sales"
       error={errors.gst_percentage?.message}
-      onInput={(e) => handleDecimalInput(e, 2)}
       {...register("gst_percentage", {
         valueAsNumber: true,
         min: { value: 0, message: "GST percentage must be positive" },
@@ -1145,10 +1141,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     <Input
       label="GST Percentage (Purchase)"
       type="number"
-      step="0.01"
+      step="any"
       placeholder="Enter GST percentage for purchase"
       error={errors.purchase_gst_percentage?.message}
-      onInput={(e) => handleDecimalInput(e, 2)}
       {...register("purchase_gst_percentage", {
         valueAsNumber: true,
         min: { value: 0, message: "GST percentage must be positive" },
@@ -1159,10 +1154,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
           <Input
             label="Discount Percentage"
             type="number"
-            step="0.01"
+            step="any"
             placeholder="Enter discount percentage"
             error={errors.discount_percentage?.message}
-            onInput={(e) => handleDecimalInput(e, 2)}
             {...register("discount_percentage", {
               valueAsNumber: true,
               min: {
@@ -1319,10 +1313,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Conversion Factor"
                 type="number"
-                step="0.0001"
+                step="any"
                 placeholder="Enter conversion factor"
                 error={errors.conversion_factor?.message}
-                onInput={(e) => handleDecimalInput(e, 4)}
                 {...register("conversion_factor", {
                   valueAsNumber: true,
                   min: {
@@ -1338,10 +1331,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Minimum Stock Quantity"
                 type="number"
-                step="0.0001"
+                step="any"
                 placeholder="Enter minimum stock"
                 error={errors.minimum_stock_quantity?.message}
-                onInput={(e) => handleDecimalInput(e, 4)}
                 {...register("minimum_stock_quantity", {
                   valueAsNumber: true,
                   min: { value: 0, message: "Minimum stock must be positive" },
@@ -1354,10 +1346,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Maximum Stock Quantity"
                 type="number"
-                step="0.0001"
+                step="any"
                 placeholder="Enter maximum stock"
                 error={errors.maximum_stock_quantity?.message}
-                onInput={(e) => handleDecimalInput(e, 4)}
                 {...register("maximum_stock_quantity", {
                   valueAsNumber: true,
                   min: { value: 0, message: "Maximum stock must be positive" },
@@ -1370,10 +1361,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Current Stock"
                 type="number"
-                step="0.0001"
+                step="any"
                 placeholder="Enter current stock"
                 error={errors.current_stock?.message}
-                onInput={(e) => handleDecimalInput(e, 4)}
                 {...register("current_stock", {
                   valueAsNumber: true,
                   min: { value: 0, message: "Current stock must be positive" },
@@ -1423,10 +1413,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="MRP (Maximum Retail Price)"
                 type="number"
-                step="0.01"
+                step="any"
                 placeholder="Enter MRP"
                 error={errors.mrp?.message}
-                onInput={(e) => handleDecimalInput(e, 2)}
                 {...register("mrp", {
                   valueAsNumber: true,
                   min: { value: 0, message: "MRP must be positive" },
@@ -1439,10 +1428,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Wholesale Price"
                 type="number"
-                step="0.01"
+                step="any"
                 placeholder="Enter wholesale price"
                 error={errors.wholesale_price?.message}
-                onInput={(e) => handleDecimalInput(e, 2)}
                 {...register("wholesale_price", {
                   valueAsNumber: true,
                   min: {
@@ -1458,10 +1446,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="Discount Amount"
                 type="number"
-                step="0.01"
+                step="any"
                 placeholder="Enter discount amount"
                 error={errors.discount_amount?.message}
-                onInput={(e) => handleDecimalInput(e, 2)}
                 {...register("discount_amount", {
                   valueAsNumber: true,
                   min: {
@@ -1477,10 +1464,9 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
               <Input
                 label="CESS Percentage"
                 type="number"
-                step="0.01"
+                step="any"
                 placeholder="Enter CESS percentage"
                 error={errors.cess_percentage?.message}
-                onInput={(e) => handleDecimalInput(e, 2)}
                 {...register("cess_percentage", {
                   valueAsNumber: true,
                   min: {

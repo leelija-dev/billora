@@ -436,7 +436,7 @@
     <div class="form-container">
         <form id="adminUserForm" action="{{ route('admin.admin-users.update', $user->id ?? '') }}" method="POST" enctype="multipart/form-data" novalidate>
             @csrf
-            @method('PUT')
+          
 
             <div class="form-grid">
                 <!-- LEFT COLUMN -->
@@ -499,7 +499,7 @@
                     </div>
 
                     <!-- Password -->
-                    <div class="form-group" style="margin-top: 20px;">
+                    {{-- <div class="form-group" style="margin-top: 20px;">
                         <label class="form-label">Password</label>
                         <div class="input-wrapper">
                             <input type="password" id="password" name="password" class="form-input" placeholder="Enter new password">
@@ -513,7 +513,7 @@
                         @error('password')
                             <span class="text-danger">{{ $message }}</span>
                         @enderror
-                    </div>
+                    </div> --}}
                 </div>
             </div>
 
