@@ -18,6 +18,8 @@ use App\Models\SuperAdminPermission;
 use App\Http\Controllers\admin\superadmin\TagsController;
 use App\Http\Controllers\admin\superadmin\BlogController;
 use App\Http\Controllers\admin\superadmin\BlogCategoriesController;
+use App\Http\Controllers\admin\superadmin\FeaturesController;
+
 Route::middleware(['web', 'admin.guest'])->prefix('admin')->group(function () {
     Route::view('/login', 'admin.login')->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('admin.login');
@@ -58,6 +60,14 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
     
         Route::get('plan-purchase-history', [PlansController::class, 'purchaseHistory'])->name('admin.plans.purchase-history');
         Route::post('update-end-date/{id}',[PlansController::class,'updateEndDate'])->name('admin.plans.update-end-date');
+    });
+    Route::prefix('features')->group(function () {
+        Route::get('/', [FeaturesController::class, 'index'])->name('admin.features.index');
+        Route::get('/create', [FeaturesController::class, 'create'])->name('admin.features.create');
+        Route::post('/store', [FeaturesController::class, 'store'])->name('admin.features.store');
+        Route::get('/edit/{id}', [FeaturesController::class, 'edit'])->name('admin.features.edit');
+        Route::post('/update/{id}', [FeaturesController::class, 'update'])->name('admin.features.update');
+        Route::delete('/delete/{id}', [FeaturesController::class, 'delete'])->name('admin.features.delete');
     });
     Route::prefix('plan-permission')->group(function () {
         Route::get('/', [PlanPermissionController::class, 'index'])->name('admin.plan-permission.index');

@@ -571,6 +571,47 @@
             font-weight: 500;
             color: #1e293b;
         }
+        .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.feature-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: all .25s ease;
+}
+
+.feature-card:hover {
+    border-color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37,99,235,.12);
+}
+
+.feature-card input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #2563eb;
+    cursor: pointer;
+}
+
+.check-icon {
+    color: #22c55e;
+    font-size: 15px;
+}
+
+.feature-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #374151;
+}
     </style>
     <!-- Main Content - Full Width -->
     <div class="main-content">
@@ -726,44 +767,39 @@
                 <div class="features-section">
                     <div class="features-header">
                         <h3>Plan Features</h3>
-                        <button type="button" class="add-feature-btn" onclick="addFeature()">
+                        {{-- <button type="button" class="add-feature-btn" onclick="addFeature()">
                             <svg viewBox="0 0 24 24">
                                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                             </svg>
                             Add Feature
-                        </button>
+                        </button> --}}
                     </div>
                     <div id="features-container">
-                        @if (isset($plan) && $plan->features && count($plan->features))
+                        <div class="form-group">
+                <div class="form-title" style="margin-top:0;">Features</div>
 
-                            @foreach ($plan->features as $feature)
-                                <div class="feature-item">
-                                    <div class="feature-icon">
-                                        <svg viewBox="0 0 24 24">
-                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                        </svg>
-                                    </div>
+                <div class="features-grid">
+                    @foreach ($features as $feature)
+                        <label class="feature-card" for="feature_{{ $feature->id }}">
+                            <input
+                                type="checkbox"
+                                id="feature_{{ $feature->id }}"
+                                name="features[]"
+                                value="{{ $feature->id }}"
+                                {{ in_array($feature->id, old('features', $planFeatures)) ? 'checked' : '' }}>
 
-                                    <input type="text" name="features[]" class="feature-input"
-                                        value="{{ $feature }}" placeholder="Enter a feature">
 
-                                    <button type="button" class="remove-feature" onclick="removeFeature(this)">
-                                        <svg viewBox="0 0 24 24">
-                                            <path
-                                                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            @endforeach
-                        @else
-                            <!-- Default empty -->
-                            <div class="feature-item">
-                                <div class="feature-icon">✔</div>
-                                <input type="text" name="features[]" class="feature-input"
-                                    placeholder="Enter a feature">
-                                <button type="button" class="remove-feature" onclick="removeFeature(this)">❌</button>
-                            </div>
-                        @endif
+                            <span class="feature-name">
+                                {{ $feature->name }}
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+
+                @error('features')
+                    <span class="text-danger" style="color:red">{{ $message }}</span>
+                @enderror
+            </div>
                     </div>
                 </div>
                 <div class="form-title" style="margin-top: 10px;">Permissions</div>

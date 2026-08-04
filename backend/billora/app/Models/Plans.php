@@ -54,5 +54,13 @@ class Plans extends Model
     {
         return $this->hasMany(PlanBusinessType::class , 'plan_id');
     }
-
+   public function features()
+{
+    return $this->belongsToMany(
+        Features::class,
+        'features_permission',
+        'plan_id',
+        'feature_id'
+    );
+}
 }

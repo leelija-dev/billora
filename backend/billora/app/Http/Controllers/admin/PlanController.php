@@ -4,6 +4,7 @@ namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customers;
+use App\Models\Features;
 use App\Models\PlanBusinessType;
 use App\Models\PlanPermission;
 use Illuminate\Http\Request;
@@ -26,19 +27,21 @@ class PlanController extends Controller
         $fromCache = Cache::tags(['users_plans'])->has($cacheKey);
 
         $data =Cache::tags(['users_plans'])->remember($cacheKey, 600, function () {
-            return Plans::with('permissions', 'business_types.businessType')
+            return Plans::with('permissions', 'business_types.businessType','features')
                 ->where('is_active', true)
                 ->orderBy('id', 'desc')
                 ->get();
         });
-         Plans::with('permissions','business_types.businessType')->where('is_active', true)->get();
+         Plans::with('permissions','business_types.businessType','features')->where('is_active', true)->get();
         $executionTime = microtime(true) - $startTime;
+        $allFeatures = Features::all();
         return response()->json([
             'status' => true,
             'message' => 'Plan List',
             'source' => $fromCache ? 'Cache' : 'Database',
             'response_time' => round($executionTime, 4) . ' sec',
             'data' => $data,
+            'allFeatures' => $allFeatures,
             
         ]);
     }
