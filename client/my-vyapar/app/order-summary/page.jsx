@@ -64,6 +64,7 @@ const OrderSummary = () => {
   const [fetchAttempted, setFetchAttempted] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [forceShowDropdown, setForceShowDropdown] = useState(false);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(true);
   const redirectAttempted = useRef(false);
   const authCheckAttempted = useRef(false);
 
@@ -78,31 +79,25 @@ const OrderSummary = () => {
   // Check authentication properly
   useEffect(() => {
     const checkAuth = async () => {
-      // If already checking, skip
       if (authCheckAttempted.current) {
         return;
       }
       
       authCheckAttempted.current = true;
       
-      // First, check if we have user from store
       if (user && isLoggedIn) {
         console.log('✅ User already logged in:', user.email);
         setIsCheckingAuth(false);
         return;
       }
       
-      // Check localStorage for token and user
       const token = getToken();
       const storedUser = localStorage.getItem('user');
       
       if (token && storedUser) {
         console.log('📦 Found stored auth data, validating...');
         try {
-          // Try to validate session
           await checkAuthStatus();
-          
-          // Small delay to let store update
           setTimeout(() => {
             setIsCheckingAuth(false);
           }, 500);
@@ -112,7 +107,6 @@ const OrderSummary = () => {
         }
       }
       
-      // If we reach here and no redirect attempted, redirect to login
       if (!redirectAttempted.current) {
         redirectAttempted.current = true;
         console.log('🔒 No valid session, redirecting to login');
@@ -136,6 +130,71 @@ const OrderSummary = () => {
     }
   }, [authLoading, user, isCheckingAuth]);
 
+  // Load selected plan from localStorage
+  useEffect(() => {
+    const loadPlanData = () => {
+      setIsLoadingPlan(true);
+      
+      // Try to get plan from localStorage first
+      let planData = localStorage.getItem('selectedPlan');
+      console.log("Raw plan data from localStorage:", planData);
+      
+      // If not in localStorage, try sessionStorage
+      if (!planData) {
+        planData = sessionStorage.getItem('selectedPlan');
+        console.log("Raw plan data from sessionStorage:", planData);
+      }
+      
+      // If still not found, try to get from URL params
+      if (!planData) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const planParam = urlParams.get('plan');
+        if (planParam) {
+          try {
+            const decodedPlan = JSON.parse(decodeURIComponent(planParam));
+            console.log("Plan from URL params:", decodedPlan);
+            setSelectedPlan(decodedPlan);
+            setIsLoadingPlan(false);
+            return;
+          } catch (e) {
+            console.error('Error parsing plan from URL:', e);
+          }
+        }
+      }
+      
+      if (planData) {
+        try {
+          const parsedPlan = JSON.parse(planData);
+          console.log("Parsed plan data:", parsedPlan);
+          setSelectedPlan(parsedPlan);
+          setIsLoadingPlan(false);
+          logger.log("Loaded plan:", parsedPlan.name);
+        } catch (e) {
+          logger.error("Error parsing plan:", e);
+          toast.error('Invalid plan data', {
+            position: "top-right",
+            autoClose: 3000,
+            transition: Bounce,
+          });
+          router.push('/pricing');
+        }
+      } else {
+        console.log("No plan data found in storage");
+        toast.error('No plan selected. Please choose a plan first.', {
+          position: "top-right",
+          autoClose: 3000,
+          transition: Bounce,
+        });
+        router.push('/pricing');
+      }
+    };
+
+    // Only load plan after auth check is complete
+    if (!isCheckingAuth && !authLoading) {
+      loadPlanData();
+    }
+  }, [router, isCheckingAuth, authLoading]);
+
   // Fetch business types using business store - only once
   useEffect(() => {
     const loadBusinessTypes = async () => {
@@ -145,7 +204,7 @@ const OrderSummary = () => {
         setFetchAttempted(true);
         try {
           logger.log('🔄 Fetching business types...');
-          console.log('Calling fetchBusinessTypes with token:', token.substring(0, 20) + '...');
+          console.log('Calling fetchBusinessTypes with token');
           
           const result = await fetchBusinessTypes(token);
           
@@ -229,41 +288,6 @@ const OrderSummary = () => {
     
     getUserData();
   }, [user]);
-
-  // Load selected plan from localStorage
-  useEffect(() => {
-    const loadPlanData = () => {
-      const planData = localStorage.getItem('selectedPlan');
-      console.log("Raw plan data from localStorage:", planData);
-      
-      if (planData) {
-        try {
-          const parsedPlan = JSON.parse(planData);
-          console.log("Parsed plan data:", parsedPlan);
-          setSelectedPlan(parsedPlan);
-          logger.log("Loaded plan:", parsedPlan.name);
-        } catch (e) {
-          logger.error("Error parsing plan:", e);
-          toast.error('Invalid plan data', {
-            position: "top-right",
-            autoClose: 3000,
-            transition: Bounce,
-          });
-          router.push('/pricing');
-        }
-      } else {
-        console.log("No plan data found in localStorage");
-        toast.error('No plan selected', {
-          position: "top-right",
-          autoClose: 3000,
-          transition: Bounce,
-        });
-        router.push('/pricing');
-      }
-    };
-
-    loadPlanData();
-  }, [router]);
   
   // Auto set businessTypeId from selected plan (only if present)
   useEffect(() => {
@@ -537,7 +561,7 @@ const OrderSummary = () => {
   };
 
   // Show loading state while checking auth or loading plan
-  if (isCheckingAuth || authLoading || !selectedPlan) {
+  if (isCheckingAuth || authLoading || isLoadingPlan || !selectedPlan) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -557,8 +581,6 @@ const OrderSummary = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] to-[#e8eef9]">
-      {/* ToastContainer removed - using global one from layout */}
-
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Order Form */}
@@ -686,7 +708,6 @@ const OrderSummary = () => {
                           Business Type <span className="text-gray-400 text-xs font-normal">(Recommended)</span>
                         </label>
                         
-                        {/* Always show dropdown if we have business types or force show */}
                         {(localBusinessTypes.length > 0 || forceShowDropdown) && (
                           <>
                             <select
@@ -711,7 +732,6 @@ const OrderSummary = () => {
                           </>
                         )}
                         
-                        {/* Loading State */}
                         {loadingBusinessTypes && localBusinessTypes.length === 0 && (
                           <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg flex items-center gap-2">
                             <FaSpinner className="animate-spin text-[#5b5bd6] w-4 h-4" />
