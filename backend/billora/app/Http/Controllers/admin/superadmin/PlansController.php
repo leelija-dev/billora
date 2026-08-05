@@ -30,7 +30,7 @@ class PlansController extends Controller
     {
         $this->checkAdminAuth();
         // Start with base query
-        $query = Plans::query();
+        $query = Plans::query()->with('features');
 
         // Apply search if exists
         if ($request->filled('search')) {

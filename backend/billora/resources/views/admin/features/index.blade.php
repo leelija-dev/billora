@@ -232,7 +232,7 @@
                             <h1 class="text-2xl font-bold bg-gradient-to-r from-gray-800 to-blue-600 bg-clip-text text-transparent">
                                 Features Management
                             </h1>
-                            <p class="text-sm text-gray-600 mt-1">Manage subscription plans and pricing</p>
+                            <p class="text-sm text-gray-600 mt-1">Manage features</p>
                         </div>
                         
                         <!-- Actions -->
@@ -283,7 +283,7 @@
                     <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                         <h2 class="text-lg font-semibold text-gray-800 flex items-center">
                             <i data-feather="grid" class="w-5 h-5 mr-2 text-blue-500"></i>
-                            All Plans
+                            All Features
                         </h2>
                     </div>
                     
@@ -291,11 +291,11 @@
                         <table class="w-full">
                             <thead class="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sl No.</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sl No.</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -303,16 +303,16 @@
                                 
                                     <tr class="table-row hover:bg-gray-50 transition duration-150" >
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
+                                            <div class="flex items-center text-center justify-center">
                                                 {{ $loop->iteration + ($features->currentPage() - 1) * $features->perPage() ?? 0 }}
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
                                             <span class="text-sm font-bold text-gray-900">
                                                 {{$feature->name ?? ''}}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
                                             <div class="flex items-center">
                                                 
                                                 <div class="ml-4">
@@ -323,13 +323,13 @@
                                             </div>
                                         </td>
                                         
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 transition-all duration-300 hover:scale-105">
-                                               {{ $feature->created_at->format('M d, Y') }}
+                                               {{ $feature->created_at->format('M d, Y h:i A') }}
                                             </span>
                                         </td>
                                         
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                                             <a href="{{ route('admin.features.edit', $feature->id) }}" class="inline-block">
                                                 <button class="action-icon text-blue-600 hover:text-blue-900 mr-3 transition-all duration-200">
                                                     <i data-feather="edit-2" class="w-4 h-4"></i>
