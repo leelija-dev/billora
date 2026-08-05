@@ -364,6 +364,7 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
+                                {{-- @dd($plans) --}}
                                 @forelse ($plans as $index => $plan)
                                     <tr class="table-row hover:bg-gray-50 transition duration-150" style="animation-delay: {{ $index * 0.05 }}s">
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -399,15 +400,15 @@
                                         </td>
                                         <td class="px-6 py-4">
                                             <div class="text-sm text-gray-900">
-                                                @if($plan->features)
-                                                    @foreach(array_slice($plan->features, 0, 3) as $feature)
-                                                        <span class="feature-tag inline-block px-2 py-1 text-xs bg-gray-100 rounded mr-1 mb-1 cursor-pointer transition-all duration-200 hover:bg-blue-500 hover:text-white">
-                                                            {{ Str::limit($feature, 15) }}
+                                                @if($plan->getRelation('features'))
+                                                    @foreach($plan->getRelation('features')->take(3) as $feature)
+                                                        <span class="feature-tag inline-block px-2 py-1 text-xs bg-gray-100 rounded mr-1 mb-1  transition-all duration-200 hover:bg-blue-500 hover:text-white">
+                                                            {{ Str::limit($feature->name, 15) }}
                                                         </span>
                                                     @endforeach
-                                                    @if(count($plan->features) > 3)
+                                                    @if($plan->getRelation('features')->count() > 3)
                                                         <span class="inline-block px-2 py-1 text-xs bg-gray-200 rounded mr-1 mb-1">
-                                                            +{{ count($plan->features) - 3 }}
+                                                            +{{ $plan->getRelation('features')->count() - 3 }}
                                                         </span>
                                                     @endif
                                                 @else

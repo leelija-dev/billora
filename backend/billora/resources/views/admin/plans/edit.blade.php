@@ -826,9 +826,36 @@
                         <span class="text-danger" style="color: red;">{{ $message }}</span>
                     @enderror
                 </div>
+                    <div class="form-group">
+                    <label for="platform" class="block text-sm font-medium text-gray-700 mb-2">
+                        Platform<span class="text-red-500">*</span> (for screen type)
+                    </label>
 
+                    <select id="platform" name="screen_type" required
+                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="" disable hidden>Select Platform</option>
+
+                        <option value="mobile" {{ old('screen_type', $plan->screen_type ?? '') == 'mobile' ? 'selected' : '' }}>
+                            Mobile
+                        </option>
+
+                        <option value="desktop"
+                            {{ old('screen_type', $plan->screen_type ?? '') == 'desktop' ? 'selected' : '' }}>
+                            Desktop
+                        </option>
+
+                        <option value="mobile_with_desktop"
+                            {{ old('screen_type', $plan->screen_type ?? '') == 'mobile_with_desktop' ? 'selected' : '' }}>
+                            Mobile + Desktop
+                        </option>
+                    </select>
+
+                    @error('screen_type')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
                 <!-- Status Toggle -->
-                <div class="form-group">
+                <div class="form-group mt-4">
                     <div class="toggle-group">
                         <div>
                             <div class="toggle-label">Active Status</div>
