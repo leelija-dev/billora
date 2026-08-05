@@ -69,9 +69,9 @@ const Pricing = ({
   const durationDropdownRef = useRef(null);
   const pathname = usePathname();
 
-  // Filter states
-  const [selectedScreenType, setSelectedScreenType] = useState("all");
-  const [selectedDuration, setSelectedDuration] = useState("all");
+  // Filter states - SET DEFAULT VALUES HERE
+  const [selectedScreenType, setSelectedScreenType] = useState("mobile_with_desktop");
+  const [selectedDuration, setSelectedDuration] = useState("365");
 
   const {
     plans,
@@ -112,7 +112,6 @@ const Pricing = ({
 
   // Screen type options
   const screenTypes = [
-    { value: "all", label: "All Screens", icon: Monitor },
     { value: "desktop", label: "Desktop Only", icon: Monitor },
     { value: "mobile", label: "Mobile Only", icon: Smartphone },
     { value: "mobile_with_desktop", label: "Mobile+Desktop", icon: Monitor },
@@ -120,7 +119,6 @@ const Pricing = ({
 
   // Duration options
   const durationOptions = [
-    { value: "all", label: "All Durations", icon: Clock },
     { value: "365", label: "1 Year (365 Days)", icon: Calendar },
     { value: "1095", label: "3 Years (1095 Days)", icon: Calendar },
   ];
