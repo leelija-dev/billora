@@ -43,7 +43,11 @@ import {
   Table,
   Grid,
   List,
-  MoveRight
+  MoveRight,
+  Monitor,
+  Smartphone,
+  Calendar,
+  Clock
 } from "lucide-react";
 
 const Pricing = ({
@@ -58,10 +62,16 @@ const Pricing = ({
   const [isSelectEnabled, setIsSelectEnabled] = useState(false);
   const [hoveredPlan, setHoveredPlan] = useState(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScreenDropdownOpen, setIsScreenDropdownOpen] = useState(false);
+  const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
   const [showComparison, setShowComparison] = useState(true);
-  const dropdownRef = useRef(null);
+  const screenDropdownRef = useRef(null);
+  const durationDropdownRef = useRef(null);
   const pathname = usePathname();
+
+  // Filter states
+  const [selectedScreenType, setSelectedScreenType] = useState("all");
+  const [selectedDuration, setSelectedDuration] = useState("all");
 
   const {
     plans,
@@ -84,8 +94,6 @@ const Pricing = ({
     setSortBy,
   } = useFilterStore();
   const [pendingPlan, setPendingPlan] = useState(null);
-  const [selectedBusinessType, setSelectedBusinessType] = useState("all");
-  const [allBusinessTypes, setAllBusinessTypes] = useState([]);
   const [filteredPlans, setFilteredPlans] = useState([]);
   const [subscribing, setSubscribing] = useState(null);
   const cardRefs = useRef([]);
@@ -101,6 +109,47 @@ const Pricing = ({
 
   // Check if we're on the pricing page
   const isPricingPage = pathname === "/pricing";
+
+  // Screen type options
+  const screenTypes = [
+    { value: "all", label: "All Screens", icon: Monitor },
+    { value: "desktop", label: "Desktop Only", icon: Monitor },
+    { value: "mobile", label: "Mobile Only", icon: Smartphone },
+    { value: "both", label: "Both", icon: Monitor },
+  ];
+
+  // Duration options
+  const durationOptions = [
+    { value: "all", label: "All Durations", icon: Clock },
+    { value: "365", label: "1 Year (365 Days)", icon: Calendar },
+    { value: "1095", label: "3 Years (1095 Days)", icon: Calendar },
+  ];
+
+  // Get selected screen type label
+  const getSelectedScreenLabel = () => {
+    const selected = screenTypes.find(type => type.value === selectedScreenType);
+    return selected ? selected.label : "All Screens";
+  };
+
+  // Get selected duration label
+  const getSelectedDurationLabel = () => {
+    const selected = durationOptions.find(option => option.value === selectedDuration);
+    return selected ? selected.label : "All Durations";
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (screenDropdownRef.current && !screenDropdownRef.current.contains(event.target)) {
+        setIsScreenDropdownOpen(false);
+      }
+      if (durationDropdownRef.current && !durationDropdownRef.current.contains(event.target)) {
+        setIsDurationDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Helper function to determine plan action based on current and target plan
   const getPlanAction = (currentPlan, targetPlan) => {
@@ -201,17 +250,6 @@ const Pricing = ({
     };
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   useEffect(() => {
     setIsClientMounted(true);
     const timer = setTimeout(() => {
@@ -219,31 +257,6 @@ const Pricing = ({
     }, 100);
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    const loadBusinessTypes = async () => {
-      try {
-        let businessTypeData;
-
-        if (token) {
-          businessTypeData = await businessService.getBusinessTypes(token);
-        } else {
-          businessTypeData = await businessService.getBusinessTypes();
-        }
-
-        if (businessTypeData && businessTypeData.length > 0) {
-          setAllBusinessTypes(businessTypeData);
-        } else {
-          console.warn("No business types found");
-        }
-      } catch (err) {
-        console.error("Business type fetch error:", err);
-        setAllBusinessTypes([]);
-      }
-    };
-
-    loadBusinessTypes();
-  }, [token]);
 
   // Transform a single plan with feature mapping
   const transformPlan = (plan, index) => {
@@ -278,6 +291,10 @@ const Pricing = ({
         featureMap[feature] = true;
       });
     }
+
+    // Determine screen type display
+    const screenType = plan.screen_type || 'both';
+    const screenTypeDisplay = screenType === 'both' ? 'Both' : screenType.charAt(0).toUpperCase() + screenType.slice(1);
 
     return {
       id: plan.id,
@@ -316,7 +333,10 @@ const Pricing = ({
       is_active: plan.is_active !== undefined ? plan.is_active : true,
       permissions: plan.permissions || [],
       slug: plan.slug || '',
-      raw: plan
+      raw: plan,
+      screen_type: screenType,
+      screen_type_display: screenTypeDisplay,
+      duration_days: plan.duration_days || 365
     };
   };
 
@@ -340,36 +360,46 @@ const Pricing = ({
     });
   };
 
-  const filterPlansByBusinessType = async (businessTypeId) => {
-    try {
-      if (businessTypeId === "all") {
-        let transformedPlans = transformPlans(plans);
+  const filterPlans = () => {
+    let filtered = [...plans];
 
-        if (limit && limit > 0) {
-          transformedPlans = transformedPlans.slice(0, limit);
+    // Filter by screen type
+    if (selectedScreenType !== "all") {
+      filtered = filtered.filter(plan => {
+        const planScreenType = plan.screen_type || 'both';
+        
+        if (selectedScreenType === 'desktop') {
+          return planScreenType === 'desktop';
+        } else if (selectedScreenType === 'mobile') {
+          return planScreenType === 'mobile';
+        } else if (selectedScreenType === 'both') {
+          return planScreenType === 'both';
         }
-
-        setFilteredPlans(transformedPlans);
-      } else {
-        updateFilter("search", businessTypeId);
-        const searchResults = await searchWithFilters();
-
-        if (searchResults && searchResults.length > 0) {
-          let transformedPlans = transformPlans(searchResults);
-
-          if (limit && limit > 0) {
-            transformedPlans = transformedPlans.slice(0, limit);
-          }
-
-          setFilteredPlans(transformedPlans);
-        } else {
-          setFilteredPlans([]);
-        }
-      }
-    } catch (error) {
-      console.error("Error filtering plans:", error);
-      setFilteredPlans([]);
+        return true;
+      });
     }
+
+    // Filter by duration
+    if (selectedDuration !== "all") {
+      const durationDays = parseInt(selectedDuration);
+      filtered = filtered.filter(plan => {
+        const planDuration = plan.duration_days || 365;
+        if (durationDays === 365) {
+          return planDuration <= 365;
+        } else if (durationDays === 1095) {
+          return planDuration >= 1095;
+        }
+        return true;
+      });
+    }
+
+    let transformedPlans = transformPlans(filtered);
+
+    if (limit && limit > 0) {
+      transformedPlans = transformedPlans.slice(0, limit);
+    }
+
+    setFilteredPlans(transformedPlans);
   };
 
   useEffect(() => {
@@ -386,24 +416,12 @@ const Pricing = ({
 
   useEffect(() => {
     if (plans && plans.length > 0) {
-      let transformedPlans = transformPlans(plans);
-
-      if (limit && limit > 0) {
-        transformedPlans = transformedPlans.slice(0, limit);
-      }
-
-      setFilteredPlans(transformedPlans);
+      filterPlans();
       setHasLoadedOnce(true);
     } else if (plans && plans.length === 0) {
       setHasLoadedOnce(true);
     }
-  }, [plans, limit, allFeatures]);
-
-  useEffect(() => {
-    if (showFilters && plans && plans.length > 0) {
-      filterPlansByBusinessType(selectedBusinessType);
-    }
-  }, [selectedBusinessType, showFilters, plans, allFeatures]);
+  }, [plans, limit, allFeatures, selectedScreenType, selectedDuration]);
 
   useEffect(() => {
     const checkEligibilityForPlans = async () => {
@@ -487,21 +505,6 @@ const Pricing = ({
   const getCurrentPrice = (plan) => {
     let basePrice;
 
-    if (selectedBusinessType !== "all" && showFilters) {
-      const businessTypeForPlan = plan.businessTypes?.find(
-        (bt) => bt.id === parseInt(selectedBusinessType),
-      );
-
-      if (businessTypeForPlan && businessTypeForPlan.custom_price) {
-        basePrice = businessTypeForPlan.custom_price;
-        return {
-          price: basePrice,
-          displayPrice: basePrice.toLocaleString("en-IN"),
-          hasCustomPrice: true,
-        };
-      }
-    }
-
     if (plan.discount > 0) {
       basePrice = plan.discountedPrice.monthly;
     } else {
@@ -516,20 +519,6 @@ const Pricing = ({
   };
 
   const getOriginalPrice = (plan) => {
-    if (selectedBusinessType !== "all" && showFilters) {
-      const businessTypeForPlan = plan.businessTypes?.find(
-        (bt) => bt.id === parseInt(selectedBusinessType),
-      );
-
-      if (businessTypeForPlan && businessTypeForPlan.custom_price) {
-        const customPrice = businessTypeForPlan.custom_price;
-        return {
-          price: customPrice,
-          displayPrice: customPrice.toLocaleString("en-IN"),
-        };
-      }
-    }
-
     return {
       price: plan.price.monthly,
       displayPrice: plan.displayPrice.monthly,
@@ -572,9 +561,7 @@ const Pricing = ({
       gst: plan.gst,
       gstAmount: gstAmount,
       totalAmount: totalAmount,
-      businessType: selectedBusinessType !== "all" && showFilters
-        ? allBusinessTypes.find((bt) => bt.id === parseInt(selectedBusinessType))
-        : plan.businessTypes?.[0] || null,
+      businessType: null,
       hasCustomPrice: currentPriceData.hasCustomPrice,
       eligibility: planEligibility[plan.id] || null,
       isUpgrade: planAction.isUpgrade,
@@ -585,12 +572,13 @@ const Pricing = ({
       slug: plan.slug,
       duration_days: plan.plan_duration,
       permissions: plan.permissions,
-      features: plan.features
+      features: plan.features,
+      screen_type: plan.screen_type,
+      plan_duration: plan.plan_duration
     };
 
-    // IMPORTANT: Store in localStorage for OrderSummary
+    // Store in localStorage for OrderSummary
     localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
-    // Also store in sessionStorage as backup
     sessionStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
 
     if (!isLoggedIn) {
@@ -599,17 +587,13 @@ const Pricing = ({
       return;
     }
 
-    // Handle different scenarios
     if (planAction.isUpgrade) {
-      // User has active plan and wants to upgrade - redirect to dashboard
       const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000";
       window.open(`${dashboardUrl}billing`, "_blank");
     } else if (isInactiveRepurchase) {
-      // User has inactive plan and wants to repurchase - go to order summary
       selectPlan(selectedPlanData);
       router.push("/order-summary");
     } else {
-      // New purchase
       selectPlan(selectedPlanData);
       router.push("/order-summary");
     }
@@ -910,6 +894,21 @@ const Pricing = ({
                     ))}
                   </tr>
 
+                  {/* Screen Type Row */}
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-semibold text-gray-700">
+                      Screen Type
+                    </td>
+                    {plans.map((plan) => (
+                      <td
+                        key={plan.id}
+                        className="px-6 py-4 text-center text-sm text-gray-600 capitalize"
+                      >
+                        {plan.screen_type_display || 'Both'}
+                      </td>
+                    ))}
+                  </tr>
+
                   {/* Features Rows */}
                   {features.length > 0 && features.map((feature, idx) => {
                     const featureName = typeof feature === 'string' ? feature : feature.name;
@@ -1107,11 +1106,7 @@ const Pricing = ({
     );
   }
 
-  const displayPlans = showFilters
-    ? filteredPlans
-    : plans && plans.length > 0
-      ? transformPlans(plans).slice(0, limit)
-      : [];
+  const displayPlans = filteredPlans.length > 0 ? filteredPlans : [];
 
   // Get all features for comparison
   const allFeaturesForComparison = allFeatures && allFeatures.length > 0
@@ -1119,15 +1114,6 @@ const Pricing = ({
     : displayPlans.length > 0 && displayPlans[0].allFeaturesList
       ? displayPlans[0].allFeaturesList
       : [];
-
-  // Get selected business type name for display
-  const getSelectedBusinessTypeName = () => {
-    if (selectedBusinessType === "all") return "All Business Types";
-    const selected = allBusinessTypes.find(
-      (bt) => bt.id === parseInt(selectedBusinessType),
-    );
-    return selected ? selected.name : "Select Business Type";
-  };
 
   return (
     <div className="pb-28 pt-8 md:pb-28 md:pt-12 bg-gradient-to-br from-gray-50 via-white to-gray-50 font-['Inter',system-ui,-apple-system,sans-serif] relative overflow-hidden">
@@ -1153,64 +1139,87 @@ const Pricing = ({
           </p>
         </div>
 
-        {/* Business Type Dropdown */}
-        {showFilters && allBusinessTypes.length > 0 && (
-          <div className="flex justify-center items-center mb-12 px-4 relative z-20">
-            <div className="relative" ref={dropdownRef}>
+        {/* Filters Section - Dropdowns */}
+        {showFilters && (
+          <div className="flex flex-wrap justify-center items-center gap-4 mb-12 px-4 relative z-20">
+            {/* Screen Type Dropdown */}
+            <div className="relative" ref={screenDropdownRef}>
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between gap-3 bg-white rounded-[40px] px-6 py-3 min-w-[260px] shadow-md border border-gray-200 hover:border-purple-300 transition-all duration-300"
+                onClick={() => setIsScreenDropdownOpen(!isScreenDropdownOpen)}
+                className="flex items-center justify-between gap-3 bg-white rounded-[40px] px-6 py-3 min-w-[200px] shadow-md border border-gray-200 hover:border-purple-300 transition-all duration-300"
               >
                 <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-purple-600" />
+                  <Monitor className="w-5 h-5 text-purple-600" />
                   <span className="text-gray-700 font-medium">
-                    {getSelectedBusinessTypeName()}
+                    {getSelectedScreenLabel()}
                   </span>
                 </div>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isScreenDropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* Dropdown Menu */}
-              {isDropdownOpen && (
+              {isScreenDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[30px] shadow-lg border border-gray-200 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
-                  <button
-                    onClick={() => {
-                      setSelectedBusinessType("all");
-                      setIsDropdownOpen(false);
-                    }}
-                    className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
-                      selectedBusinessType === "all"
-                        ? "bg-purple-50 text-purple-700"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    All Business Types
-                    {selectedBusinessType === "all" && (
-                      <Check className="w-4 h-4 ml-auto text-purple-600" />
-                    )}
-                  </button>
+                  {screenTypes.map((type) => {
+                    const Icon = type.icon;
+                    const isActive = selectedScreenType === type.value;
+                    return (
+                      <button
+                        key={type.value}
+                        onClick={() => {
+                          setSelectedScreenType(type.value);
+                          setIsScreenDropdownOpen(false);
+                        }}
+                        className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
+                          isActive ? "bg-purple-50 text-purple-700" : "text-gray-700"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{type.label}</span>
+                        {isActive && <Check className="w-4 h-4 ml-auto text-purple-600" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-                  {allBusinessTypes.map((businessType) => (
-                    <button
-                      key={businessType.id}
-                      onClick={() => {
-                        setSelectedBusinessType(businessType.id.toString());
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
-                        selectedBusinessType === businessType.id.toString()
-                          ? "bg-purple-50 text-purple-700"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      <Building2 className="w-4 h-4" />
-                      {businessType.name}
-                      {selectedBusinessType === businessType.id.toString() && (
-                        <Check className="w-4 h-4 ml-auto text-purple-600" />
-                      )}
-                    </button>
-                  ))}
+            {/* Duration Dropdown */}
+            <div className="relative" ref={durationDropdownRef}>
+              <button
+                onClick={() => setIsDurationDropdownOpen(!isDurationDropdownOpen)}
+                className="flex items-center justify-between gap-3 bg-white rounded-[40px] px-6 py-3 min-w-[200px] shadow-md border border-gray-200 hover:border-purple-300 transition-all duration-300"
+              >
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-purple-600" />
+                  <span className="text-gray-700 font-medium">
+                    {getSelectedDurationLabel()}
+                  </span>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDurationDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {isDurationDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-[30px] shadow-lg border border-gray-200 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
+                  {durationOptions.map((option) => {
+                    const Icon = option.icon;
+                    const isActive = selectedDuration === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setSelectedDuration(option.value);
+                          setIsDurationDropdownOpen(false);
+                        }}
+                        className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
+                          isActive ? "bg-purple-50 text-purple-700" : "text-gray-700"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{option.label}</span>
+                        {isActive && <Check className="w-4 h-4 ml-auto text-purple-600" />}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1227,8 +1236,8 @@ const Pricing = ({
               No Plans Available
             </h3>
             <p className="text-gray-600 text-lg">
-              No plans found for this business type. Please try another
-              selection.
+              No plans found matching your filters. Please try different
+              selections.
             </p>
           </div>
         ) : (
@@ -1347,6 +1356,17 @@ const Pricing = ({
                           <p className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
                             {plan.description}
                           </p>
+                          {/* Screen Type & Duration Badges */}
+                          <div className="mt-2 flex justify-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              <Monitor className="w-3 h-3" />
+                              {plan.screen_type_display || 'Both'}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              <Calendar className="w-3 h-3" />
+                              {plan.plan_duration} Days
+                            </span>
+                          </div>
                         </div>
 
                         {/* Price Section */}
@@ -1386,24 +1406,9 @@ const Pricing = ({
                                 </span>
                               </div>
                             )}
-
-                          {/* Special Pricing */}
-                          {currentPriceData.hasCustomPrice && (
-                            <div className="mt-4 flex justify-center">
-                              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 rounded-full">
-                                <div className="relative">
-                                  <div className="absolute inset-0 bg-purple-500 rounded-full blur-sm opacity-50"></div>
-                                  <Tag className="w-4 h-4 text-purple-600 relative" />
-                                </div>
-                                <span className="text-xs font-semibold text-purple-700">
-                                  Special Pricing Available
-                                </span>
-                              </div>
-                            </div>
-                          )}
                         </div>
 
-                        {/* Features Section - Show ALL features with check/cross */}
+                        {/* Features Section */}
                         <div className="mb-8 flex-1">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
