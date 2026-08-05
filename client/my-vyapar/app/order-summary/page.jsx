@@ -581,7 +581,7 @@ const OrderSummary = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4ff] to-[#e8eef9]">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-8 ">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Order Form */}
           <div className="lg:col-span-2">
