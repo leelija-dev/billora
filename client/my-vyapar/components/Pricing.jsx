@@ -115,7 +115,7 @@ const Pricing = ({
     { value: "all", label: "All Screens", icon: Monitor },
     { value: "desktop", label: "Desktop Only", icon: Monitor },
     { value: "mobile", label: "Mobile Only", icon: Smartphone },
-    { value: "both", label: "Both", icon: Monitor },
+    { value: "mobile_with_desktop", label: "Mobile+Desktop", icon: Monitor },
   ];
 
   // Duration options
@@ -293,8 +293,8 @@ const Pricing = ({
     }
 
     // Determine screen type display
-    const screenType = plan.screen_type || 'both';
-    const screenTypeDisplay = screenType === 'both' ? 'Both' : screenType.charAt(0).toUpperCase() + screenType.slice(1);
+    const screenType = plan.screen_type || 'mobile_with_desktop';
+    const screenTypeDisplay = screenType === 'mobile_with_desktop' ? 'mobile_with_desktop' : screenType.charAt(0).toUpperCase() + screenType.slice(1);
 
     return {
       id: plan.id,
@@ -366,14 +366,14 @@ const Pricing = ({
     // Filter by screen type
     if (selectedScreenType !== "all") {
       filtered = filtered.filter(plan => {
-        const planScreenType = plan.screen_type || 'both';
+        const planScreenType = plan.screen_type || 'mobile_with_desktop';
         
         if (selectedScreenType === 'desktop') {
           return planScreenType === 'desktop';
         } else if (selectedScreenType === 'mobile') {
           return planScreenType === 'mobile';
-        } else if (selectedScreenType === 'both') {
-          return planScreenType === 'both';
+        } else if (selectedScreenType === 'mobile_with_desktop') {
+          return planScreenType === 'mobile_with_desktop';
         }
         return true;
       });
@@ -904,7 +904,7 @@ const Pricing = ({
                         key={plan.id}
                         className="px-6 py-4 text-center text-sm text-gray-600 capitalize"
                       >
-                        {plan.screen_type_display || 'Both'}
+                        {plan.screen_type_display || 'mobile_with_desktop'}
                       </td>
                     ))}
                   </tr>
@@ -1360,7 +1360,7 @@ const Pricing = ({
                           <div className="mt-2 flex justify-center gap-2 flex-wrap">
                             <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                               <Monitor className="w-3 h-3" />
-                              {plan.screen_type_display || 'Both'}
+                              {plan.screen_type_display || 'mobile_with_desktop'}
                             </span>
                             <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                               <Calendar className="w-3 h-3" />
