@@ -37,8 +37,15 @@ const usePackageStore = create((set, get) => ({
   lastFetchTime: null,
   cacheKey: null,
 
-  // Fetch packages
+  // Fetch packages with proper pagination
   fetchPackages: async (userId, page = 1, filters = {}) => {
+    // Check if userId is provided
+    if (!userId) {
+      console.error('User ID is required to fetch packages')
+      set({ loading: false, error: 'User ID is required' })
+      return
+    }
+
     const cacheKey = JSON.stringify({ userId, page, filters })
     const currentState = get()
     
@@ -57,7 +64,8 @@ const usePackageStore = create((set, get) => ({
       set({
         packages: cached.packages,
         totalPackages: cached.total,
-        currentPage: page,
+        currentPage: cached.current_page || page,
+        pageSize: cached.per_page || 8,
         loading: false,
         cacheKey,
         lastFetchTime: Date.now()
@@ -65,34 +73,70 @@ const usePackageStore = create((set, get) => ({
       return
     }
 
-    set({ loading: true, cacheKey })
+    set({ loading: true, error: null, cacheKey })
+    
     try {
       const response = await packagesAPI.getAll(userId, page, filters)
       console.log('API Response in store:', response)
       
-      // Extract packages array from response
-      const packagesArray = response.data.data || []
-      const paginationData = response.data.pagination || {}
-      console.log('Packages data:', packagesArray)
+      // Extract data from response - handle different response structures
+      let packagesData = []
+      let paginationData = {}
+      
+      if (response?.data?.status === true) {
+        // Response structure from your API
+        const responseData = response.data.data
+        packagesData = responseData?.data || []
+        paginationData = {
+          total: responseData?.total || packagesData.length,
+          current_page: responseData?.current_page || page,
+          per_page: responseData?.per_page || 8,
+          last_page: responseData?.last_page || 1,
+          from: responseData?.from || 0,
+          to: responseData?.to || packagesData.length
+        }
+      } else if (response?.data?.data) {
+        // Fallback for different response structure
+        const responseData = response.data.data
+        packagesData = Array.isArray(responseData) ? responseData : (responseData?.data || [])
+        paginationData = {
+          total: responseData?.total || packagesData.length,
+          current_page: responseData?.current_page || page,
+          per_page: responseData?.per_page || 8
+        }
+      } else {
+        packagesData = Array.isArray(response?.data) ? response.data : []
+        paginationData = {
+          total: packagesData.length,
+          current_page: page,
+          per_page: 8
+        }
+      }
+      
+      console.log('Packages data:', packagesData)
+      console.log('Pagination data:', paginationData)
       
       // Cache the results
       const cacheData = {
-        packages: packagesArray,
-        total: paginationData.total || packagesArray.length
+        packages: packagesData,
+        total: paginationData.total,
+        current_page: paginationData.current_page,
+        per_page: paginationData.per_page
       }
       setCachedData(cacheKey, cacheData)
       
       set({
-        packages: packagesArray,
-        totalPackages: paginationData.total || packagesArray.length,
-        currentPage: paginationData.current_page || 1,
+        packages: packagesData,
+        totalPackages: paginationData.total || packagesData.length,
+        currentPage: paginationData.current_page || page,
         pageSize: paginationData.per_page || 8,
         loading: false,
         lastFetchTime: Date.now()
       })
+      
       return response.data
     } catch (error) {
-      console.log('Error in fetchPackages:', error)
+      console.error('Error in fetchPackages:', error)
       set({
         error: error.response?.data?.message || 'Failed to fetch packages',
         loading: false,
@@ -114,8 +158,9 @@ const usePackageStore = create((set, get) => ({
       
       // Add new package to local state immediately for better UX
       const { packages } = get()
+      const newPackage = response.data?.data || response.data
       set({
-        packages: [response.data, ...packages],
+        packages: [newPackage, ...packages],
         totalPackages: (packages?.length || 0) + 1,
         loading: false,
       })
@@ -144,8 +189,9 @@ const usePackageStore = create((set, get) => ({
       
       // Update local state immediately for better UX
       const { packages } = get()
+      const updatedPackage = response.data?.data || response.data
       set({
-        packages: packages.map(pkg => pkg.id === id ? response.data : pkg),
+        packages: packages.map(pkg => pkg.id === id ? updatedPackage : pkg),
         loading: false,
       })
       
@@ -172,12 +218,25 @@ const usePackageStore = create((set, get) => ({
       get().clearCache()
       
       // Update local state immediately for better UX
-      const { packages } = get()
+      const { packages, currentPage, totalPackages } = get()
+      const updatedPackages = packages.filter(pkg => pkg.id !== id)
+      
+      // If the last item on the page was deleted, go to previous page
+      const shouldGoToPreviousPage = updatedPackages.length === 0 && currentPage > 1
+      
       set({
-        packages: packages.filter(pkg => pkg.id !== id),
+        packages: updatedPackages,
         totalPackages: Math.max(0, (packages?.length || 0) - 1),
         loading: false,
       })
+      
+      if (shouldGoToPreviousPage) {
+        // Fetch the previous page
+        const { userId } = get()
+        if (userId) {
+          await get().fetchPackages(userId, currentPage - 1)
+        }
+      }
       
       return { success: true }
     } catch (error) {
@@ -199,7 +258,7 @@ const usePackageStore = create((set, get) => ({
       console.log('Package fetched successfully', response.data)
       
       set({ loading: false })
-      return response.data
+      return response.data?.data || response.data
     } catch (error) {
       console.error('Failed to fetch package:', error)
       set({
@@ -229,6 +288,11 @@ const usePackageStore = create((set, get) => ({
     } else {
       set({ filters: newFilters })
     }
+  },
+
+  // Set current page
+  setCurrentPage: (page) => {
+    set({ currentPage: page })
   },
 
   // Clear cache data

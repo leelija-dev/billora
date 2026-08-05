@@ -178,6 +178,11 @@
                     <i class="fa fa-hotel"></i>
                     <span class="ml-3">Business Types</span>
                 </a>
+                 <a href="{{ route('admin.features.index') }}"
+                    class="flex items-center px-4 py-3 {{ request()->routeIs('admin.features.index', 'admin.features.create', 'admin.features.edit') ? 'bg-blue-100 text-blue-600 font-semibold' : 'hover:bg-blue-100' }}">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span class="ml-3">Features</span>
+                </a>
                 {{-- @endif --}}
                 @if ($admin && $admin->can('view customers'))
                     <a href="{{ route('admin.plans.index') }}"

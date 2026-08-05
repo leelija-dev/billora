@@ -927,7 +927,15 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height
                 'message' => 'No active plan found.'
             ], 422);
         }
+        $activePlan  =  Plans::where('id',$data['plan_id'])->where('is_active',true)->first();
+        if (!$activePlan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The selected plan is not exists.'
+            ], 422);
+        }
         $plan = Plans::findOrFail($data['plan_id']);
+        
         $orderId = 'order_' . uniqid();
         $url = config('cashfree.base_url').'/orders';
         $disAmt = ($plan->price * $plan->discount) / 100;

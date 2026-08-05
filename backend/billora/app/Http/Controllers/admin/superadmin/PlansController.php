@@ -5,7 +5,9 @@ namespace App\Http\Controllers\admin\superadmin;
 use App\Http\Controllers\Controller;
 use App\Models\BusinessType;
 use App\Models\Customers;
+use App\Models\Features;
 use App\Models\PlanBusinessType;
+use App\Models\PlanFeaturesPermission;
 use Illuminate\Http\Request;
 use App\Models\Plans;
 use App\Models\PlanPermission;
@@ -28,7 +30,7 @@ class PlansController extends Controller
     {
         $this->checkAdminAuth();
         // Start with base query
-        $query = Plans::query();
+        $query = Plans::query()->with('features');
 
         // Apply search if exists
         if ($request->filled('search')) {
@@ -57,7 +59,8 @@ class PlansController extends Controller
         $this->checkAdminAuth();
         $permissions = PlanPermission::all();
         $business_types = BusinessType::where('is_active', 1)->get();
-        return view('admin.plans.create', compact('permissions', 'business_types'));
+        $features = Features::all();
+        return view('admin.plans.create', compact('permissions', 'business_types', 'features'));
     }
     public function store(Request $request)
     {
@@ -67,13 +70,14 @@ class PlansController extends Controller
             'price'         => 'required',
             'gst'           => 'required',
             'discount'      => 'required',
-            'features'      => 'nullable',
+            // 'features'      => 'nullable',
             'description'   => 'nullable',
             'is_active'     => 'required',
             'duration_days' => 'required',
             'currency'      => 'nullable',
             'permissions'    => 'nullable|array',
-            'business_types' => 'required|array'
+            'business_types' => 'required|array',
+            'screen_type'    => 'required|in:mobile,desktop,mobile_with_desktop'
         ]);
         $admin = Auth::guard('admin')->user();
 
@@ -82,6 +86,12 @@ class PlansController extends Controller
         $data['slug'] = Str::slug($data['name']);
         try {
             $plan = Plans::create($data);
+            foreach ($request->features as $feature) {
+                PlanFeaturesPermission::create([
+                    'plan_id' => $plan->id,
+                    'feature_id' => $feature
+                ]);
+            }
             if ($plan) {
                 foreach ($data['permissions'] as $permission) {
                     PlanPermissionDetails::create([
@@ -117,8 +127,11 @@ class PlansController extends Controller
         $planPermissions = PlanPermissionDetails::where('plan_id', $plan->id)
             ->pluck('permission_id')
             ->toArray();
-
-        return view('admin.plans.edit', compact('plan', 'permissions', 'planPermissions', 'business_types', 'selected_business_types'));
+        $planFeatures = PlanFeaturesPermission::where('plan_id', $plan->id)
+            ->pluck('feature_id')
+            ->toArray();
+        $features = Features::all();
+        return view('admin.plans.edit', compact('plan', 'features', 'planFeatures', 'permissions', 'planPermissions', 'business_types', 'selected_business_types'));
     }
     public function update(Request $request, $id)
     {
@@ -127,13 +140,14 @@ class PlansController extends Controller
             'price'         => 'required',
             'gst'           => 'required',
             'discount'      => 'required',
-            'features'      => 'nullable',
+            // 'features'      => 'nullable',
             'description'   => 'nullable',
             'is_active'     => 'nullable|boolean',
             'duration_days' => 'required',
             'currency'      => 'nullable',
             'permissions'   => 'nullable|array',
-            'business_types' => 'required|array'
+            'business_types' => 'required|array',
+            'screen_type'    => 'required|in:mobile,desktop,mobile_with_desktop'
         ]);
 
         try {
@@ -141,7 +155,31 @@ class PlansController extends Controller
 
             // Update plan
             $plan->update($data);
+            $newFeatures = $request->features ?? [];
 
+            // Existing features
+            $oldFeatures = PlanFeaturesPermission::where('plan_id', $plan->id)
+                ->pluck('feature_id')
+                ->toArray();
+
+            // Delete unchecked features
+            $toDelete = array_diff($oldFeatures, $newFeatures);
+
+            if (!empty($toDelete)) {
+                PlanFeaturesPermission::where('plan_id', $plan->id)
+                    ->whereIn('feature_id', $toDelete)
+                    ->delete();
+            }
+
+            // Insert newly checked features
+            $toInsert = array_diff($newFeatures, $oldFeatures);
+
+            foreach ($toInsert as $featureId) {
+                PlanFeaturesPermission::create([
+                    'plan_id' => $plan->id,
+                    'feature_id' => $featureId,
+                ]);
+            }
             // Selected permissions from form
             $newPermissions = $request->permissions ?? [];
             $newBusinessTypes = $request->business_types ?? [];
@@ -259,17 +297,17 @@ class PlansController extends Controller
     {
         $cacheKey = 'plan_purchase_history_' . md5($request->fullUrl());
 
-            $data = Cache::tags(['plan_purchase_history'])
-                ->remember($cacheKey, 600, function () use ($request) {
+        $data = Cache::tags(['plan_purchase_history'])
+            ->remember($cacheKey, 600, function () use ($request) {
                 $search = $request->search;
 
                 $planPurchaseHistory = PlanPurchaseHistory::when($search, function ($query) use ($search) {
-                        $query->where('id', 'like', '%' . $search . '%')
+                    $query->where('id', 'like', '%' . $search . '%')
                         ->orWhere('payment_id', 'like', '%' . $search . '%')
                         ->orWhereHas('plan', function ($q) use ($search) {
                             $q->where('name', 'like', "%{$search}%");
                         });
-                    })
+                })
                     ->latest()
                     ->paginate(10)
                     ->withQueryString();
@@ -278,13 +316,13 @@ class PlansController extends Controller
                 $planExpire = PlanPurchaseHistory::where('payment_status', 'pending')->count();
                 $cancelledPayment = PlanPurchaseHistory::where('payment_status', 'failed')->count();
                 return [
-                    'planPurchaseHistory'=>$planPurchaseHistory,
-                    'totalplanHistory'=>$totalplanHistory,
-                    'successPayment'=>$successPayment,
-                    'planExpire'=>$planExpire,
-                    'cancelledPayment'=>$cancelledPayment
+                    'planPurchaseHistory' => $planPurchaseHistory,
+                    'totalplanHistory' => $totalplanHistory,
+                    'successPayment' => $successPayment,
+                    'planExpire' => $planExpire,
+                    'cancelledPayment' => $cancelledPayment
                 ];
-        });
+            });
         return view('admin.plans.plan-purchase-history', $data);
     }
 
@@ -292,22 +330,22 @@ class PlansController extends Controller
     {
         $data = $request->validate([
             'new_end_date' => 'required',
-            'user_id' =>'required|exists:customers,id'
+            'user_id' => 'required|exists:customers,id'
         ]);
 
         try {
-            $planPurchase = PlanPurchaseHistory::where('id',$id)->where('user_id',$data['user_id'])->firstOrFail();
+            $planPurchase = PlanPurchaseHistory::where('id', $id)->where('user_id', $data['user_id'])->firstOrFail();
             $endDate = \Carbon\Carbon::parse($data['new_end_date']);
             $customer = Customers::findOrFail($data['user_id']);
-            if($planPurchase->payment_status != 'success'){
+            if ($planPurchase->payment_status != 'success') {
                 return redirect()->back()->with('error', 'Your plan payment has not been completed.');
             }
-             $planPurchase->update([
+            $planPurchase->update([
                 'end_date' => $endDate,
                 'status' => $endDate->gte(now()) ? 'active' : 'expired'
-             ]);
-             $customer->update([
-                    'is_active' => $endDate->gte(now())
+            ]);
+            $customer->update([
+                'is_active' => $endDate->gte(now())
             ]);
             Cache::tags(['plan_purchase_history'])->flush();
 

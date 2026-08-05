@@ -1,6 +1,6 @@
 @extends('admin.main-layout')
-    @section('title', 'Create New Plan')
-    @section('content')
+@section('title', 'Create New Plan')
+@section('content')
     <style>
         * {
             margin: 0;
@@ -95,11 +95,11 @@
         }
 
         .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        align-items: start; 
-    }
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
 
         .form-group {
             margin-bottom: 0;
@@ -578,9 +578,52 @@
                 /* Single column on mobile */
             }
         }
+
         .form-grid {
-    gap: 25px;
-}
+            gap: 25px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .feature-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fff;
+            cursor: pointer;
+            transition: all .25s ease;
+        }
+
+        .feature-card:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, .12);
+        }
+
+        .feature-card input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #2563eb;
+            cursor: pointer;
+        }
+
+        .check-icon {
+            color: #22c55e;
+            font-size: 15px;
+        }
+
+        .feature-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #374151;
+        }
     </style>
 
     {{-- @include('admin.sidebar') --}}
@@ -593,7 +636,7 @@
                 <h1>Create New Plan</h1>
                 <p>Add a new subscription plan for your customers</p>
             </div>
-            <a href="{{route('admin.plans.index')}}" class="back-btn">
+            <a href="{{ route('admin.plans.index') }}" class="back-btn">
                 <svg viewBox="0 0 24 24">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
                 </svg>
@@ -624,8 +667,7 @@
                                 </svg>
                             </span>
                             <input type="text" name="name" class="form-input with-icon"
-                                placeholder="Enter plan name (e.g., Basic, Premium)" value="{{ old('name') }}"
-                                required>
+                                placeholder="Enter plan name (e.g., Basic, Premium)" value="{{ old('name') }}" required>
                             @error('name')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
@@ -670,36 +712,36 @@
                         </div>
 
                     </div>
-                     <div class="form-group">
+                    <div class="form-group">
                         <label class="form-label">
                             GST (%)<span>*</span>
                         </label>
-                        <div >
-                            
+                        <div>
+
                             <input type="number" name="gst" class="form-input currency-input"
-                                placeholder="Enter GST percentage" step="0.01" min="0" value="{{ old('gst') }}"
-                                required>
+                                placeholder="Enter GST percentage" step="0.01" min="0"
+                                value="{{ old('gst') }}" required>
                             @error('gst')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
                         </div>
-                     </div>
-                     <div class="form-group">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">
                             Discount (%)<span>*</span>
                         </label>
-                        <div >
-                            
+                        <div>
+
                             <input type="number" name="discount" class="form-input currency-input"
-                                placeholder="Enter discount percentage" step="0.01" min="0" value="{{ old('discount') }}"
-                                required>
+                                placeholder="Enter discount percentage" step="0.01" min="0"
+                                value="{{ old('discount') }}" required>
                             @error('discount')
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
 
                         </div>
-                     </div>
+                    </div>
 
                     <!-- Duration Days -->
                     <div class="form-group">
@@ -714,8 +756,8 @@
                                 </svg>
                             </span>
                             <input type="number" name="duration_days" class="form-input with-icon"
-                                placeholder="Enter plan duration in days" min="0"
-                                value="{{ old('duration_days') }}" required>
+                                placeholder="Enter plan duration in days" min="0" value="{{ old('duration_days') }}"
+                                required>
                             @error('duration_days')
                                 <span class="text-danger" style="color: red">{{ $message }}</span>
                             @enderror
@@ -724,8 +766,7 @@
                     <!-- Description FULL WIDTH -->
                     <div class="form-group">
                         <label class="form-label">Plan Description</label>
-                        <textarea name="description" id="description" class="form-textarea"
-                            placeholder="Enter plan description">{{ old('description') }}</textarea>
+                        <textarea name="description" id="description" class="form-textarea" placeholder="Enter plan description">{{ old('description') }}</textarea>
 
                         @error('description')
                             <span class="text-danger" style="color: red">{{ $message }}</span>
@@ -733,47 +774,32 @@
                     </div>
 
                 </div>
-                   
 
-                    <!-- Features  -->
-                    <div class="form-group ">
-                        <div class="form-title" style="margin-top: 0px;">Features</div>
-                        <div class="features-section">
-                            <div class="features-header">
-                                <h3>Plan Features</h3>
-                                <button type="button" class="add-feature-btn" onclick="addFeature()">
-                                    <svg viewBox="0 0 24 24">
-                                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                                    </svg>
-                                    Add Feature
-                                </button>
-                            </div>
-                            <div id="features-container">
-                                <div class="feature-item">
-                                    <div class="feature-icon">
-                                        <svg viewBox="0 0 24 24">
-                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                        </svg>
-                                    </div>
-                                    <input type="text" name="features[]" class="feature-input"
-                                        placeholder="e.g., Up to 10 users">
 
-                                    <button type="button" class="remove-feature" onclick="removeFeature(this)">
-                                        <svg viewBox="0 0 24 24">
-                                            <path
-                                                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                                        </svg>
-                                    </button>
+                <!-- Features -->
+                <div class="form-group">
+                    <div class="form-title" style="margin-top:0;">Features</div>
 
-                                </div>
+                    <div class="features-grid">
+                        @foreach ($features as $feature)
+                            <label class="feature-card" for="feature_{{ $feature->id }}">
+                                <input type="checkbox" id="feature_{{ $feature->id }}" name="features[]"
+                                    value="{{ $feature->id }}"
+                                    {{ in_array($feature->id, old('features', [])) ? 'checked' : '' }}>
 
-                            </div>
-                        </div>
-                        @error('features')
-                            <span class="text-danger" style="color: red">{{ $message }}</span>
-                        @enderror
+
+                                <span class="feature-name">
+                                    {{ $feature->name }}
+                                </span>
+                            </label>
+                        @endforeach
                     </div>
-                
+
+                    @error('features')
+                        <span class="text-danger" style="color:red">{{ $message }}</span>
+                    @enderror
+                </div>
+
                 <div class="form-title" style="margin-top: 10px;">Permissions</div>
                 <div class="features-section">
                     <div class="features-header">
@@ -795,8 +821,36 @@
                         @endforeach
                     </div>
                 </div>
-                <!-- Status Toggle -->
                 <div class="form-group">
+                    <label for="platform" class="block text-sm font-medium text-gray-700 mb-2">
+                        Platform<span class="text-red-500">*</span> (for screen type)
+                    </label>
+
+                    <select id="platform" name="screen_type" required
+                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="" disable hidden>Select Platform</option>
+
+                        <option value="mobile" {{ old('screen_type') == 'mobile' ? 'selected' : '' }}>
+                            Mobile
+                        </option>
+
+                        <option value="desktop"
+                            {{ old('screen_type') == 'desktop' ? 'selected' : '' }}>
+                            Desktop
+                        </option>
+
+                        <option value="mobile_with_desktop"
+                            {{ old('screen_type') == 'mobile_with_desktop' ? 'selected' : '' }}>
+                            Mobile + Desktop
+                        </option>
+                    </select>
+
+                    @error('screen_type')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <!-- Status Toggle -->
+                <div class="form-group mt-4">
                     <div class="toggle-group">
                         <div>
                             <div class="toggle-label">Active Status</div>
@@ -813,9 +867,11 @@
                     @enderror
                 </div>
 
+
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="{{route('admin.plans.index')}}"><button type="button" class="btn btn-secondary" style="color:white;background-color:red;">Cancel</button></a>
+                    <a href="{{ route('admin.plans.index') }}"><button type="button" class="btn btn-secondary"
+                            style="color:white;background-color:red;">Cancel</button></a>
                     <button type="submit" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;">
                             <path
@@ -836,7 +892,7 @@
     <!-- Summernote JS -->
     <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         function addFeature() {
             const container = document.getElementById('features-container');
@@ -867,9 +923,9 @@
             } else {
                 // alert('You need at least one feature');
                 Swal.fire({
-                icon: "warning",
-                title: "Cannot Remove",
-                text: "You need at least one feature!",
+                    icon: "warning",
+                    title: "Cannot Remove",
+                    text: "You need at least one feature!",
                 });
             }
         }
@@ -953,11 +1009,11 @@
         });
     </script>
     <script>
-    $(document).ready(function() {
-        $('#businessTypes').select2({
-            placeholder: "Select Business Types",
-            allowClear: true
+        $(document).ready(function() {
+            $('#businessTypes').select2({
+                placeholder: "Select Business Types",
+                allowClear: true
+            });
         });
-    });
-</script>
+    </script>
 @endsection

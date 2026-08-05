@@ -230,20 +230,20 @@
                     <div class="flex justify-between items-center flex-wrap gap-4">
                         <div>
                             <h1 class="text-2xl font-bold bg-gradient-to-r from-gray-800 to-blue-600 bg-clip-text text-transparent">
-                                Plans Management
+                                Features Management
                             </h1>
-                            <p class="text-sm text-gray-600 mt-1">Manage subscription plans and pricing</p>
+                            <p class="text-sm text-gray-600 mt-1">Manage features</p>
                         </div>
                         
                         <!-- Actions -->
                         <div class="flex items-center space-x-3 flex-wrap gap-3">
                             <!-- Search -->
                             <div class="relative">
-                                <form method="GET" action="{{ route('admin.plans.index') }}">
+                                <form method="GET" action="{{ route('admin.features.index') }}">
                                     <input type="text" 
                                         name="search"
                                         value="{{ request('search') }}"
-                                        placeholder="Search plans..." 
+                                        placeholder="Search features..." 
                                         class="search-input pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent w-64 transition-all duration-300">
                                     <i data-feather="search" class="absolute left-2.5 top-2 w-3.5 h-3.5 text-gray-400"></i>
                                     
@@ -256,18 +256,10 @@
                                     @endif
                                 </form>
                             </div>
-                            
-                            <a href="{{route('admin.plans.deleted')}}">
-                                <button class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-300 transform hover:scale-105 hover:shadow-lg btn-hover-effect">
-                                    <i data-feather="trash" class="w-4 h-4 mr-2"></i>
-                                    Trashed Plans
-                                </button>
-                            </a>
-                            
-                            <a href="{{route('admin.plans.create')}}">
+                             <a href="{{route('admin.features.create')}}">
                                 <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-all duration-300 transform hover:scale-105 hover:shadow-lg btn-hover-effect">
                                     <i data-feather="plus" class="w-4 h-4 mr-2"></i>
-                                    Add Plan
+                                    Add Feature
                                 </button>
                             </a>
                         </div>
@@ -285,68 +277,13 @@
                 </div>
             @endif
 
-            <!-- Stats Cards - Full Width Grid -->
-            <div class="full-width-container mt-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 cursor-pointer">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-blue-600 font-semibold tracking-wide">TOTAL PLANS</p>
-                                <p class="stat-number text-2xl font-bold text-blue-600 mt-2">{{ $totalPlans ?? 0 }}</p>
-                            </div>
-                            <div class="p-3 bg-blue-100 rounded-full transition-transform duration-300 group-hover:rotate-12">
-                                <i data-feather="layers" class="w-6 h-6 text-blue-600"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-green-500 cursor-pointer">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-green-600 font-semibold tracking-wide">ACTIVE PLANS</p>
-                                <p class="stat-number text-2xl font-bold text-green-600 mt-2">{{ $activePlans ?? 0 }}</p>
-                            </div>
-                            <div class="p-3 bg-green-100 rounded-full transition-transform duration-300 group-hover:rotate-12">
-                                <i data-feather="check-circle" class="w-6 h-6 text-green-600"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 cursor-pointer">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-yellow-600 font-semibold tracking-wide">INACTIVE PLANS</p>
-                                <p class="stat-number text-2xl font-bold text-yellow-600 mt-2">{{ $inactivePlans ?? 0 }}</p>
-                            </div>
-                            <div class="p-3 bg-orange-100 rounded-full transition-transform duration-300 group-hover:rotate-12">
-                                <i data-feather="pause-circle" class="w-6 h-6 text-orange-600"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <a href="{{route('admin.plans.deleted')}}" class="block">
-                        <div class="stat-card bg-white rounded-lg shadow p-6 border-l-4 border-red-500 cursor-pointer">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-red-600 font-semibold tracking-wide">DELETED PLANS</p>
-                                    <p class="stat-number text-2xl font-bold text-red-600 mt-2">{{ $deletedPlans ?? '0' }}</p>
-                                </div>
-                                <div class="p-3 bg-red-100 rounded-full transition-transform duration-300 group-hover:rotate-12">
-                                    <i data-feather="trash-2" class="w-6 h-6 text-red-600"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
             <!-- Plans Table - Full Width -->
             <div class="full-width-container pb-6 mt-6">
                 <div class="bg-white rounded-lg shadow overflow-hidden w-full">
                     <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                         <h2 class="text-lg font-semibold text-gray-800 flex items-center">
                             <i data-feather="grid" class="w-5 h-5 mr-2 text-blue-500"></i>
-                            All Plans
+                            All Features
                         </h2>
                     </div>
                     
@@ -354,91 +291,51 @@
                         <table class="w-full">
                             <thead class="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Features</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sl No.</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                {{-- @dd($plans) --}}
-                                @forelse ($plans as $index => $plan)
-                                    <tr class="table-row hover:bg-gray-50 transition duration-150" style="animation-delay: {{ $index * 0.05 }}s">
+                                @forelse ($features as  $feature)
+                                
+                                    <tr class="table-row hover:bg-gray-50 transition duration-150" >
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md transition-transform duration-300 hover:scale-110">
-                                                        <span class="text-white font-bold">{{ substr($plan->name, 0, 1) }}</span>
-                                                    </div>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">{{ $plan->name }}</div>
-                                                    @if($plan->description)
-                                                        <div class="text-sm text-gray-500">{!! Str::limit($plan->description, 40) !!}</div>
-                                                    @endif
-                                                </div>
+                                            <div class="flex items-center text-center justify-center">
+                                                {{ $loop->iteration + ($features->currentPage() - 1) * $features->perPage() ?? 0 }}
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
                                             <span class="text-sm font-bold text-gray-900">
-                                                @if($plan->currency == 'USD')
-                                                    ${{ number_format($plan->price, 2) }}
-                                                @elseif($plan->currency == 'INR')
-                                                    ₹{{ number_format($plan->price, 2) }}
-                                                @else
-                                                    ₹{{ number_format($plan->price, 2) }}
-                                                @endif
+                                                {{$feature->name ?? ''}}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 transition-all duration-300 hover:scale-105">
-                                                {{ $plan->duration_days ?? '0' }} days
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="text-sm text-gray-900">
-                                                @if($plan->getRelation('features'))
-                                                    @foreach($plan->getRelation('features')->take(3) as $feature)
-                                                        <span class="feature-tag inline-block px-2 py-1 text-xs bg-gray-100 rounded mr-1 mb-1  transition-all duration-200 hover:bg-blue-500 hover:text-white">
-                                                            {{ Str::limit($feature->name, 15) }}
-                                                        </span>
-                                                    @endforeach
-                                                    @if($plan->getRelation('features')->count() > 3)
-                                                        <span class="inline-block px-2 py-1 text-xs bg-gray-200 rounded mr-1 mb-1">
-                                                            +{{ $plan->getRelation('features')->count() - 3 }}
-                                                        </span>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            <div class="flex items-center">
+                                                
+                                                <div class="ml-4">
+                                                    @if($feature->description)
+                                                        <div class="text-sm text-gray-500">{!! Str::limit($feature->description, 40) !!}</div>
                                                     @endif
-                                                @else
-                                                    <span class="text-gray-500">No features</span>
-                                                @endif
+                                                </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @if($plan->is_active)
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 transition-all duration-300 hover:scale-105 cursor-pointer">
-                                                    
-                                                    Active
-                                                </span>
-                                            @else
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 transition-all duration-300 hover:scale-105 cursor-pointer">
-                                                    Inactive
-                                                </span>
-                                            @endif
+                                        
+                                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 transition-all duration-300 hover:scale-105">
+                                               {{ $feature->created_at->format('M d, Y h:i A') }}
+                                            </span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <i data-feather="calendar" class="w-3 h-3 inline mr-1"></i>
-                                            {{ $plan->created_at->format('M d, Y') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('admin.plans.edit', $plan->id) }}" class="inline-block">
+                                        
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                                            <a href="{{ route('admin.features.edit', $feature->id) }}" class="inline-block">
                                                 <button class="action-icon text-blue-600 hover:text-blue-900 mr-3 transition-all duration-200">
                                                     <i data-feather="edit-2" class="w-4 h-4"></i>
                                                 </button>
                                             </a>
-                                            <button onclick="deletePlan({{ $plan->id }})" class="action-icon text-red-600 hover:text-red-900 transition-all duration-200">
+                                            <button onclick="deleteFeature({{ $feature->id }})" class="action-icon text-red-600 hover:text-red-900 transition-all duration-200">
                                                 <i data-feather="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </td>
@@ -448,13 +345,13 @@
                                         <td colspan="7" class="px-6 py-12 text-center">
                                             <div class="text-center">
                                                 <i data-feather="inbox" class="mx-auto h-12 w-12 text-gray-400 animate-bounce"></i>
-                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No plans found</h3>
-                                                <p class="mt-1 text-sm text-gray-500">Get started by creating a new plan.</p>
+                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No features found</h3>
+                                                <p class="mt-1 text-sm text-gray-500">Get started by creating a new features.</p>
                                                 <div class="mt-6">
-                                                    <a href="{{ route('admin.plans.create') }}">
+                                                    <a href="{{ route('admin.features.create') }}">
                                                         <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105">
                                                             <i data-feather="plus" class="w-4 h-4 mr-2 inline"></i>
-                                                            Add Plan
+                                                            Add Feature
                                                         </button>
                                                     </a>
                                                 </div>
@@ -466,7 +363,7 @@
                         </table>
                     </div>
                     <div class="p-4 bg-gray-50">
-                        {{ $plans->links('pagination::tailwind') }}
+                        {{ $features->links('pagination::tailwind') }}
                     </div>
                 </div>
             </div>
@@ -500,6 +397,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    
     <!-- Initialize Feather Icons -->
     <script>
         feather.replace();
@@ -510,10 +408,10 @@
             alert('Add Plan Modal - To be implemented');
         }
         
-        function deletePlan(id) {
+        function deleteFeature (id) {
             Swal.fire({
                 title: 'Are you sure?',
-                text: "This plan will be deleted!",
+                text: "This feature will be deleted!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc2626',
@@ -530,7 +428,7 @@
                 if (result.isConfirmed) {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = `{{ route('admin.plans.delete', ':id') }}`.replace(':id', id);
+                    form.action = `{{ route('admin.features.delete', ':id') }}`.replace(':id', id);
                     
                     const csrf = document.createElement('input');
                     csrf.type = 'hidden';

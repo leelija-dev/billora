@@ -21,6 +21,7 @@ class Plans extends Model
         'is_active',
         'duration_days',
         'currency',
+        'screen_type',
         'gst',
         'discount'
     ];
@@ -54,5 +55,13 @@ class Plans extends Model
     {
         return $this->hasMany(PlanBusinessType::class , 'plan_id');
     }
-
+   public function features()
+{
+    return $this->belongsToMany(
+        Features::class,
+        'features_permission',
+        'plan_id',
+        'feature_id'
+    );
+}
 }
