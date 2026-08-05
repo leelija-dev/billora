@@ -675,6 +675,24 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">
+                            Slug <span>*</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <path
+                                        d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
+                                </svg>
+                            </span>
+                            <input type="text" name="slug" class="form-input with-icon"
+                                placeholder="Enter plan slug" value="{{ old('slug') }}" required>
+                            @error('slug')
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
                             Business Types <span>*</span>
                         </label>
 

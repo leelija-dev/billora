@@ -67,6 +67,7 @@ class PlansController extends Controller
         $this->checkAdminAuth();
         $data = $request->validate([
             'name'          => 'required',
+            'slug'          => 'required|unique:plans,slug', 
             'price'         => 'required',
             'gst'           => 'required',
             'discount'      => 'required',
@@ -83,7 +84,7 @@ class PlansController extends Controller
 
         // Add admin data
         $data['created_by'] = $admin->name;
-        $data['slug'] = Str::slug($data['name']);
+        // $data['slug'] = Str::slug($data['name']);
         try {
             $plan = Plans::create($data);
             foreach ($request->features as $feature) {
@@ -137,6 +138,7 @@ class PlansController extends Controller
     {
         $data = $request->validate([
             'name'          => 'required',
+            // 'slug'          => 'required|unique:plans,slug,' . $id,
             'price'         => 'required',
             'gst'           => 'required',
             'discount'      => 'required',
