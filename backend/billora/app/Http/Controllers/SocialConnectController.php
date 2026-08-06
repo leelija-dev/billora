@@ -44,7 +44,7 @@ class SocialConnectController extends Controller
             'redirect_uri' => env('META_CALLBACK_URL'),
             'code' => $request->code,
         ])->json();
-        Log::info("token response ".$tokenResponse);
+        
         if (!isset($tokenResponse['access_token'])) {
             return response()->json($tokenResponse);
         }
