@@ -786,7 +786,6 @@
                                                     method="POST">
 
                                                     @csrf
-                                                    @method('DELETE')
 
                                                     <button type="button" onclick="confirmDelete({{ $category->id }})"
                                                         class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 shadow-sm"

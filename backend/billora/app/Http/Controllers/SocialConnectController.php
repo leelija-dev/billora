@@ -17,7 +17,7 @@ class SocialConnectController extends Controller
 
         $url = "https://www.facebook.com/dialog/oauth?" . http_build_query([
             'client_id' => env('META_APP_ID',1020309880319734),
-            'redirect_uri' => env('APP_URL').'/api/social/facebook/callback',
+            'redirect_uri' => env('META_CALLBACK_URL', 'https://api.thefastbill.com/api/social/facebook/callback'),//META_CALLBACK_URL//env('APP_URL').'/api/social/facebook/callback',
             'config_id' => env('META_CONFIG_ID','2008621436419759'),
             'response_type' => 'code',
             'state' => $userId
@@ -44,7 +44,7 @@ class SocialConnectController extends Controller
             'redirect_uri' => env('META_CALLBACK_URL'),
             'code' => $request->code,
         ])->json();
-        Log::info("token response ".$tokenResponse);
+        
         if (!isset($tokenResponse['access_token'])) {
             return response()->json($tokenResponse);
         }
