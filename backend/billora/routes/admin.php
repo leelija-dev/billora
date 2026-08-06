@@ -158,7 +158,7 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::post('/store', [BlogCategoriesController::class, 'store'])->name('admin.category.store');
         Route::get('/edit/{id}', [BlogCategoriesController::class, 'edit'])->name('admin.category.edit');
         Route::post('/update/{id}', [BlogCategoriesController::class, 'update'])->name('admin.category.update');
-        Route::post('/delete/{id}', [BlogCategoriesController::class, 'destroy'])->name('admin.category.destroy');    
+        Route::post('/delete/{id}', [BlogCategoriesController::class, 'delete'])->name('admin.category.destroy');
     });  
     
 });
