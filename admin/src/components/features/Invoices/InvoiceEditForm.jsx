@@ -114,6 +114,38 @@ const calculateTotalsFromLines = (lineItems) => {
   };
 };
 
+// Helper function to safely convert variant objects to strings
+const getVariantDisplayString = (variant) => {
+  if (!variant) return null;
+  if (typeof variant === 'string') return variant;
+  if (typeof variant === 'object') {
+    const parts = [];
+    if (variant.size) parts.push(`Size: ${variant.size}`);
+    if (variant.color) parts.push(`Color: ${variant.color}`);
+    if (variant.material) parts.push(`Material: ${variant.material}`);
+    if (variant.gender) parts.push(`Gender: ${variant.gender}`);
+    if (variant.name) parts.push(variant.name);
+    return parts.length > 0 ? parts.join(', ') : JSON.stringify(variant);
+  }
+  return String(variant);
+};
+
+// Helper function to safely render variant values
+const renderVariantValue = (variant) => {
+  if (!variant) return null;
+  if (typeof variant === 'string') return variant;
+  if (typeof variant === 'object') {
+    const parts = [];
+    if (variant.size) parts.push(`Size: ${variant.size}`);
+    if (variant.color) parts.push(`Color: ${variant.color}`);
+    if (variant.material) parts.push(`Material: ${variant.material}`);
+    if (variant.gender) parts.push(`Gender: ${variant.gender}`);
+    if (variant.name) parts.push(variant.name);
+    return parts.length > 0 ? parts.join(', ') : JSON.stringify(variant);
+  }
+  return String(variant);
+};
+
 const InvoiceEditForm = ({
   invoice,
   hasStockPermission,
@@ -373,7 +405,7 @@ const InvoiceEditForm = ({
           (row) => !row.is_package,
         );
 
-        // Fetch current stock quantities for each item
+        // FIXED: Map products using stock data directly from invoice items
         const mappedProducts = [];
 
         for (const item of rows) {
@@ -411,26 +443,52 @@ const InvoiceEditForm = ({
             }
           }
 
-          // Fetch current stock quantity using stock_id from invoice item
+          // FIX: Use stock data directly from the invoice item
           let currentStockQuantity = 0;
           let stockEntry = null;
+          let stockId = null;
 
-          if (hasStockPermission && item.stock_id) {
+          // Check if the invoice item already has stock data included
+          if (item.stock) {
+            // The stock is already included in the invoice item
+            stockEntry = item.stock;
+            currentStockQuantity = parseFloat(item.stock.quantity || 0);
+            stockId = item.stock.id || item.stock_id;
+            console.log(`Using stock from invoice item for stock_id ${stockId}:`, {
+              quantity: currentStockQuantity,
+              stockEntry
+            });
+          } 
+          // If we have a stock_id but no stock data in the item, fetch it
+          else if (hasStockPermission && item.stock_id) {
+            stockId = item.stock_id;
             try {
-              const stockResponse = await stockAPI.getById(item.stock_id);
-              console.log(
-                `Fetched stock for stock_id ${item.stock_id}:`,
-                stockResponse,
-              );
-              if (
-                stockResponse.data?.status === true &&
-                stockResponse.data?.data
-              ) {
-                stockEntry = stockResponse.data.data;
-                currentStockQuantity = parseFloat(stockEntry.quantity || 0);
+              // First check if we already have this stock in our local stockList
+              const existingStock = stockList.find((s) => s.id === item.stock_id);
+              if (existingStock) {
+                currentStockQuantity = parseFloat(existingStock.quantity || 0);
+                stockEntry = existingStock;
+                console.log(`Using stock from stockList for stock_id ${item.stock_id}:`, {
+                  quantity: currentStockQuantity
+                });
+              } else {
+                // Fetch from API if not in local list
+                const stockResponse = await stockAPI.getById(item.stock_id);
+                console.log(
+                  `Fetched stock for stock_id ${item.stock_id}:`,
+                  stockResponse,
+                );
+                if (
+                  stockResponse.data?.status === true &&
+                  stockResponse.data?.data
+                ) {
+                  stockEntry = stockResponse.data.data;
+                  currentStockQuantity = parseFloat(stockEntry.quantity || 0);
+                }
               }
             } catch (error) {
               console.error(`Failed to fetch stock ${item.stock_id}:`, error);
+              // Try to find in stockList as fallback
               const stock = stockList.find((s) => s.id === item.stock_id);
               if (stock) {
                 currentStockQuantity = parseFloat(stock.quantity ?? 0);
@@ -438,15 +496,18 @@ const InvoiceEditForm = ({
               }
             }
           } else if (hasStockPermission && !item.stock_id) {
+            // If no stock_id, try to find by product_id
             const stock = stockList.find(
               (s) => s.product_id === item.product_id,
             );
             if (stock) {
               currentStockQuantity = parseFloat(stock.quantity ?? 0);
               stockEntry = stock;
+              stockId = stock.id;
             }
           }
 
+          // If we have stock permission but no stock found, set to 0
           const availableStock = hasStockPermission
             ? currentStockQuantity
             : Infinity;
@@ -454,8 +515,19 @@ const InvoiceEditForm = ({
           const unit = Array.isArray(bd.units)
             ? bd.units.find((u) => u.id === (item.unit_id || product?.unit_id))
             : null;
+          
+          // Get price from item, then product, then default to 0
           const price = parseFloat(item.price ?? product?.selling_price ?? 0);
-          const gst = parseFloat(item.gst ?? product?.gst_percentage ?? 0);
+          
+          // Get GST from item, then stock selling_gst_percentage, then product
+          let gst = parseFloat(item.gst ?? 0);
+          if (gst === 0 && stockEntry?.selling_gst_percentage) {
+            gst = parseFloat(stockEntry.selling_gst_percentage);
+          } else if (gst === 0 && product?.gst_percentage) {
+            gst = parseFloat(product.gst_percentage);
+          }
+          
+          // Get discount from item, then product
           const discount = parseFloat(
             item.discount ?? product?.discount_percentage ?? 0,
           );
@@ -496,6 +568,10 @@ const InvoiceEditForm = ({
             unitName = product.unit.short_name;
           } else if (product?.unit?.name) {
             unitName = product.unit.name;
+          } else if (stockEntry?.unit?.short_name) {
+            unitName = stockEntry.unit.short_name;
+          } else if (stockEntry?.unit?.name) {
+            unitName = stockEntry.unit.name;
           }
 
           // Extract attributes from product
@@ -510,23 +586,54 @@ const InvoiceEditForm = ({
               productAttributes = product.attribute;
             }
 
-            // Get variants
+            // Get variants - ensure they are converted to strings for display
             if (product.variants && Array.isArray(product.variants)) {
-              productVariants = product.variants;
+              productVariants = product.variants.map(v => {
+                if (typeof v === 'object') {
+                  // Convert variant object to display string
+                  const parts = [];
+                  if (v.size) parts.push(`Size: ${v.size}`);
+                  if (v.color) parts.push(`Color: ${v.color}`);
+                  if (v.material) parts.push(`Material: ${v.material}`);
+                  if (v.gender) parts.push(`Gender: ${v.gender}`);
+                  if (v.name) parts.push(v.name);
+                  return parts.length > 0 ? parts.join(', ') : JSON.stringify(v);
+                }
+                return v;
+              });
             } else if (product.variant && Array.isArray(product.variant)) {
-              productVariants = product.variant;
+              productVariants = product.variant.map(v => {
+                if (typeof v === 'object') {
+                  const parts = [];
+                  if (v.size) parts.push(`Size: ${v.size}`);
+                  if (v.color) parts.push(`Color: ${v.color}`);
+                  if (v.material) parts.push(`Material: ${v.material}`);
+                  if (v.gender) parts.push(`Gender: ${v.gender}`);
+                  if (v.name) parts.push(v.name);
+                  return parts.length > 0 ? parts.join(', ') : JSON.stringify(v);
+                }
+                return v;
+              });
             }
 
             // If stock entry has variant info, use that
             if (stockEntry && stockEntry.variant_info) {
               if (!productVariants.length && stockEntry.variant_info) {
-                productVariants = [stockEntry.variant_info];
+                productVariants = [getVariantDisplayString(stockEntry.variant_info)];
               }
             }
           }
 
+          // Get variant info from stock entry or item
+          let variantInfo = item.variant_info || stockEntry?.variant_info || null;
+          
+          // Ensure variantInfo is a string
+          if (variantInfo && typeof variantInfo === 'object') {
+            variantInfo = getVariantDisplayString(variantInfo);
+          }
+
           console.log(
-            `Product ${productName} attributes:`,
+            `Product ${productName} stock quantity: ${currentStockQuantity}, attributes:`,
             productAttributes,
             "variants:",
             productVariants,
@@ -539,7 +646,7 @@ const InvoiceEditForm = ({
             product_code: productCode,
             quantity: qty,
             item_count: qty,
-            unit_id: item.unit_id || product?.unit_id || null,
+            unit_id: item.unit_id || product?.unit_id || stockEntry?.unit_id || null,
             unit_name: unitName,
             price: price,
             gst: gst,
@@ -548,9 +655,9 @@ const InvoiceEditForm = ({
             status: "completed",
             stock_quantity: availableStock,
             current_stock: currentStockQuantity,
-            stock_id: item.stock_id || stockEntry?.id || null,
+            stock_id: stockId || item.stock_id || stockEntry?.id || null,
             is_package: false,
-            variant_info: item.variant_info || stockEntry?.variant_info || null,
+            variant_info: variantInfo,
             attributes: productAttributes,
             variants: productVariants,
             original_gst_percentage: gst,
@@ -1683,7 +1790,7 @@ const InvoiceEditForm = ({
                                                     key={`${attrIdx}-${key}`}
                                                     className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
                                                   >
-                                                    {key}: {value}
+                                                    {key}: {String(value)}
                                                   </span>
                                                 ),
                                               );
@@ -1693,7 +1800,7 @@ const InvoiceEditForm = ({
                                                 key={attrIdx}
                                                 className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
                                               >
-                                                {attr}
+                                                {String(attr)}
                                               </span>
                                             );
                                           },
@@ -1713,33 +1820,16 @@ const InvoiceEditForm = ({
                                         {product.variants
                                           .slice(0, 3)
                                           .map((variant, variantIdx) => {
-                                            const variantValues = [];
-                                            if (variant.size)
-                                              variantValues.push(
-                                                `Size: ${variant.size}`,
-                                              );
-                                            if (variant.color)
-                                              variantValues.push(
-                                                `Color: ${variant.color}`,
-                                              );
-                                            if (variant.material)
-                                              variantValues.push(
-                                                `Material: ${variant.material}`,
-                                              );
-                                            if (variant.gender)
-                                              variantValues.push(
-                                                `Gender: ${variant.gender}`,
-                                              );
-
-                                            return variantValues.map(
-                                              (val, valIdx) => (
-                                                <span
-                                                  key={`${variantIdx}-${valIdx}`}
-                                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
-                                                >
-                                                  {val}
-                                                </span>
-                                              ),
+                                            // Convert variant to display string
+                                            const variantStr = renderVariantValue(variant);
+                                            if (!variantStr) return null;
+                                            return (
+                                              <span
+                                                key={`${variantIdx}`}
+                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                              >
+                                                {variantStr}
+                                              </span>
                                             );
                                           })}
                                         {product.variants.length > 3 && (
@@ -1847,6 +1937,11 @@ const InvoiceEditForm = ({
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             Qty: {item.quantity} × ₹{item.price}
                           </p>
+                          {hasStockPermission && (
+                            <p className={`text-xs ${item.stock_quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              Stock: {item.stock_quantity}
+                            </p>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -1946,7 +2041,7 @@ const InvoiceEditForm = ({
                                           key={`${attrIdx}-${key}`}
                                           className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
                                         >
-                                          {key}: {value}
+                                          {key}: {String(value)}
                                         </span>
                                       ),
                                     );
@@ -1956,7 +2051,7 @@ const InvoiceEditForm = ({
                                       key={attrIdx}
                                       className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
                                     >
-                                      {attr}
+                                      {String(attr)}
                                     </span>
                                   );
                                 })}
@@ -1971,32 +2066,16 @@ const InvoiceEditForm = ({
                                 {item.variants
                                   .slice(0, 2)
                                   .map((variant, variantIdx) => {
-                                    const variantValues = [];
-                                    if (variant.size)
-                                      variantValues.push(
-                                        `Size: ${variant.size}`,
-                                      );
-                                    if (variant.color)
-                                      variantValues.push(
-                                        `Color: ${variant.color}`,
-                                      );
-                                    if (variant.material)
-                                      variantValues.push(
-                                        `Material: ${variant.material}`,
-                                      );
-                                    if (variant.gender)
-                                      variantValues.push(
-                                        `Gender: ${variant.gender}`,
-                                      );
-
-                                    return variantValues.map((val, valIdx) => (
+                                    const variantStr = renderVariantValue(variant);
+                                    if (!variantStr) return null;
+                                    return (
                                       <span
-                                        key={`${variantIdx}-${valIdx}`}
+                                        key={`${variantIdx}`}
                                         className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
                                       >
-                                        {val}
+                                        {variantStr}
                                       </span>
-                                    ));
+                                    );
                                   })}
                                 {item.variants.length > 2 && (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
@@ -2009,7 +2088,7 @@ const InvoiceEditForm = ({
                           {!item.is_package &&
                             item.stock_quantity !== undefined &&
                             item.stock_quantity < Infinity && (
-                              <p className="text-xs text-blue-600 dark:text-blue-400">
+                              <p className={`text-xs ${item.stock_quantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                 Stock avail.: {item.stock_quantity}
                               </p>
                             )}
