@@ -268,7 +268,7 @@ class StocksController extends Controller
                 ]);
                 /*---------------Seller Details---------------*/
                 $tempFile = null;
-
+                $upload  =[];
                 if ($request->hasFile('invoice_image')) {
                     $tempFile = $request->file('invoice_image')->getRealPath();
                 }
@@ -292,7 +292,7 @@ class StocksController extends Controller
                         'message' => 'Seller not found'
                     ]);
                 }
-                $totalAmt = (($stocks['purchase_price'] * $stocks['quantity']) + ($stocks['purchase_price'] * $stocks['quantity'] * $stocks['purchase_gst_percentage'] / 100));
+                $totalAmt = round((($stocks['purchase_price'] * $stocks['quantity']) + ($stocks['purchase_price'] * $stocks['quantity'] * $stocks['purchase_gst_percentage'] / 100)), 2);
                 $sellerDetails = SellerProducts::create([
                     'user_id'    => $user,
                     'seller_id'  => $stocks['seller_id'],
@@ -320,7 +320,7 @@ class StocksController extends Controller
                 }
                 if ($seller) {
                     $seller->update([
-                        'due_amount' => $seller->due_amount + ($totalAmt - $stocks['paid_amount'])
+                        'due_amount' => round(($seller->due_amount + ($totalAmt - $stocks['paid_amount'])), 2)
                     ]);
                 }
                 $stock->update([
@@ -328,11 +328,17 @@ class StocksController extends Controller
                 ]);
                 // Log::info('Stock created: ' . json_encode($stock));
                 // $stocks = Stocks::where('user_id', $user)->get();
-                Log::info('Before Flush');
+                // Log::info('Before Flush');
                 }
-                Cache::tags(['stock_user_' . $user, 'gst_collection_user_' . $user, 'billing_user_' . $user, 'seller_user_' . $user])->flush();
+                Cache::tags([
+                    'stock_user_' . $user,
+                    'products_user_' . $user,
+                    'gst_collection_user_' . $user,
+                    'billing_user_' . $user,
+                    'seller_user_' . $user
+                ])->flush();
                 // 'stock_user_' . Auth::user()->id.'page_id'.$request->page
-                Log::info('After Flush');
+                // Log::info('After Flush');
                 return response()->json([
                     'status' => true,
                     'message' => 'Stock created successfully',

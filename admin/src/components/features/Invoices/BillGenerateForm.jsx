@@ -2448,16 +2448,18 @@ const BillGenerateForm = ({
                             )}
 
                           {hasStockPermission &&
-                            item.stock_quantity !== undefined &&
-                            (item.stock_quantity > 0 ? (
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                Stock: {item.stock_quantity}
-                              </p>
-                            ) : (
-                              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                                Please Add Stock
-                              </p>
-                            ))}
+  item.stock_quantity !== undefined &&
+  !item.is_package && ( // Add this condition to check if it's NOT a package
+    item.stock_quantity > 0 ? (
+      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+        Stock: {item.stock_quantity}
+      </p>
+    ) : (
+      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+        Please Add Stock
+      </p>
+    )
+  )}
                         </div>
                       </td>
                       <td className="py-3">

@@ -422,7 +422,7 @@ class UserOrdersController extends Controller
                     'message' => 'User not found'
                 ]);
             }
-            $orders = UserOrders::where('user_id', $user_id)->where('customer_phone',$mobile)->with('items.product','store')->orderBy('id','desc')->paginate(8);
+            $orders = UserOrders::where('user_id', $user_id)->where('customer_phone',$mobile)->with('items.product','store')->orderBy('id','desc')->get();
             
             return response()->json([
                 'status' => true,
