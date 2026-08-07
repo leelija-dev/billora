@@ -22,10 +22,10 @@ class SocialConnectController extends Controller
             'response_type' => 'code',
             'state' => $userId
         ]);
-        Log::info("redirect url:".$url);
-        Log::info("env('APP_URL')".env('APP_URL'));
-        Log::info("META_CALLBACK_URL:".env('META_CALLBACK_URL'));
-        Log::info("config call back url:".config('app.callback_url'));
+        // Log::info("redirect url:".$url);
+        // Log::info("env('APP_URL')".env('APP_URL'));
+        // Log::info("META_CALLBACK_URL:".env('META_CALLBACK_URL'));
+        // Log::info("config call back url:".config('app.callback_url'));
         return redirect($url);
     }
     public function callback(Request $request)
@@ -39,9 +39,9 @@ class SocialConnectController extends Controller
         Log::info("called");
         // 1. Exchange CODE → Short-lived token
         $tokenResponse = Http::get("https://graph.facebook.com/v19.0/oauth/access_token", [
-            'client_id' => env('META_APP_ID'),
-            'client_secret' => env('META_APP_SECRET'),
-            'redirect_uri' => env('META_CALLBACK_URL'),
+            'client_id' => env('META_APP_ID',1020309880319734),
+            'client_secret' => env('META_APP_SECRET','062a93a7a50427fb2a22d6b0acbe0619'),
+            'redirect_uri' => env('META_CALLBACK_URL','https://api.thefastbill.com/api/social/facebook/callback'),
             'code' => $request->code,
         ])->json();
         
@@ -54,8 +54,8 @@ class SocialConnectController extends Controller
         // 2. Exchange → Long-lived token
         $longLivedTokenResponse = Http::get("https://graph.facebook.com/v19.0/oauth/access_token", [
             'grant_type' => 'fb_exchange_token',
-            'client_id' => env('META_APP_ID'),
-            'client_secret' => env('META_APP_SECRET'),
+            'client_id' => env('META_APP_ID',1020309880319734),
+            'client_secret' => env('META_APP_SECRET','062a93a7a50427fb2a22d6b0acbe0619'),
             'fb_exchange_token' => $shortLivedUserToken
         ])->json();
 
