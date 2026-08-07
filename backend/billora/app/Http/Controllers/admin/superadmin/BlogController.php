@@ -16,35 +16,37 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
 class BlogController extends Controller
 {
     public function index(Request $request)
     {
         $cacheKey = "blogs_index_" . md5($request->fullUrl());
-        $data = Cache::tags(['blogs'])->remember($cacheKey,600,function () use ($request) {
-        $blogs = Blog::when($request->search, function ($query) use ($request) {
-            $query->where('title', 'like', '%' . $request->search . '%')
-                ->orWhere('slug', 'like', '%' . $request->search . '%')
-                ->orWhere('content', 'like', '%' . $request->search . '%')
-                ->orWhere('meta_title', 'like', '%' . $request->search . '%')
-                ->orWhere('meta_description', 'like', '%' . $request->search . '%')
-                ->orWhere('keywords', 'like', '%' . $request->search . '%')
-                ->orWhere('schema', 'like', '%' . $request->search . '%')
-                ->orWhere('feature_image_alt', 'like', '%' . $request->search . '%');
-        })->paginate(10);
-        // $blogs =  Blog::paginate(10);
+        $data = Cache::tags(['blogs'])->remember($cacheKey, 600, function () use ($request) {
+            $blogs = Blog::when($request->search, function ($query) use ($request) {
+                $query->where('title', 'like', '%' . $request->search . '%')
+                    ->orWhere('slug', 'like', '%' . $request->search . '%')
+                    ->orWhere('content', 'like', '%' . $request->search . '%')
+                    ->orWhere('meta_title', 'like', '%' . $request->search . '%')
+                    ->orWhere('meta_description', 'like', '%' . $request->search . '%')
+                    ->orWhere('keywords', 'like', '%' . $request->search . '%')
+                    ->orWhere('schema', 'like', '%' . $request->search . '%')
+                    ->orWhere('feature_image_alt', 'like', '%' . $request->search . '%');
+            })->orderBy('id', 'desc')->paginate(10);
+            // $blogs =  Blog::paginate(10);
 
-        $deletedBlog = Blog::onlyTrashed()->count();
-        $totalBlog = Blog::withTrashed()->count();
-        $activeBlog = Blog::where('status', true)->count();
-        $inactiveBlog = Blog::where('status', false)->count();
-        return [
-            'blogs' => $blogs,
-            'deletedBlog' => $deletedBlog,
-            'totalBlog' => $totalBlog,
-            'activeBlog' => $activeBlog,
-            'inactiveBlog' => $inactiveBlog
-        ];
+            $deletedBlog = Blog::onlyTrashed()->count();
+            $totalBlog = Blog::withTrashed()->count();
+            $activeBlog = Blog::where('status', true)->count();
+            $inactiveBlog = Blog::where('status', false)->count();
+            return [
+                'blogs' => $blogs,
+                'deletedBlog' => $deletedBlog,
+                'totalBlog' => $totalBlog,
+                'activeBlog' => $activeBlog,
+                'inactiveBlog' => $inactiveBlog
+            ];
         });
         return view('admin.blogs.index', $data);
     }
@@ -90,22 +92,25 @@ class BlogController extends Controller
 
             if ($request->hasFile('feature_image')) {
 
+
+
                 $file = $request->file('feature_image');
 
-                $uploadPath = public_path('blogs/images');
+                $upload = Cloudinary::uploadApi()->upload(
+                    $file->getRealPath(),
+                    [
+                        'folder' => 'Thefastbill/blog_images',
+                        'public_id' => 'blog_image_' . time() . '_' . Str::random(8),
+                        'overwrite' => false,
+                        'resource_type' => 'image',
+                    ]
+                );
 
-                // Create folder if not exists
-                if (!File::exists($uploadPath)) {
-                    File::makeDirectory($uploadPath, 0755, true);
-                }
+                // Save Cloudinary URL in database
+                $validated['feature_image'] = $upload['secure_url'];
 
-                // Generate unique filename
-                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-
-                // Move file
-                $file->move($uploadPath, $filename);
-
-                $validated['feature_image'] = 'blogs/images/' . $filename;
+                // Optional: save Cloudinary public ID if your DB has a column
+                $validated['feature_image_public_id'] = $upload['public_id'];
             }
 
 
@@ -114,6 +119,7 @@ class BlogController extends Controller
                 'title'              => $validated['title'],
                 'slug'               => $validated['slug'],
                 'feature_image'      => $validated['feature_image'] ?? null,
+                'feature_image_public_id' => $validated['feature_image_public_id'] ?? null,
                 'feature_image_alt'  => $validated['feature_image_alt'] ?? null,
                 'excerpt'            => $validated['excerpt'] ?? null,
                 'content'            => $validated['content'],
@@ -178,26 +184,26 @@ class BlogController extends Controller
 
             //FAQ add
 
-           if (!empty($validated['question'])) {
+            if (!empty($validated['question'])) {
                 // Log::info('FAQ data is not empty',$validated['question']);
                 $faqData = [];
-                
+
                 foreach ($validated['question'] as $key => $question) {
-                     if (
-                            empty(trim($question ?? '')) &&
-                            empty(trim($answer ?? ''))
-                        ) {
-                            continue;
-                        }
+                    if (
+                        empty(trim($question ?? '')) &&
+                        empty(trim($answer ?? ''))
+                    ) {
+                        continue;
+                    }
                     $faqData[] = [
                         'blog_id'     => $blog->id,
                         'question'    => $question,
                         'answer'      => $validated['answer'][$key],
                     ];
                 }
-                  if (!empty($faqData)) {
-                BlogFaq::insert($faqData);
-                  }
+                if (!empty($faqData)) {
+                    BlogFaq::insert($faqData);
+                }
             }
             DB::commit();
             Cache::tags(['blogs'])->flush();
@@ -223,11 +229,11 @@ class BlogController extends Controller
 
     public function edit($id)
     {
-         Cache::tags(['blogs'])->flush();
-        $blog =  Blog::with(['categories', 'tags','faqs'])->withTrashed()->findOrFail($id);
+        Cache::tags(['blogs'])->flush();
+        $blog =  Blog::with(['categories', 'tags', 'faqs'])->withTrashed()->findOrFail($id);
         $categories = Category::where('status', true)->get();
         $tags = BlogTags::where('blog_id', $id)->get();
-        return view('admin.blogs.edit', compact('blog', 'categories','tags'));
+        return view('admin.blogs.edit', compact('blog', 'categories', 'tags'));
     }
     public function update(Request $request, $id)
     {
@@ -264,35 +270,53 @@ class BlogController extends Controller
 
             //Upload New Image & Delete Old Image
 
+         if ($request->hasFile('feature_image')) {
+           if (!empty($blog->feature_image_public_id)) {
 
-            if ($request->hasFile('feature_image')) {
+                try {
 
-                // Delete old image
-                if ($blog->feature_image && File::exists(public_path($blog->feature_image))) {
-                    File::delete(public_path($blog->feature_image));
+                    Cloudinary::uploadApi()->destroy(
+                        $blog->feature_image_public_id,
+                        [
+                            'resource_type' => 'image',
+                            'type'          => 'upload',
+                        ]
+                    );
+
+                    Log::info('Old Cloudinary image deleted', [
+                        'public_id' => $blog->feature_image_public_id,
+                    ]);
+
+                } catch (\Throwable $e) {
+
+                    Log::warning('Could not delete old Cloudinary image', [
+                        'public_id' => $blog->feature_image_public_id,
+                        'error'     => $e->getMessage(),
+                    ]);
                 }
-
-                $file = $request->file('feature_image');
-
-                $uploadPath = public_path('blogs/images');
-
-                // Create directory if not exists
-                if (!File::exists($uploadPath)) {
-                    File::makeDirectory($uploadPath, 0755, true);
-                }
-
-                // New filename
-                $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-
-                // Upload image
-                $file->move($uploadPath, $filename);
-
-                $validated['feature_image'] = 'blogs/images/' . $filename;
-            } else {
-
-                // Keep old image
-                $validated['feature_image'] = $blog->feature_image;
             }
+            $file = $request->file('feature_image');
+
+                $upload = Cloudinary::uploadApi()->upload(
+                    $file->getRealPath(),
+                    [
+                        'folder' => 'Thefastbill/blog_images',
+                        'public_id' => 'blog_image_' . time() . '_' . Str::random(8),
+                        'overwrite' => false,
+                        'resource_type' => 'image',
+                    ]
+                );
+
+                // Save Cloudinary URL in database
+                $validated['feature_image'] = $upload['secure_url'];
+
+                // Optional: save Cloudinary public ID if your DB has a column
+                $validated['feature_image_public_id'] = $upload['public_id'];
+         }else{
+            
+            $validated['feature_image'] = $blog->feature_image;
+            $validated['feature_image_public_id'] = $blog->feature_image_public_id;
+         }
 
 
             //Update Blog
@@ -301,7 +325,8 @@ class BlogController extends Controller
             $blog->update([
                 'title'              => $validated['title'],
                 'slug'               => $validated['slug'],
-                'feature_image'      => $validated['feature_image'],
+                'feature_image'      => $validated['feature_image'] ?? $blog->feature_image,
+                'feature_image_public_id' => $validated['feature_image_public_id'] ?? $blog->feature_image_public_id,
                 'feature_image_alt'  => $validated['feature_image_alt'] ?? null,
                 'excerpt'            => $validated['excerpt'] ?? null,
                 'content'            => $validated['content'],
@@ -360,23 +385,23 @@ class BlogController extends Controller
 
                 foreach ($validated['question'] as $key => $question) {
                     if (
-                            empty(trim($question ?? '')) &&
-                            empty(trim($answer ?? ''))
-                        ) {
-                            continue;
-                        }
+                        empty(trim($question ?? '')) &&
+                        empty(trim($answer ?? ''))
+                    ) {
+                        continue;
+                    }
                     $faqData[] = [
                         'blog_id'     => $blog->id,
                         'question'    => $question,
                         'answer'      => $validated['answer'][$key],
                     ];
                 }
-                if(!empty($faqData)){
-                BlogFaq::insert($faqData);
+                if (!empty($faqData)) {
+                    BlogFaq::insert($faqData);
                 }
             }
             DB::commit();
-             Cache::tags(['blogs'])->flush();
+            Cache::tags(['blogs'])->flush();
             return redirect()
                 ->route('admin.blogs.index')
                 ->with('success', 'Blog updated successfully.');
@@ -403,7 +428,7 @@ class BlogController extends Controller
                 unlink(public_path($blog->feature_image));
             }
             $blog->delete();
-             Cache::tags(['blogs','trashed_blogs'])->flush();
+            Cache::tags(['blogs', 'trashed_blogs'])->flush();
             return redirect()->route('admin.blogs.index')->with('success', 'Blog deleted successfully');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -414,25 +439,25 @@ class BlogController extends Controller
 
         // $blogs = Blog::onlyTrashed()->paginate(10);\
         $cacheKey = "blogs_trashed_" . md5($request->fullUrl());
-        $data = Cache::tags(['trashed_blogs'])->remember($cacheKey,600,function () use ($request) {
-        $blogs = Blog::onlyTrashed()
-            ->when($request->search, function ($query) use ($request) {
+        $data = Cache::tags(['trashed_blogs'])->remember($cacheKey, 600, function () use ($request) {
+            $blogs = Blog::onlyTrashed()
+                ->when($request->search, function ($query) use ($request) {
 
-                $query->where(function ($q) use ($request) {
+                    $query->where(function ($q) use ($request) {
 
-                    $q->where('title', 'like', '%' . $request->search . '%')
-                        ->orWhere('slug', 'like', '%' . $request->search . '%')
-                        ->orWhere('content', 'like', '%' . $request->search . '%')
-                        ->orWhere('meta_title', 'like', '%' . $request->search . '%')
-                        ->orWhere('meta_description', 'like', '%' . $request->search . '%')
-                        ->orWhere('keywords', 'like', '%' . $request->search . '%')
-                        ->orWhere('schema', 'like', '%' . $request->search . '%')
-                        ->orWhere('feature_image_alt', 'like', '%' . $request->search . '%');
-                });
-            })
-            ->paginate(10);
+                        $q->where('title', 'like', '%' . $request->search . '%')
+                            ->orWhere('slug', 'like', '%' . $request->search . '%')
+                            ->orWhere('content', 'like', '%' . $request->search . '%')
+                            ->orWhere('meta_title', 'like', '%' . $request->search . '%')
+                            ->orWhere('meta_description', 'like', '%' . $request->search . '%')
+                            ->orWhere('keywords', 'like', '%' . $request->search . '%')
+                            ->orWhere('schema', 'like', '%' . $request->search . '%')
+                            ->orWhere('feature_image_alt', 'like', '%' . $request->search . '%');
+                    });
+                })
+                ->paginate(10);
             return [
-            'blogs' => $blogs
+                'blogs' => $blogs
             ];
         });
 
@@ -443,9 +468,10 @@ class BlogController extends Controller
         $blog = Blog::withTrashed()->findOrFail($id);
         if ($blog->trashed()) {
             $blog->restore();
-             Cache::tags(['blogs',
-             'trashed_blogs'
-             ])->flush();
+            Cache::tags([
+                'blogs',
+                'trashed_blogs'
+            ])->flush();
             return redirect()->route('admin.blogs.trash')->with('success', 'Blog restored successfully');
         } else {
             return redirect()->route('admin.blogs.trash')->with('error', 'Blog is not in trashed state');
@@ -458,10 +484,35 @@ class BlogController extends Controller
             if ($blog->feature_image && file_exists(public_path($blog->feature_image))) {
                 unlink(public_path($blog->feature_image));
             }
+             if (!empty($blog->feature_image_public_id)) {
+
+                try {
+
+                    Cloudinary::uploadApi()->destroy(
+                        $blog->feature_image_public_id,
+                        [
+                            'resource_type' => 'image',
+                            'type'          => 'upload',
+                        ]
+                    );
+
+                    Log::info('Old Cloudinary image deleted', [
+                        'public_id' => $blog->feature_image_public_id,
+                    ]);
+
+                } catch (\Throwable $e) {
+
+                    Log::warning('Could not delete old Cloudinary image', [
+                        'public_id' => $blog->feature_image_public_id,
+                        'error'     => $e->getMessage(),
+                    ]);
+                }
+             }
             $blog->forceDelete();
-            Cache::tags(['blogs',
-             'trashed_blogs'
-             ])->flush();
+            Cache::tags([
+                'blogs',
+                'trashed_blogs'
+            ])->flush();
             return redirect()->route('admin.blogs.trash')->with('success', 'Blog permanently deleted successfully');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());

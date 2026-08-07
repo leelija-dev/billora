@@ -638,7 +638,7 @@
                             <input type="text" name="title" class="form-input with-icon" placeholder="Enter title.."
                                 value="{{ old('title') }}" required>
                             @error('title')
-                                <span class="text-danger">{{ $message }}</span>
+                                <span class="text-red-500">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>
@@ -650,7 +650,7 @@
                         <input type="text" name="slug" class="form-input with-icon" placeholder="Enter slug.."
                             value="{{ old('slug') }}" required>
                         @error('slug')
-                            <span class="text-danger">{{ $message }}</span>
+                            <span class="text-red-500">{{ $message }}</span>
                         @enderror
 
                     </div>
@@ -670,7 +670,7 @@
                                 @endforeach
                             </select>
                             @error('category_id')
-                                <span class="text-danger">{{ $message }}</span>
+                                <span class="text-red-500">{{ $message }}</span>
                             @enderror
 
                         </div>
@@ -713,7 +713,7 @@
 
                         <textarea name="excerpt" class="form-input currency-input" rows="3" placeholder="Enter plan excerpt" required>{{ old('excerpt') }}</textarea>
                         @error('excerpt')
-                            <span class="text-danger">{{ $message }}</span>
+                            <span class="text-red-500">{{ $message }}</span>
                         @enderror
 
 
@@ -727,7 +727,7 @@
                             <input type="text" name="feature_image_alt" class="form-input currency-input"
                                 placeholder="Enter feature image alt" value="{{ old('feature_image_alt') }}" required>
                             @error('feature_image_alt')
-                                <span class="text-danger">{{ $message }}</span>
+                                <span class="text-red-500">{{ $message }}</span>
                             @enderror
 
                         </div>
@@ -741,7 +741,7 @@
                             <input type="file" name="feature_image" class="form-input" accept="image/*" required>
 
                             @error('feature_image')
-                                <span class="text-danger">{{ $message }}</span>
+                                <span class="text-red-500">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>
@@ -754,7 +754,7 @@
                             <input type="text" name="meta_title" class="form-input currency-input"
                                 placeholder="Enter meta title" value="{{ old('meta_title') }}" required>
                             @error('meta_title')
-                                <span class="text-danger">{{ $message }}</span>
+                                <span class="text-red-500">{{ $message }}</span>
                             @enderror
 
                         </div>
@@ -769,7 +769,7 @@
                         <input type="text" name="keywords" class="form-input currency-input"
                             placeholder="Enter keywords" value="{{ old('keywords') }}" required>
                         @error('keywords')
-                            <span class="text-danger">{{ $message }}</span>
+                            <span class="text-red-500">{{ $message }}</span>
                         @enderror
 
 

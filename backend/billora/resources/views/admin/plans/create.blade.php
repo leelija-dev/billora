@@ -687,7 +687,7 @@
                             <input type="text" name="slug" class="form-input with-icon"
                                 placeholder="Enter plan slug" value="{{ old('slug') }}" required>
                             @error('slug')
-                                <span class="text-danger">{{ $message }}</span>
+                                <span class="text-red-500">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>
@@ -706,7 +706,7 @@
                         </select>
 
                         @error('business_types')
-                            <span class="text-danger" style="color:red;">{{ $message }}</span>
+                            <span class="text-red-500">{{ $message }}</span>
                         @enderror
                     </div>
                     <!-- Price and Currency -->
