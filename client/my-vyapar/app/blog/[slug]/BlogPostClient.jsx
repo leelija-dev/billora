@@ -10,14 +10,15 @@ import {
   Clock, Eye, Mail, 
   ChevronDown, ChevronUp, Bookmark, Copy, Check,
   MessageCircle, ThumbsUp, Share, ExternalLink,
-  Award, Briefcase, MapPin
+  Award, Briefcase, MapPin, RefreshCw
 } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
 
 export default function BlogPostClient({ 
   initialBlog, 
   initialRelatedBlogs,
-  initialToc 
+  initialToc,
+  lastUpdated 
 }) {
   const router = useRouter();
   const [blog] = useState(initialBlog);
@@ -27,10 +28,24 @@ export default function BlogPostClient({
   const [copied, setCopied] = useState(false);
   const [openFaqs, setOpenFaqs] = useState([1]);
   const [tableOfContents] = useState(initialToc || []);
+  const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
 
   const faqs = blog?.faqs || [];
   const user = blog?.user || {};
   const authorName = user.fullName || user.fname && user.lname ? `${user.fname} ${user.lname}` : user.username || 'Editorial Team';
+
+  // Check if content is fresh (less than 60 seconds old)
+  useEffect(() => {
+    if (lastUpdated) {
+      const lastUpdateTime = new Date(lastUpdated).getTime();
+      const now = new Date().getTime();
+      const diffSeconds = (now - lastUpdateTime) / 1000;
+      
+      if (diffSeconds > 60) {
+        setShowUpdateIndicator(true);
+      }
+    }
+  }, [lastUpdated]);
 
   const toggleFaq = (faqId) => {
     setOpenFaqs(prev => 
@@ -61,8 +76,6 @@ export default function BlogPostClient({
     const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
     return `${API_BASE_URL}/${cleanPath}`;
   };
-
-  console.log("checking blog inner post",blog)
 
   const handleShare = async (platform = null) => {
     const url = window.location.href;
@@ -125,6 +138,14 @@ export default function BlogPostClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      {/* ISR Status Indicator */}
+      {showUpdateIndicator && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs py-1.5 px-4 text-center">
+          <RefreshCw className="inline-block h-3 w-3 mr-1 animate-spin" />
+          This page is updated automatically every 60 seconds
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-slate-100 sticky top-0 z-20">
         <div className="xl:container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">

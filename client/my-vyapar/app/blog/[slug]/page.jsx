@@ -1,20 +1,27 @@
+// app/blog/[slug]/page.js
 import blogApi from '@/services/blogApi'; 
 import BlogPostClient from './BlogPostClient'; 
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
-// Optional: Generate static params for better performance
+// Generate static params at build time for better performance
 export async function generateStaticParams() {
   try {
-    const response = await blogApi.getBlogs();
+    const response = await blogApi.getBlogs({ page: 1, limit: 100 });
     const blogs = response.data?.blogs?.data || [];
     return blogs.map(blog => ({
       slug: blog.slug
     }));
   } catch (error) {
+    console.error('Error generating static params:', error);
     return [];
   }
 }
+
+// ISR: Revalidate every 60 seconds (1 minute)
+// This means the page will be regenerated in the background
+// when a request comes in after 60 seconds
+export const revalidate = 60;
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }) {
@@ -35,6 +42,15 @@ export async function generateMetadata({ params }) {
       title: `${blog.title} | The Fast Bill Blog`,
       description: blog.excerpt || `Read ${blog.title} on The Fast Bill Blog.`,
       openGraph: {
+        title: blog.title,
+        description: blog.excerpt,
+        images: blog.feature_image ? [blog.feature_image] : [],
+        type: 'article',
+        publishedTime: blog.created_at,
+        authors: blog.user ? [blog.user.fname + ' ' + blog.user.lname] : [],
+      },
+      twitter: {
+        card: 'summary_large_image',
         title: blog.title,
         description: blog.excerpt,
         images: blog.feature_image ? [blog.feature_image] : [],
@@ -76,6 +92,8 @@ export default async function BlogPostPage({ params }) {
       bio: blogData.user?.bio || 'Content writer and industry expert.',
       role: blogData.user?.role || 'contributor',
       email: blogData.user?.email || '',
+      created_at: blogData.user?.created_at || null,
+      updated_at: blogData.user?.updated_at || null,
     };
 
     // Format the blog data with proper user information
@@ -89,7 +107,7 @@ export default async function BlogPostPage({ params }) {
     // Fetch related blogs
     let relatedBlogs = [];
     try {
-      const relatedResponse = await blogApi.getRelatedBlogs(3);
+      const relatedResponse = await blogApi.getRelatedBlogs(4);
       const relatedData = relatedResponse.data;
       if (relatedData.status && relatedData.blogs?.data) {
         relatedBlogs = relatedData.blogs.data
@@ -117,6 +135,7 @@ export default async function BlogPostPage({ params }) {
         initialBlog={formattedBlog}
         initialRelatedBlogs={relatedBlogs}
         initialToc={processedContent.toc}
+        lastUpdated={new Date().toISOString()}
       />
     );
   } catch (error) {
@@ -132,7 +151,6 @@ function processContentForTOC(content) {
   // Use a simple regex to find headings
   const headingRegex = /<h([2-3])>(.*?)<\/h\1>/g;
   const toc = [];
-  let html = content;
   let match;
   let index = 0;
   
@@ -144,7 +162,7 @@ function processContentForTOC(content) {
     const id = `heading-${index}`;
     headingMatches.push({
       level: `h${level}`,
-      text,
+      text: text.replace(/<[^>]*>/g, ''), // Remove any HTML tags from heading text
       id,
       href: `#${id}`
     });
@@ -153,7 +171,7 @@ function processContentForTOC(content) {
   
   // Replace headings with ones containing IDs
   let processedHtml = content;
-  headingMatches.forEach((heading, idx) => {
+  headingMatches.forEach((heading) => {
     const originalHeading = `<h${heading.level.replace('h', '')}>${heading.text}</h${heading.level.replace('h', '')}>`;
     const newHeading = `<${heading.level} id="${heading.id}">${heading.text}</${heading.level}>`;
     processedHtml = processedHtml.replace(originalHeading, newHeading);
@@ -167,7 +185,7 @@ function processContentForTOC(content) {
   
   return {
     html: processedHtml,
-    toc: toc.slice(0, 8) // Limit TOC items
+    toc: toc.slice(0, 8) // Limit TOC items to 8
   };
 }
 
