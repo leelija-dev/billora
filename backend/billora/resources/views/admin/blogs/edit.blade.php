@@ -1173,11 +1173,11 @@
             faqContainer.insertAdjacentHTML('beforeend', faqHtml);
 
             // Initialize only new textarea
-            $('#' + textareaId).summernote({
-                height: 100,
-                placeholder: 'Enter answer..',
+            // $('#' + textareaId).summernote({
+            //     height: 100,
+            //     placeholder: 'Enter answer..',
 
-            });
+            // });
 
             faqIndex++;
         }
@@ -1201,14 +1201,14 @@
         }
 
         // Existing FAQs initialize
-        $(document).ready(function() {
+        // $(document).ready(function() {
 
-            $('.faq-answer').summernote({
-                height: 100,
-                placeholder: 'Enter answer..',
-            });
+        //     $('.faq-answer').summernote({
+        //         height: 100,
+        //         placeholder: 'Enter answer..',
+        //     });
 
-        });
+        // });
     </script>
     <script>
         document.getElementById('addTag').addEventListener('click', function() {

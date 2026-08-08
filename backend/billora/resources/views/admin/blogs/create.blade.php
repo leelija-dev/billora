@@ -1101,10 +1101,10 @@
             faqContainer.insertAdjacentHTML('beforeend', faqHtml);
 
             // Initialize summernote for newly added textarea
-            $('.faq-answer').summernote({
-                height: 100,
-                placeholder: 'Enter answer..'
-            });
+            // $('.faq-answer').summernote({
+            //     height: 100,
+            //     placeholder: 'Enter answer..'
+            // });
         }
 
         function removeFaq(button) {
@@ -1125,14 +1125,14 @@
         }
 
         // Initial Summernote
-        $(document).ready(function() {
+        // $(document).ready(function() {
 
-            $('.faq-answer').summernote({
-                height: 100,
-                placeholder: 'Enter answer..'
-            });
+        //     $('.faq-answer').summernote({
+        //         height: 100,
+        //         placeholder: 'Enter answer..'
+        //     });
 
-        });
+        // });
     </script>
     <script>
         document.getElementById('addTag').addEventListener('click', function() {

@@ -1,3 +1,4 @@
+// app/blog/BlogClient.js
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,17 +6,24 @@ import { Search, Filter, X, ChevronRight, Sparkles, TrendingUp, Clock, Eye } fro
 import BlogCard from '@/components/blog/BlogCard';
 import { blogApi } from '@/services/blogApi';
 
-export default function BlogPage() {
-  const [blogs, setBlogs] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function BlogClient({ initialData }) {
+  // Initialize state with initial data if available
+  const [blogs, setBlogs] = useState(initialData?.blogs?.data || []);
+  const [categories, setCategories] = useState(initialData?.categories || []);
+  const [loading, setLoading] = useState(!initialData); // If no initial data, show loading
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(initialData?.blogs?.current_page || 1);
+  const [hasMore, setHasMore] = useState(() => {
+    if (initialData?.blogs) {
+      return initialData.blogs.current_page < initialData.blogs.last_page;
+    }
+    return true;
+  });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [error, setError] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const fetchBlogs = async (page = 1, reset = false) => {
     try {
@@ -50,7 +58,7 @@ export default function BlogPage() {
           setBlogs(prev => [...prev, ...blogData]);
         }
 
-        // Set categories from API response
+        // Set categories from API response (only if not already set)
         if (data.categories && categories.length === 0) {
           setCategories(data.categories);
         }
@@ -67,12 +75,31 @@ export default function BlogPage() {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      setIsInitialLoad(false);
     }
   };
 
+  // Fetch when search or category changes
   useEffect(() => {
+    // Don't fetch if we already have initial data and it's the first render
+    if (initialData && isInitialLoad) {
+      setIsInitialLoad(false);
+      setLoading(false);
+      return;
+    }
+    
+    // Reset and fetch with new filters
+    setCurrentPage(1);
+    setHasMore(true);
     fetchBlogs(1, true);
   }, [searchTerm, selectedCategory]);
+
+  // Initial fetch if no initial data
+  useEffect(() => {
+    if (!initialData) {
+      fetchBlogs(1, true);
+    }
+  }, []);
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
@@ -102,7 +129,7 @@ export default function BlogPage() {
     }
     
     // If it's a relative path, prepend the API base URL
-    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ||  'http://localhost:8000';
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     
     // Remove /api suffix if present (images are served from base URL, not /api)
     API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
@@ -115,6 +142,26 @@ export default function BlogPage() {
 
   // Featured post (first blog post)
   const featuredPost = blogs.length > 0 ? blogs[0] : null;
+
+  // If loading and no initial data, show skeleton
+  if (loading && !initialData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="bg-slate-100 rounded-2xl h-56 mb-4"></div>
+                <div className="h-5 bg-slate-100 rounded-lg w-3/4 mb-3"></div>
+                <div className="h-4 bg-slate-100 rounded-lg w-full mb-2"></div>
+                <div className="h-4 bg-slate-100 rounded-lg w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
