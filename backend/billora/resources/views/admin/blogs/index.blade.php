@@ -923,15 +923,15 @@
                                         <path
                                             d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v2c0 .55.45 1 1 1h.59c.26 0 .52-.11.71-.29L14.59 18H20c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" />
                                     </svg>
-                                    <h3>No contacts found</h3>
+                                    <h3>No blogs found</h3>
                                     @if (request('search'))
-                                        <p>No messages found for "<strong>{{ request('search') }}</strong>"</p>
+                                        <p>No blogs found for "<strong>{{ request('search') }}</strong>"</p>
                                         <p style="font-size: 12px; margin-top: 8px;">
-                                            <a href="{{ route('admin.contacts.index') }}" style="color: #2563eb;">Clear
+                                            <a href="{{ route('admin.blogs.index') }}" style="color: #2563eb;">Clear
                                                 search</a>
                                         </p>
                                     @else
-                                        <p>No messages available</p>
+                                        <p>No blogs available</p>
                                     @endif
                                 </td>
                             </tr>
@@ -945,7 +945,7 @@
                 <div class="pagination-modern">
                     <div class="pagination-info">
                         Showing <strong>{{ $blogs->firstItem() }}</strong> to <strong>{{ $blogs->lastItem() }}</strong> of
-                        <strong>{{ $contacts->total() }}</strong> results
+                        <strong>{{ $blogs->total() }}</strong> results
                     </div>
                     <div>
                         {{ $blogs->appends(request()->query())->links('pagination::tailwind') }}
