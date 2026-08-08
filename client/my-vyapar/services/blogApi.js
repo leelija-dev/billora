@@ -27,6 +27,7 @@ export const blogApi = {
   getBlogs: async (params = {}) => {
     await getCsrfToken();
     const response = await apiClient.get('/blog', { params });
+    console.log("checking blog response",response);
     return response;
   },
 
@@ -35,6 +36,7 @@ export const blogApi = {
   getBlog: async (slug) => {
     await getCsrfToken();
     const response = await apiClient.get(`/blog/${slug}`);
+    console.log("checking blog response 2",response);
     return response;
   },
 
@@ -42,6 +44,7 @@ export const blogApi = {
   getCategories: async () => {
     await getCsrfToken();
     const response = await apiClient.get('/blog');
+    console.log("checking blog response 3",response);
     return response;
   },
 
@@ -51,6 +54,7 @@ export const blogApi = {
     const response = await apiClient.get('/blog', {
       params: { category_id: categoryId, ...params }
     });
+    console.log("checking blog response 4",response);
     return response;
   },
 
@@ -60,6 +64,7 @@ export const blogApi = {
     const response = await apiClient.get('/blog', {
       params: { search: 'name', ...params }
     });
+    console.log("checking blog response 5",response);
     return response;
   },
 

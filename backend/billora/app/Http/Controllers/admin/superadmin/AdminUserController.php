@@ -53,7 +53,7 @@ class AdminUserController extends Controller
                 $fileName = time() . '_' . $image->getClientOriginalName();
                 $image->move($folderPath, $fileName);
 
-                $imagePath = 'uploads/admin_images/' . $fileName;
+                $imagePath = env('APP_URL',"https://api.thefastbill.com") . '/uploads/admin_images/' . $fileName;
             }
             $user = AdminUser::create([
                 'username' => $data['name'],
@@ -120,7 +120,7 @@ class AdminUserController extends Controller
             $fileName = time() . '_' . $image->getClientOriginalName();
             $image->move($folderPath, $fileName);
 
-            $data['image'] = 'uploads/admin_images/' . $fileName;
+            $data['image'] = env('APP_URL',"https://api.thefastbill.com") . '/uploads/admin_images/' . $fileName;
         }
 
         // Update user
