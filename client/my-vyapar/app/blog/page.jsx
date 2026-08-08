@@ -2,7 +2,7 @@
 import BlogClient from './BlogClient';
 import { blogApi } from '@/services/blogApi';
 
-// This runs on the server
+// This runs on the server - no authentication needed
 async function getBlogs() {
   try {
     const response = await blogApi.getBlogs({ page: 1 });
@@ -15,7 +15,13 @@ async function getBlogs() {
 
 export const metadata = {
   title: "Blog – GST, Billing & Inventory Tips | The Fast Bill",
-  description: "Read The Fast Bill blog for practical tips on GST billing, inventory management, tax compliance, and growing your business in India. Updated regularly."
+  description: "Read The Fast Bill blog for practical tips on GST billing, inventory management, tax compliance, and growing your business in India. Updated regularly.",
+  openGraph: {
+    title: "Blog – GST, Billing & Inventory Tips | The Fast Bill",
+    description: "Read The Fast Bill blog for practical tips on GST billing, inventory management, tax compliance, and growing your business in India.",
+    type: "website",
+    url: "https://thefastbill.com/blog",
+  }
 }
 
 export default async function BlogPage() {

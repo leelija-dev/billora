@@ -1,8 +1,8 @@
 // app/blog/BlogClient.js
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Search, Filter, X, ChevronRight, Sparkles, TrendingUp, Clock, Eye } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Filter, X, ChevronRight, TrendingUp, Clock, Eye } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
 import { blogApi } from '@/services/blogApi';
 
@@ -10,7 +10,7 @@ export default function BlogClient({ initialData }) {
   // Initialize state with initial data if available
   const [blogs, setBlogs] = useState(initialData?.blogs?.data || []);
   const [categories, setCategories] = useState(initialData?.categories || []);
-  const [loading, setLoading] = useState(!initialData); // If no initial data, show loading
+  const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -24,8 +24,24 @@ export default function BlogClient({ initialData }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [error, setError] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const initialFetchDone = useRef(false);
 
-  const fetchBlogs = async (page = 1, reset = false) => {
+  // Helper function to fix image URLs
+  const getImageUrl = useCallback((imagePath) => {
+    if (!imagePath) return null;
+    
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
+    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    
+    return `${API_BASE_URL}/${cleanPath}`;
+  }, []);
+
+  const fetchBlogs = useCallback(async (page = 1, reset = false) => {
     try {
       if (reset) {
         setLoading(true);
@@ -35,13 +51,11 @@ export default function BlogClient({ initialData }) {
 
       const params = { page };
       
-      // Apply search filter
       if (searchTerm) {
         params.search = 'name';
         params.name = searchTerm;
       }
 
-      // Apply category filter
       if (selectedCategory) {
         params.category_id = selectedCategory;
       }
@@ -58,14 +72,13 @@ export default function BlogClient({ initialData }) {
           setBlogs(prev => [...prev, ...blogData]);
         }
 
-        // Set categories from API response (only if not already set)
         if (data.categories && categories.length === 0) {
           setCategories(data.categories);
         }
 
-        // Check if there are more pages
         setHasMore(data.blogs?.current_page < data.blogs?.last_page);
         setCurrentPage(data.blogs?.current_page || page);
+        setError(null);
       } else {
         throw new Error(data.message || 'Failed to fetch blogs');
       }
@@ -77,29 +90,33 @@ export default function BlogClient({ initialData }) {
       setLoadingMore(false);
       setIsInitialLoad(false);
     }
-  };
+  }, [searchTerm, selectedCategory, categories.length]);
+
+  // Initial data handling
+  useEffect(() => {
+    if (initialData && !initialFetchDone.current) {
+      initialFetchDone.current = true;
+      setLoading(false);
+      setIsInitialLoad(false);
+    }
+  }, [initialData]);
 
   // Fetch when search or category changes
   useEffect(() => {
-    // Don't fetch if we already have initial data and it's the first render
-    if (initialData && isInitialLoad) {
-      setIsInitialLoad(false);
-      setLoading(false);
-      return;
+    if (!isInitialLoad || !initialData) {
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchBlogs(1, true);
     }
-    
-    // Reset and fetch with new filters
-    setCurrentPage(1);
-    setHasMore(true);
-    fetchBlogs(1, true);
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, isInitialLoad, initialData, fetchBlogs]);
 
   // Initial fetch if no initial data
   useEffect(() => {
-    if (!initialData) {
+    if (!initialData && !initialFetchDone.current) {
+      initialFetchDone.current = true;
       fetchBlogs(1, true);
     }
-  }, []);
+  }, [initialData, fetchBlogs]);
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
@@ -119,31 +136,10 @@ export default function BlogClient({ initialData }) {
     setHasMore(true);
   };
 
-  // Helper function to fix image URLs
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-    
-    // If it's already a full URL, return as-is
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-    
-    // If it's a relative path, prepend the API base URL
-    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-    
-    // Remove /api suffix if present (images are served from base URL, not /api)
-    API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
-    
-    // Remove leading slash if present to avoid double slashes
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    
-    return `${API_BASE_URL}/${cleanPath}`;
-  };
-
   // Featured post (first blog post)
   const featuredPost = blogs.length > 0 ? blogs[0] : null;
 
-  // If loading and no initial data, show skeleton
+  // Loading skeleton
   if (loading && !initialData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -165,9 +161,8 @@ export default function BlogClient({ initialData }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      {/* Search and Filter Section */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filter Bar - Fully Rounded with Custom Dropdown */}
+        {/* Filter Bar */}
         <div className="flex flex-col md:flex-row gap-3 bg-white/80 backdrop-blur-sm shadow-lg border border-slate-100 p-4 mb-3 sticky top-22 z-30 md:rounded-full rounded-[20px]">
           {/* Search Bar */}
           <div className="flex-1">
@@ -204,13 +199,11 @@ export default function BlogClient({ initialData }) {
             {/* Dropdown Menu */}
             {isDropdownOpen && (
               <>
-                {/* Backdrop */}
                 <div 
                   className="fixed inset-0 z-20" 
                   onClick={() => setIsDropdownOpen(false)}
                 />
                 
-                {/* Dropdown options */}
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="max-h-64 overflow-y-auto">
                     <button
@@ -282,7 +275,7 @@ export default function BlogClient({ initialData }) {
           </div>
         )}
     
-        {/* Featured Post - conditional, only show when no filters active and blogs exist */}
+        {/* Featured Post */}
         {!searchTerm && !selectedCategory && featuredPost && (
           <div className="mb-12 mt-6">
             <div className="group relative bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 hover:shadow-2xl transition-all duration-500">
@@ -428,7 +421,6 @@ export default function BlogClient({ initialData }) {
               </div>
             )}
 
-            {/* Show current count */}
             {!loadingMore && blogs.length > 0 && (
               <p className="text-center text-slate-500 text-sm mt-6">
                 Showing {blogs.length} articles{hasMore ? ' (more available)' : ''}

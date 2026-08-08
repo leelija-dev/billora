@@ -9,7 +9,8 @@ import {
   Facebook, Twitter, Linkedin, 
   Clock, Eye, Mail, 
   ChevronDown, ChevronUp, Bookmark, Copy, Check,
-  MessageCircle, ThumbsUp, Share, ExternalLink
+  MessageCircle, ThumbsUp, Share, ExternalLink,
+  Award, Briefcase, MapPin
 } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
 
@@ -28,6 +29,8 @@ export default function BlogPostClient({
   const [tableOfContents] = useState(initialToc || []);
 
   const faqs = blog?.faqs || [];
+  const user = blog?.user || {};
+  const authorName = user.fullName || user.fname && user.lname ? `${user.fname} ${user.lname}` : user.username || 'Editorial Team';
 
   const toggleFaq = (faqId) => {
     setOpenFaqs(prev => 
@@ -58,6 +61,8 @@ export default function BlogPostClient({
     const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
     return `${API_BASE_URL}/${cleanPath}`;
   };
+
+  console.log("checking blog inner post",blog)
 
   const handleShare = async (platform = null) => {
     const url = window.location.href;
@@ -102,6 +107,20 @@ export default function BlogPostClient({
       });
       window.history.pushState(null, null, href);
     }
+  };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (user.fname && user.lname) {
+      return `${user.fname.charAt(0)}${user.lname.charAt(0)}`;
+    }
+    if (user.fname) {
+      return user.fname.charAt(0);
+    }
+    if (user.username) {
+      return user.username.charAt(0).toUpperCase();
+    }
+    return 'A';
   };
 
   return (
@@ -223,7 +242,7 @@ export default function BlogPostClient({
                   {blog.title}
                 </h1>
 
-                {/* Meta Information */}
+                {/* Meta Information with User Details */}
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-slate-500 mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-slate-100">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -237,13 +256,49 @@ export default function BlogPostClient({
                     <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                     1.2k views
                   </div>
-                  {blog.user && (
-                    <div className="flex items-center gap-1">
-                      <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                      {blog.user.fname} {blog.user.lname}
+                  {/* User Info with Avatar */}
+                  <div className="flex items-center gap-2 ml-0 sm:ml-2">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-[10px] sm:text-xs font-bold">
+                      {getUserInitials()}
                     </div>
-                  )}
+                    <span className="text-slate-700 font-medium">
+                      {authorName}
+                    </span>
+                    {user.role === 'admin' && (
+                      <span className="inline-flex items-center px-2 py-0.5 bg-[rgb(65,135,249)]/10 text-[rgb(65,135,249)] text-[10px] font-medium rounded-full">
+                        Admin
+                      </span>
+                    )}
+                    {user.role === 'editor' && (
+                      <span className="inline-flex items-center px-2 py-0.5 bg-[#ec4899]/10 text-[#ec4899] text-[10px] font-medium rounded-full">
+                        Editor
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Author Bio Bar - Quick Author Info */}
+                {user && (user.fname || user.username) && (
+                  <div className="flex items-center gap-3 bg-gradient-to-r from-slate-50 to-white p-3 sm:p-4 rounded-xl mb-6 border border-slate-100">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-sm sm:text-base font-bold shrink-0">
+                      {getUserInitials()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {authorName}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {user.bio || 'Content Writer'}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/author/${user.id || user.username}`}
+                      className="text-[rgb(65,135,249)] hover:text-[rgb(65,135,249)]/80 text-xs font-medium transition-colors shrink-0"
+                    >
+                      View Profile
+                    </Link>
+                  </div>
+                )}
 
                 {/* Excerpt */}
                 {blog.excerpt && (
@@ -283,7 +338,7 @@ export default function BlogPostClient({
                         )}
                       </button>
                       {openFaqs.includes(faq.id) && (
-                        <div className="px-4 pb-4 sm:px-5 sm:pb-5  border-t border-slate-100 pt-4">
+                        <div className="px-4 pb-4 sm:px-5 sm:pb-5 border-t border-slate-100 pt-4">
                           <p className="text-slate-600 text-sm sm:text-base">{faq.answer}</p>
                         </div>
                       )}
@@ -314,35 +369,80 @@ export default function BlogPostClient({
               </div>
             )}
 
-            {/* Author Section */}
-            <div className="mt-8 sm:mt-12 bg-gradient-to-r from-[rgb(65,135,249)]/5 to-[#ec4899]/5 rounded-2xl sm:rounded-3xl border border-slate-100 p-5 sm:p-6 md:p-8">
-              <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 items-start sm:items-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0">
-                  {blog.user?.fname?.charAt(0) || blog.user?.lname?.charAt(0) || 'A'}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">
-                    {blog.user ? `${blog.user.fname} ${blog.user.lname}` : 'Editorial Team'}
-                  </h3>
-                  <p className="text-[rgb(65,135,249)] text-xs sm:text-sm mb-2 sm:mb-3">Senior Content Writer</p>
-                  <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                    Passionate about sharing insights and helping businesses grow through valuable content. 
-                    With over 5 years of experience in digital marketing and business strategy.
-                  </p>
-                  <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
-                    <button className="p-1.5 sm:p-2 rounded-full bg-white text-slate-600 hover:text-[rgb(65,135,249)] hover:shadow-md transition-all">
-                      <Twitter className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </button>
-                    <button className="p-1.5 sm:p-2 rounded-full bg-white text-slate-600 hover:text-[rgb(65,135,249)] hover:shadow-md transition-all">
-                      <Linkedin className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </button>
-                    <button className="p-1.5 sm:p-2 rounded-full bg-white text-slate-600 hover:text-[rgb(65,135,249)] hover:shadow-md transition-all">
-                      <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </button>
+            {/* Author Section - Enhanced with Full Details */}
+            {user && (user.fname || user.username) && (
+              <div className="mt-8 sm:mt-12 bg-gradient-to-r from-[rgb(65,135,249)]/5 to-[#ec4899]/5 rounded-2xl sm:rounded-3xl border border-slate-100 p-5 sm:p-6 md:p-8">
+                <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 items-start sm:items-center">
+                  {/* Author Avatar */}
+                  <div className="relative">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0">
+                      {getUserInitials()}
+                    </div>
+                    {user.role === 'admin' && (
+                      <div className="absolute -bottom-1 -right-1 bg-[rgb(65,135,249)] rounded-full p-1 border-2 border-white">
+                        <Award className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    {user.role === 'editor' && (
+                      <div className="absolute -bottom-1 -right-1 bg-[#ec4899] rounded-full p-1 border-2 border-white">
+                        <Briefcase className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Author Info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+                        {authorName}
+                      </h3>
+                      {user.role === 'admin' && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 bg-[rgb(65,135,249)]/10 text-[rgb(65,135,249)] text-xs font-medium rounded-full">
+                          Admin
+                        </span>
+                      )}
+                      {user.role === 'editor' && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 bg-[#ec4899]/10 text-[#ec4899] text-xs font-medium rounded-full">
+                          Editor
+                        </span>
+                      )}
+                    </div>
+                    
+                    <p className="text-[rgb(65,135,249)] text-xs sm:text-sm mb-2 sm:mb-3">
+                      {user.role === 'admin' ? 'Senior Content Manager' : 
+                       user.role === 'editor' ? 'Content Editor' : 
+                       'Content Writer'}
+                    </p>
+                    
+                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                      {user.bio || 'Passionate about sharing insights and helping businesses grow through valuable content. With years of experience in digital marketing and business strategy.'}
+                    </p>
+                    
+                    {/* Author Social Links */}
+                    <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
+                      {user.email && (
+                        <a href={`mailto:${user.email}`} className="p-1.5 sm:p-2 rounded-full bg-white text-slate-600 hover:text-[rgb(65,135,249)] hover:shadow-md transition-all">
+                          <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </a>
+                      )}
+                      <button className="p-1.5 sm:p-2 rounded-full bg-white text-slate-600 hover:text-[rgb(65,135,249)] hover:shadow-md transition-all">
+                        <Twitter className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </button>
+                      <button className="p-1.5 sm:p-2 rounded-full bg-white text-slate-600 hover:text-[rgb(65,135,249)] hover:shadow-md transition-all">
+                        <Linkedin className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </button>
+                      <Link
+                        href={`/author/${user.id || user.username}`}
+                        className="ml-auto text-xs font-medium text-[rgb(65,135,249)] hover:text-[rgb(65,135,249)]/80 transition-colors flex items-center gap-1"
+                      >
+                        View all posts
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Related Posts Section */}
             {relatedBlogs.length > 0 && (
@@ -363,7 +463,7 @@ export default function BlogPostClient({
           {/* Right Sidebar - Social Icons & Actions */}
           <div className="lg:col-span-2">
             <div className="sticky top-24">
-              {/* Social Share Section - Horizontal scroll on mobile */}
+              {/* Social Share Section */}
               <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 mb-6">
                 <h3 className="text-sm font-semibold text-slate-900 mb-3 sm:mb-4 text-center">Share this post</h3>
                 <div className="flex flex-row lg:flex-col gap-2 sm:gap-3 overflow-x-auto pb-2 lg:pb-0">

@@ -16,6 +16,38 @@ export async function generateStaticParams() {
   }
 }
 
+// Generate metadata for SEO
+export async function generateMetadata({ params }) {
+  try {
+    const { slug } = await params;
+    const response = await blogApi.getBlog(slug);
+    const data = response.data;
+    
+    if (!data.status || !data.blog) {
+      return {
+        title: 'Blog Post Not Found',
+        description: 'The requested blog post could not be found.'
+      };
+    }
+
+    const blog = data.blog;
+    return {
+      title: `${blog.title} | The Fast Bill Blog`,
+      description: blog.excerpt || `Read ${blog.title} on The Fast Bill Blog.`,
+      openGraph: {
+        title: blog.title,
+        description: blog.excerpt,
+        images: blog.feature_image ? [blog.feature_image] : [],
+      }
+    };
+  } catch (error) {
+    return {
+      title: 'Blog Post',
+      description: 'Read our latest blog post.'
+    };
+  }
+}
+
 export default async function BlogPostPage({ params }) {
   try {
     const { slug } = await params;
@@ -28,6 +60,32 @@ export default async function BlogPostPage({ params }) {
       return <NotFound />;
     }
 
+    // Get the blog data
+    const blogData = data.blog;
+    
+    // Format user data properly
+    const formattedUser = {
+      id: blogData.user?.id || null,
+      username: blogData.user?.username || 'editor',
+      fname: blogData.user?.fname || '',
+      lname: blogData.user?.lname || '',
+      fullName: blogData.user?.fname && blogData.user?.lname 
+        ? `${blogData.user.fname} ${blogData.user.lname}`
+        : blogData.user?.username || 'Editorial Team',
+      avatar: blogData.user?.avatar || null,
+      bio: blogData.user?.bio || 'Content writer and industry expert.',
+      role: blogData.user?.role || 'contributor',
+      email: blogData.user?.email || '',
+    };
+
+    // Format the blog data with proper user information
+    const formattedBlog = {
+      ...blogData,
+      user: formattedUser,
+      author_name: formattedUser.fullName,
+      author_avatar: formattedUser.avatar,
+    };
+
     // Fetch related blogs
     let relatedBlogs = [];
     try {
@@ -35,22 +93,28 @@ export default async function BlogPostPage({ params }) {
       const relatedData = relatedResponse.data;
       if (relatedData.status && relatedData.blogs?.data) {
         relatedBlogs = relatedData.blogs.data
-          .filter(post => post.id !== data.blog.id)
-          .slice(0, 3);
+          .filter(post => post.id !== blogData.id)
+          .slice(0, 3)
+          .map(blog => ({
+            ...blog,
+            user: blog.user ? {
+              ...blog.user,
+              fullName: blog.user.fname && blog.user.lname 
+                ? `${blog.user.fname} ${blog.user.lname}`
+                : blog.user.username || 'Editorial Team'
+            } : null
+          }));
       }
     } catch (error) {
       console.error('Error fetching related blogs:', error);
     }
 
     // Process content for table of contents on the server
-    const processedContent = processContentForTOC(data.blog.content);
+    const processedContent = processContentForTOC(blogData.content);
 
     return (
       <BlogPostClient 
-        initialBlog={{
-          ...data.blog,
-          content: processedContent.html
-        }}
+        initialBlog={formattedBlog}
         initialRelatedBlogs={relatedBlogs}
         initialToc={processedContent.toc}
       />
