@@ -16,9 +16,9 @@ class SocialConnectController extends Controller
         $userId = Auth::user()->id;
 
         $url = "https://www.facebook.com/dialog/oauth?" . http_build_query([
-            'client_id' => $_ENV['META_APP_ID'],
-            'redirect_uri' => $_ENV['META_CALLBACK_URL'],
-            'config_id' => $_ENV['META_CONFIG_ID'],
+            'client_id' => config('services.facebook.app_id'),
+            'redirect_uri' => config('services.facebook.callback_url'),
+            'config_id' => config('services.facebook.config_id'),
             'response_type' => 'code',
             'state' => $userId
         ]);
@@ -36,9 +36,9 @@ class SocialConnectController extends Controller
         Log::info("called");
         // 1. Exchange CODE → Short-lived token
         $tokenResponse = Http::get("https://graph.facebook.com/v19.0/oauth/access_token", [
-            'client_id' => $_ENV['META_APP_ID'],
-            'client_secret' => $_ENV['META_APP_SECRET'],
-            'redirect_uri' => $_ENV['META_CALLBACK_URL'],
+            'client_id' => config('services.facebook.app_id'), 
+            'client_secret' => config('services.facebook.app_secret'), 
+            'redirect_uri' => config('services.facebook.callback_url'),
             'code' => $request->code,
         ])->json();
         
@@ -51,8 +51,8 @@ class SocialConnectController extends Controller
         // 2. Exchange → Long-lived token
         $longLivedTokenResponse = Http::get("https://graph.facebook.com/v19.0/oauth/access_token", [
             'grant_type' => 'fb_exchange_token',
-            'client_id' => $_ENV['META_APP_ID'],
-            'client_secret' => $_ENV['META_APP_SECRET'],
+            'client_id' => config('services.facebook.app_id'),
+            'client_secret' => config('services.facebook.app_secret'),
             'fb_exchange_token' => $shortLivedUserToken
         ])->json();
 
@@ -95,7 +95,7 @@ class SocialConnectController extends Controller
             );
         }
 
-        return redirect($_ENV['FRONTEND_ADMIN_URL'].'/social-link');
+        return redirect(env('REACT_APP_URL','https://app.thefastbill.com').'/social-link');
     }
     public function showConnection($id){
         $customer = Customers::findOrFail($id);
