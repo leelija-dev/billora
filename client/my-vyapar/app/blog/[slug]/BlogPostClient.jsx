@@ -34,7 +34,7 @@ export default function BlogPostClient({
   const user = blog?.user || {};
   const authorName = user.fullName || (user.fname && user.lname ? `${user.fname} ${user.lname}` : user.username || 'Editorial Team');
 
-  console.log("Current Blog:", blog);
+  // console.log("Current Blog:", blog);
 
   // Check if content is fresh (less than 60 seconds old)
   useEffect(() => {
