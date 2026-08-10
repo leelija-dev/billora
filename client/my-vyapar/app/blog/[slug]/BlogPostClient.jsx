@@ -32,7 +32,9 @@ export default function BlogPostClient({
 
   const faqs = blog?.faqs || [];
   const user = blog?.user || {};
-  const authorName = user.fullName || user.fname && user.lname ? `${user.fname} ${user.lname}` : user.username || 'Editorial Team';
+  const authorName = user.fullName || (user.fname && user.lname ? `${user.fname} ${user.lname}` : user.username || 'Editorial Team');
+
+  console.log("Current Blog:", blog);
 
   // Check if content is fresh (less than 60 seconds old)
   useEffect(() => {
@@ -74,6 +76,24 @@ export default function BlogPostClient({
     let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
     const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    return `${API_BASE_URL}/${cleanPath}`;
+  };
+
+  // Helper function to get user avatar URL
+  const getUserAvatarUrl = (avatarPath) => {
+    if (!avatarPath) return null;
+    
+    // If it's already a full URL, return as-is
+    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+      return avatarPath;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
+    
+    // Remove leading slash if present
+    const cleanPath = avatarPath.startsWith('/') ? avatarPath.slice(1) : avatarPath;
     return `${API_BASE_URL}/${cleanPath}`;
   };
 
@@ -135,6 +155,10 @@ export default function BlogPostClient({
     }
     return 'A';
   };
+
+  // Get user avatar URL (try multiple sources)
+  const userAvatarUrl = user.avatar || user.image || user.profile_image || null;
+  const avatarImageUrl = getUserAvatarUrl(userAvatarUrl);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -279,8 +303,19 @@ export default function BlogPostClient({
                   </div>
                   {/* User Info with Avatar */}
                   <div className="flex items-center gap-2 ml-0 sm:ml-2">
-                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-[10px] sm:text-xs font-bold">
-                      {getUserInitials()}
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-[10px] sm:text-xs font-bold">
+                      {avatarImageUrl ? (
+                        <Image
+                          src={avatarImageUrl}
+                          alt={authorName}
+                          width={28}
+                          height={28}
+                          className="object-cover w-full h-full"
+                          unoptimized
+                        />
+                      ) : (
+                        getUserInitials()
+                      )}
                     </div>
                     <span className="text-slate-700 font-medium">
                       {authorName}
@@ -301,23 +336,34 @@ export default function BlogPostClient({
                 {/* Author Bio Bar - Quick Author Info */}
                 {user && (user.fname || user.username) && (
                   <div className="flex items-center gap-3 bg-gradient-to-r from-slate-50 to-white p-3 sm:p-4 rounded-xl mb-6 border border-slate-100">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-sm sm:text-base font-bold shrink-0">
-                      {getUserInitials()}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-sm sm:text-base font-bold shrink-0">
+                      {avatarImageUrl ? (
+                        <Image
+                          src={avatarImageUrl}
+                          alt={authorName}
+                          width={48}
+                          height={48}
+                          className="object-cover w-full h-full"
+                          unoptimized
+                        />
+                      ) : (
+                        getUserInitials()
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-900">
                         {authorName}
                       </p>
                       <p className="text-xs text-slate-500 truncate">
-                        {user.bio || 'Content Writer'}
+                        {user.bio || user.description || 'Content Writer'}
                       </p>
                     </div>
-                    <Link
+                    {/* <Link
                       href={`/author/${user.id || user.username}`}
                       className="text-[rgb(65,135,249)] hover:text-[rgb(65,135,249)]/80 text-xs font-medium transition-colors shrink-0"
                     >
                       View Profile
-                    </Link>
+                    </Link> */}
                   </div>
                 )}
 
@@ -396,8 +442,19 @@ export default function BlogPostClient({
                 <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 items-start sm:items-center">
                   {/* Author Avatar */}
                   <div className="relative">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0">
-                      {getUserInitials()}
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0">
+                      {avatarImageUrl ? (
+                        <Image
+                          src={avatarImageUrl}
+                          alt={authorName}
+                          width={80}
+                          height={80}
+                          className="object-cover w-full h-full"
+                          unoptimized
+                        />
+                      ) : (
+                        getUserInitials()
+                      )}
                     </div>
                     {user.role === 'admin' && (
                       <div className="absolute -bottom-1 -right-1 bg-[rgb(65,135,249)] rounded-full p-1 border-2 border-white">
@@ -414,7 +471,7 @@ export default function BlogPostClient({
                   {/* Author Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+                      <h3 className="text-lg sm:text-xl font-bold text-slate-900 capitalize">
                         {authorName}
                       </h3>
                       {user.role === 'admin' && (
@@ -429,18 +486,16 @@ export default function BlogPostClient({
                       )}
                     </div>
                     
-                    <p className="text-[rgb(65,135,249)] text-xs sm:text-sm mb-2 sm:mb-3">
-                      {user.role === 'admin' ? 'Senior Content Manager' : 
-                       user.role === 'editor' ? 'Content Editor' : 
-                       'Content Writer'}
+                    <p className="text-[rgb(65,135,249)] text-xs sm:text-sm mb-2 sm:mb-2 capitalize">
+                      {user?.role}
                     </p>
                     
-                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                      {user.bio || 'Passionate about sharing insights and helping businesses grow through valuable content. With years of experience in digital marketing and business strategy.'}
+                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed capitalize">
+                      {user.bio || user.description || 'Passionate about sharing insights and helping businesses grow through valuable content. With years of experience in digital marketing and business strategy.'}
                     </p>
                     
                     {/* Author Social Links */}
-                    <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
+                    {/* <div className="flex items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
                       {user.email && (
                         <a href={`mailto:${user.email}`} className="p-1.5 sm:p-2 rounded-full bg-white text-slate-600 hover:text-[rgb(65,135,249)] hover:shadow-md transition-all">
                           <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -459,7 +514,7 @@ export default function BlogPostClient({
                         View all posts
                         <ExternalLink className="h-3 w-3" />
                       </Link>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>

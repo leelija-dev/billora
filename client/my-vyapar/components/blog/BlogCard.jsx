@@ -11,6 +11,8 @@ export default function BlogCard({ blog }) {
     });
   };
 
+  // console.log('BlogCard blog prop:', blog); // Debugging line to check the blog prop
+
   // Helper function to fix image URLs
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
@@ -21,7 +23,7 @@ export default function BlogCard({ blog }) {
     }
     
     // If it's a relative path, prepend the API base URL
-    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ||  'http://localhost:8000';
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     
     // Remove /api suffix if present (images are served from base URL, not /api)
     API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
@@ -31,6 +33,25 @@ export default function BlogCard({ blog }) {
     
     return `${API_BASE_URL}/${cleanPath}`;
   };
+
+  // Helper function to get user avatar URL
+  const getUserAvatarUrl = (userImage) => {
+    if (!userImage) return '/default-avatar.png';
+    
+    // If the image is already a full URL, return as-is
+    if (userImage.startsWith('http://') || userImage.startsWith('https://')) {
+      return userImage;
+    }
+    
+    // If it's a relative path, prepend the API base URL
+    let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
+    
+    const cleanPath = userImage.startsWith('/') ? userImage.slice(1) : userImage;
+    return `${API_BASE_URL}/${cleanPath}`;
+  };
+
+  const userAvatar = blog.user?.image ? getUserAvatarUrl(blog.user.image) : '/default-avatar.png';
 
   return (
     <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl border border-slate-100 overflow-hidden transition-all duration-300 hover:-translate-y-1">
@@ -45,7 +66,6 @@ export default function BlogCard({ blog }) {
             alt={blog.feature_image_alt || blog.title}
             fill
             className="object-contain group-hover:scale-105 transition-transform duration-500"
-            
             unoptimized
           />
         ) : (
@@ -96,8 +116,15 @@ export default function BlogCard({ blog }) {
         {/* Author & Tags */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[rgb(65,135,249)]/20 to-[#ec4899]/20 flex items-center justify-center text-sm font-medium text-[rgb(65,135,249)]">
-              {blog.user ? (blog.user.fname ? blog.user.fname.charAt(0) : blog.user.username ? blog.user.username.charAt(0) : 'A') : 'A'}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[rgb(65,135,249)]/20 to-[#ec4899]/20 flex items-center justify-center text-sm font-medium text-[rgb(65,135,249)] overflow-hidden">
+              <Image
+                src={userAvatar}
+                alt={blog.user?.fname ? `${blog.user.fname} ${blog.user.lname}` : 'Staff Writer'}
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+                unoptimized
+              />
             </div>
             <span className="text-sm text-slate-600">
               {blog.user ? (blog.user.fname && blog.user.lname ? `${blog.user.fname} ${blog.user.lname}` : blog.user.username || 'Staff Writer') : 'Staff Writer'}
