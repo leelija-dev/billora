@@ -1,13 +1,14 @@
 
-
 import React from 'react';
 import Container from '@/components/Container'; 
 import Link from 'next/link';
+import { createMetadata } from '../../utils/seo';
 
-export const metadata = {
+export const metadata = createMetadata({
   title: "Privacy Policy | The Fast Bill",
   description: "Read The Fast Bill's privacy policy to understand how we collect, use, store, and protect your personal and business data in line with India's DPDP Act",
-}
+  path: '/privacy-policy',
+});
 
 const PrivacyPolicy = () => {
   const lastUpdated = "January 15, 2026";

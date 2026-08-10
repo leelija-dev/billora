@@ -11,13 +11,13 @@ import {
 } from 'react-icons/fa';
 import { HiOutlineLocationMarker } from 'react-icons/hi';
 import { MdPhone, MdEmail } from 'react-icons/md';
+import { createMetadata } from '../../utils/seo';
 
-export const metadata = {
+export const metadata = createMetadata({
   title: "Billing & Inventory Solutions for Every Business | The Fast Bill",
-
-  description:
-    "Tailored GST billing, inventory, and accounting solutions for retail, enterprises, and professionals. POS, multi-branch, analytics & more. Book a free demo.",
-}
+  description: "Tailored GST billing, inventory, and accounting solutions for retail, enterprises, and professionals. POS, multi-branch, analytics & more. Book a free demo.",
+  path: '/solutions',
+});
 
 export default function SolutionPage() {
   const solutions = [

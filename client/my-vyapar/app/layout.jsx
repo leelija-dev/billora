@@ -1,37 +1,39 @@
-// app/layout.js
 import "./globals.css";
 import { ToastContainer, Bounce } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import StoreInitializer from '../components/StoreInitializer';
+import JsonLdWrapper from '@/components/JsonLdWrapper';
 
 export default function RootLayout({ children }) {
   return (
-    <>
-      <StoreInitializer />
-      <html lang="en" suppressHydrationWarning>
-        <body suppressHydrationWarning={true}>
-          <Navbar />
-          <main>
-            {children}
-          </main>
-          <Footer />
-          <ToastContainer 
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="light"
-            transition={Bounce}
-          />
-        </body>
-      </html>
-    </>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* ✅ JSON-LD will be injected here ONLY on homepage */}
+        <JsonLdWrapper />
+      </head>
+      <body suppressHydrationWarning={true}>
+        <StoreInitializer />
+        <Navbar />
+        <main>
+          {children}
+        </main>
+        <Footer />
+        <ToastContainer 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          transition={Bounce}
+        />
+      </body>
+    </html>
   );
 }

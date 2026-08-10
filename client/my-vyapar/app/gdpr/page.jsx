@@ -1,13 +1,14 @@
 
-
 import React from 'react';
 import Container from '@/components/Container'; 
 import Link from 'next/link';
+import { createMetadata } from '../../utils/seo';
 
-export const metadata = {
+export const metadata = createMetadata({
   title: "GDPR Compliance | The Fast Bill",
   description: "Understand how The Fast Bill handles data protection and your rights under GDPR, including access, correction, erasure, and how to contact us about your data.",
-}
+  path: '/gdpr',
+});
 
 const GDPRNotice = () => {
   const lastUpdated = "January 15, 2026";

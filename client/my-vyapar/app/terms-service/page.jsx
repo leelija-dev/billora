@@ -1,13 +1,13 @@
-
-
 import React from 'react';
 import Container from '@/components/Container'; 
 import Link from 'next/link';
+import { createMetadata } from '../../utils/seo';
 
-export const metadata = {
+export const metadata = createMetadata({
   title: "Terms of Service | The Fast Bill",
   description: "Review the Terms of Service governing your use of The Fast Bill's GST billing and inventory software, including accounts, plans, and acceptable use.",
-}
+  path: '/terms-service',
+});
 
 const TermsOfService = () => {
   const lastUpdated = "January 15, 2026";
