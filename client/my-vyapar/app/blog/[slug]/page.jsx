@@ -89,8 +89,8 @@ export default async function BlogPostPage({ params }) {
         ? `${blogData.user.fname} ${blogData.user.lname}`
         : blogData.user?.username || 'Editorial Team',
       avatar: blogData.user?.image || null,
-      bio: blogData.user?.bio || 'Content writer and industry expert.',
-      role: blogData.user?.role || 'contributor',
+      bio: blogData.user?.description || 'Content writer and industry expert.',
+      role: blogData.user?.username || 'contributor',
       email: blogData.user?.email || '',
       created_at: blogData.user?.created_at || null,
       updated_at: blogData.user?.updated_at || null,

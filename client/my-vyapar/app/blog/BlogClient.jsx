@@ -30,10 +30,12 @@ export default function BlogClient({ initialData }) {
   const getImageUrl = useCallback((imagePath) => {
     if (!imagePath) return null;
     
+    // If it's already a full URL, return as is
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
     
+    // Handle relative paths
     let API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
     API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
     const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
@@ -72,7 +74,8 @@ export default function BlogClient({ initialData }) {
           setBlogs(prev => [...prev, ...blogData]);
         }
 
-        if (data.categories && categories.length === 0) {
+        // Only set categories if we have them and they're not already set
+        if (data.categories && data.categories.length > 0 && categories.length === 0) {
           setCategories(data.categories);
         }
 
@@ -136,8 +139,48 @@ export default function BlogClient({ initialData }) {
     setHasMore(true);
   };
 
-  // Featured post (first blog post)
-  const featuredPost = blogs.length > 0 ? blogs[0] : null;
+  // Featured post (first blog post) - only show if no filters are applied
+  const featuredPost = (!searchTerm && !selectedCategory && blogs.length > 0) ? blogs[0] : null;
+
+  // Helper to format date
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    } catch {
+      return '';
+    }
+  };
+
+  // Helper to get user display name
+  const getUserDisplayName = (user) => {
+    if (!user) return 'Editorial Team';
+    if (user.fname && user.lname) return `${user.fname} ${user.lname}`;
+    if (user.username) return user.username;
+    return 'Editorial Team';
+  };
+
+  // Helper to get user initial
+  const getUserInitial = (user) => {
+    if (!user) return 'A';
+    if (user.fname) return user.fname.charAt(0).toUpperCase();
+    if (user.username) return user.username.charAt(0).toUpperCase();
+    return 'A';
+  };
+
+  // Helper to get user image with fallback
+  const getUserImage = (user) => {
+    if (!user) return null;
+    // Check if user has an image field
+    if (user.image) {
+      return getImageUrl(user.image);
+    }
+    return null;
+  };
 
   // Loading skeleton
   if (loading && !initialData) {
@@ -187,9 +230,9 @@ export default function BlogClient({ initialData }) {
             >
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-slate-400" />
-                <span className="text-sm">
+                <span className="text-sm truncate">
                   {selectedCategory 
-                    ? categories.find(c => c.id === parseInt(selectedCategory))?.name 
+                    ? categories.find(c => c.id === parseInt(selectedCategory))?.name || 'All Categories'
                     : 'All Categories'}
                 </span>
               </div>
@@ -225,27 +268,33 @@ export default function BlogClient({ initialData }) {
                     
                     <div className="h-px bg-slate-100 my-1"></div>
                     
-                    {categories.map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => {
-                          handleCategoryChange(category.id.toString());
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/5 hover:to-[#ec4899]/5 transition-colors ${
-                          selectedCategory === category.id.toString() 
-                            ? 'bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] font-medium' 
-                            : 'text-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span>{category.name}</span>
-                          {selectedCategory === category.id.toString() && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-[rgb(65,135,249)]"></div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                    {categories.length > 0 ? (
+                      categories.map((category) => (
+                        <button
+                          key={category.id}
+                          onClick={() => {
+                            handleCategoryChange(category.id.toString());
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/5 hover:to-[#ec4899]/5 transition-colors ${
+                            selectedCategory === category.id.toString() 
+                              ? 'bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] font-medium' 
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{category.name}</span>
+                            {selectedCategory === category.id.toString() && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-[rgb(65,135,249)]"></div>
+                            )}
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-slate-500">
+                        No categories available
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -266,7 +315,7 @@ export default function BlogClient({ initialData }) {
             )}
             {selectedCategory && (
               <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] border border-[rgb(65,135,249)]/20">
-                Category: {categories.find(c => c.id === parseInt(selectedCategory))?.name}
+                Category: {categories.find(c => c.id === parseInt(selectedCategory))?.name || 'Unknown'}
                 <button onClick={() => setSelectedCategory('')} className="hover:text-[#ec4899] transition-colors ml-1">
                   <X className="h-3 w-3" />
                 </button>
@@ -276,16 +325,16 @@ export default function BlogClient({ initialData }) {
         )}
     
         {/* Featured Post */}
-        {!searchTerm && !selectedCategory && featuredPost && (
+        {featuredPost && (
           <div className="mb-12 mt-6">
             <div className="group relative bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 hover:shadow-2xl transition-all duration-500">
               <div className="absolute inset-0 bg-gradient-to-r from-[rgb(65,135,249)]/5 to-[#ec4899]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="grid lg:grid-cols-2 gap-0">
                 <div className="relative h-64 lg:h-full min-h-[300px] overflow-hidden max-h-[400px]">
-                  {featuredPost?.feature_image ? (
+                  {featuredPost.feature_image ? (
                     <img
                       src={getImageUrl(featuredPost.feature_image)}
-                      alt={featuredPost.title}
+                      alt={featuredPost.title || 'Featured article'}
                       className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
                     />
                   ) : (
@@ -307,33 +356,42 @@ export default function BlogClient({ initialData }) {
                   <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      {featuredPost?.created_at && new Date(featuredPost.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      {formatDate(featuredPost.created_at)}
                     </div>
                     <div className="flex items-center gap-1">
                       <Eye className="h-4 w-4" />
-                      5 min read
+                      {featuredPost.views || '5 min read'}
                     </div>
                   </div>
                   <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 mb-4 leading-tight group-hover:text-[rgb(65,135,249)] transition-colors duration-300">
-                    {featuredPost?.title}
+                    {featuredPost.title || 'Untitled Article'}
                   </h2>
-                  <p className="text-slate-600 mb-6 leading-relaxed">
-                    {featuredPost?.excerpt || 'Explore our latest featured article packed with actionable insights and expert advice.'}
+                  <p className="text-slate-600 mb-6 leading-relaxed line-clamp-3">
+                    {featuredPost.excerpt || 'Explore our latest featured article packed with actionable insights and expert advice.'}
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white font-semibold">
-                        {featuredPost?.user ? (featuredPost.user.fname ? featuredPost.user.fname.charAt(0) : featuredPost.user.username ? featuredPost.user.username.charAt(0) : 'A') : 'A'}
+                      {/* User Avatar with Image */}
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] flex items-center justify-center text-white font-semibold flex-shrink-0">
+                        {getUserImage(featuredPost.user) ? (
+                          <img
+                            src={getUserImage(featuredPost.user)}
+                            alt={getUserDisplayName(featuredPost.user)}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{getUserInitial(featuredPost.user)}</span>
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-medium text-slate-900">
-                          {featuredPost?.user ? (featuredPost.user.fname && featuredPost.user.lname ? `${featuredPost.user.fname} ${featuredPost.user.lname}` : featuredPost.user.username || 'Editorial Team') : 'Editorial Team'}
+                          {getUserDisplayName(featuredPost.user)}
                         </p>
-                        <p className="text-xs text-slate-500">Senior Writer</p>
+                        <p className="text-xs text-slate-500">Author</p>
                       </div>
                     </div>
                     <a
-                      href={`/blog/${featuredPost?.slug}`}
+                      href={`/blog/${featuredPost.slug}`}
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[rgb(65,135,249)] to-[#ec4899] text-white text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300"
                     >
                       Read Article
