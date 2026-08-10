@@ -158,10 +158,10 @@ const Hero = () => {
                       </span>
                     </Link>
                     <Link
-                      href="/bookdemo"
+                      href="/contact"
                       className="px-6 sm:px-8 py-3 sm:py-4 bg-white/80 lg:backdrop-blur-sm border border-border-gray-300 rounded-full text-text-slate-700 font-semibold text-text-sm sm:text-text-md hover:bg-white transition-all duration-300 hover:scale-105 active:scale-95"
                     >
-                      Book Free Demo →
+                      Contact Us →
                     </Link>
                   </>
                 )}
