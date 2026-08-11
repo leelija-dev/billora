@@ -1,5 +1,5 @@
 import React from 'react';
-import ResetPasswordPage from './ResetPassword';
+import ResetPasswordContent from './ResetPassword';
 import { createMetadata } from '../../utils/seo';
 
 export const metadata = createMetadata({
@@ -11,5 +11,5 @@ export const metadata = createMetadata({
 });
 
 export default function ResetPasswordPage() {
-  return <ResetPasswordPage />;
+  return <ResetPasswordContent />;
 }

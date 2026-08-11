@@ -24,7 +24,7 @@ import RecentOrderModal from "../../../components/products/RecentOrderModal";
 import PopupNotification from "../../../components/products/PopupNotification";
 import SkeletonLoader from "../../../components/products/SkeletonLoader";
 
-const ProductsPage = () => {
+const ProductsContent = () => {
   const router = useRouter();
   const params = useParams();
   const { user, token } = useAuthStore();
@@ -880,4 +880,4 @@ const ProductsPage = () => {
   );
 };
 
-export default ProductsPage;
+export default ProductsContent;

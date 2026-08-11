@@ -1,5 +1,5 @@
-import { createMetadata } from '../../utils/seo';
-import ProductsPage from './ProductContent';
+import { createMetadata } from '@/utils/seo'; 
+import ProductsContent from './ProductContent';
 
 export const metadata = createMetadata({
   title: "Products – Billing & Inventory Software | The Fast Bill",
@@ -8,5 +8,5 @@ export const metadata = createMetadata({
 });
 
 export default function ProductsPage() {
-  return <ProductsPage />;
+  return <ProductsContent />;
 }

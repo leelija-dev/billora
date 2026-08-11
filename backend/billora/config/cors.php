@@ -14,7 +14,7 @@ return [
         // 'http://127.0.0.1:5173',
         // 'http://192.168.1.173:8000',
         // 'http://localhost:8000',
-        'http://127.0.0.1:8000',
+        // 'http://127.0.0.1:8000',
         'https://thefastbill.com',
         'https://app.thefastbill.com',
         'https://api.thefastbill.com',

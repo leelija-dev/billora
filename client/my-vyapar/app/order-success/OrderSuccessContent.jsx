@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FaCheckCircle, FaClock, FaReceipt, FaShoppingBag } from "react-icons/fa";
 import { logger } from '../../utils/logger';
 
-const OrderSuccessPage = () => {
+const OrderSuccessContent = () => {
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
   const [orderDetails, setOrderDetails] = useState(null);
@@ -332,4 +332,4 @@ const OrderSuccessPage = () => {
   );
 };
 
-export default OrderSuccessPage;
+export default OrderSuccessContent;

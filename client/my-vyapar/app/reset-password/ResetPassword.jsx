@@ -428,7 +428,7 @@ function ResetPasswordFallback() {
 }
 
 // Main page component with Suspense
-export default function ResetPasswordPage() {
+export default function ResetPasswordContent() {
   return (
     <Suspense fallback={<ResetPasswordFallback />}>
       <ResetPasswordForm />

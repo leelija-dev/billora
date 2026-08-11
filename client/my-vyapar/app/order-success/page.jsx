@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import OrderSuccessPage from "./OrderSuccess";
+import OrderSuccessContent from "./OrderSuccessContent";
 import { createMetadata } from '../../utils/seo';
 
 export const metadata = createMetadata({
@@ -21,7 +21,7 @@ export default function OrderSuccessPage() {
         </div>
       }
     >
-      <OrderSuccessPage />
+      <OrderSuccessContent />
     </Suspense>
   );
 }
