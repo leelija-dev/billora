@@ -13,6 +13,7 @@ import Ratings from "../components/Ratings";
 export const metadata = createMetadata({
   title: "Best Inventory Management & GST Billing Software - The Fast Bill",
   description: "Fast Bill is the best billing software for retail shops in India that creates customized GST bills within 10 seconds, & helps you manage inventory & track sales.",
+  keywords:'best billing software in india, billing software, gst billing software',
   path: '/',
 });
 
