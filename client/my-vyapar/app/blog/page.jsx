@@ -16,6 +16,7 @@ async function getBlogs() {
 export const metadata = {
   title: "Blog – GST, Billing & Inventory Tips | The Fast Bill",
   description: "Read The Fast Bill blog for practical tips on GST billing, inventory management, tax compliance, and growing your business in India. Updated regularly.",
+  keywords: "thefastbill blog",
   openGraph: {
     title: "Blog – GST, Billing & Inventory Tips | The Fast Bill",
     description: "Read The Fast Bill blog for practical tips on GST billing, inventory management, tax compliance, and growing your business in India.",

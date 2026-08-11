@@ -5,6 +5,7 @@ import { createMetadata } from '../../utils/seo';
 export const metadata = createMetadata({
   title: "Login to Your Account | The Fast Bill",
   description: "Log in to your The Fast Bill account to create GST invoices, manage inventory, and track sales. Secure access to your billing dashboard, anytime, anywhere.",
+  keywords: "thefastbill login",
   path: '/login',
 });
 

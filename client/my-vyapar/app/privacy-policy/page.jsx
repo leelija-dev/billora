@@ -7,6 +7,7 @@ import { createMetadata } from '../../utils/seo';
 export const metadata = createMetadata({
   title: "Privacy Policy | The Fast Bill",
   description: "Read The Fast Bill's privacy policy to understand how we collect, use, store, and protect your personal and business data in line with India's DPDP Act",
+  keywords: "thefastbill privacy policy",
   path: '/privacy-policy',
 });
 

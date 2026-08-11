@@ -6,6 +6,7 @@ import { createMetadata } from '../../utils/seo';
 export const metadata = createMetadata({
   title: "Cookie Policy | The Fast Bill",
   description: "Learn how The Fast Bill uses cookies and similar technologies, which are essential vs. optional, and how you can control or manage your cookie preferences.",
+  keywords: "thefastbill Cookie Policy",
   path: '/cookie-policy',
 });
 
