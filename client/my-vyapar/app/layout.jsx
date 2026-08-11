@@ -4,15 +4,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import StoreInitializer from '../components/StoreInitializer';
-import JsonLdWrapper from '@/components/JsonLdWrapper';
+
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* ✅ JSON-LD will be injected here ONLY on homepage */}
-        <JsonLdWrapper />
-      </head>
+      
       <body suppressHydrationWarning={true}>
         <StoreInitializer />
         <Navbar />
