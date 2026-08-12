@@ -1,48 +1,28 @@
-"use client";
+// components/Pricing.jsx
+'use client';
 
 import React, { useEffect, useRef, useState } from "react";
-import SectionTitle from "@/components/SectionTitle";
 import Container from "@/components/Container";
 import { usePricingStore } from "../store/pricingStore";
 import { useAuthStore } from "../store/authStoreZustand";
 import { useFilterStore } from "../store/filterStore";
 import { useRouter, usePathname } from "next/navigation";
-import businessService from "../services/businessService";
 import { 
-  Star, 
   Check, 
   Loader2, 
   ArrowRight, 
   Lock, 
   Layers, 
-  Tag, 
-  Gem, 
-  Info,
   AlertCircle,
   Crown,
   Sparkles,
-  ShoppingBag,
   RefreshCw,
-  Zap,
-  Shield,
-  Users,
-  CreditCard,
   Gift,
   TrendingUp,
   ChevronDown,
-  Building2,
   LayoutGrid,
   X,
-  ArrowUpRight,
-  Plus,
-  Minus,
-  CircleCheck,
-  Medal,
-  Rocket,
-  PartyPopper,
   Table,
-  Grid,
-  List,
   MoveRight,
   Monitor,
   Smartphone,
@@ -54,6 +34,7 @@ const Pricing = ({
   limit = 3,
   showFilters = true,
   showViewAllButton = true,
+  initialData = null, // ✅ Accept initial data from server
 }) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [planEligibility, setPlanEligibility] = useState({});
@@ -69,7 +50,6 @@ const Pricing = ({
   const durationDropdownRef = useRef(null);
   const pathname = usePathname();
 
-  // Filter states - SET DEFAULT VALUES HERE
   const [selectedScreenType, setSelectedScreenType] = useState("mobile_with_desktop");
   const [selectedDuration, setSelectedDuration] = useState("365");
 
@@ -85,6 +65,8 @@ const Pricing = ({
     selectPlan,
     subscribeToPlan,
     clearError,
+    setPlans, // ✅ Already exists in your store
+    setAllFeatures,
   } = usePricingStore();
 
   const {
@@ -107,35 +89,29 @@ const Pricing = ({
     checkPlanPurchaseEligibility,
   } = useAuthStore();
 
-  // Check if we're on the pricing page
   const isPricingPage = pathname === "/pricing";
 
-  // Screen type options
   const screenTypes = [
     { value: "desktop", label: "Desktop Only", icon: Monitor },
     { value: "mobile", label: "Mobile Only", icon: Smartphone },
     { value: "mobile_with_desktop", label: "Mobile+Desktop", icon: Monitor },
   ];
 
-  // Duration options
   const durationOptions = [
     { value: "365", label: "1 Year (365 Days)", icon: Calendar },
     { value: "1095", label: "3 Years (1095 Days)", icon: Calendar },
   ];
 
-  // Get selected screen type label
   const getSelectedScreenLabel = () => {
     const selected = screenTypes.find(type => type.value === selectedScreenType);
     return selected ? selected.label : "All Screens";
   };
 
-  // Get selected duration label
   const getSelectedDurationLabel = () => {
     const selected = durationOptions.find(option => option.value === selectedDuration);
     return selected ? selected.label : "All Durations";
   };
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (screenDropdownRef.current && !screenDropdownRef.current.contains(event.target)) {
@@ -149,7 +125,6 @@ const Pricing = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Helper function to determine plan action based on current and target plan
   const getPlanAction = (currentPlan, targetPlan) => {
     if (!currentPlan) {
       return { 
@@ -224,7 +199,6 @@ const Pricing = ({
     }
   };
 
-  // Helper function to get user's plan status
   const getUserPlanStatus = () => {
     if (!isLoggedIn || !user?.plan_id) {
       return { hasPlan: false, isActive: false, plan: null };
@@ -255,6 +229,40 @@ const Pricing = ({
     }, 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // ✅ Load plans - use server data if available
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        // If we have server data, use it
+        if (initialData?.plans?.length > 0) {
+          console.log('📦 Using server data:', initialData.plans.length, 'plans');
+          setPlans(initialData.plans);
+          
+          if (initialData.allFeatures) {
+            setAllFeatures(initialData.allFeatures);
+          }
+          
+          setHasLoadedOnce(true);
+        } else {
+          // ⚠️ Fallback to client fetch
+          console.log('🔄 No server data, fetching from client...');
+          await fetchPlans();
+        }
+      } catch (error) {
+        console.error('❌ Error loading plans:', error);
+        if (!initialData?.plans) {
+          try {
+            await fetchPlans();
+          } catch (fallbackError) {
+            console.error('❌ Fallback fetch failed:', fallbackError);
+          }
+        }
+      }
+    };
+
+    loadPlans();
+  }, [fetchPlans, initialData, setPlans, setAllFeatures]);
 
   // Transform a single plan with feature mapping
   const transformPlan = (plan, index) => {
@@ -290,7 +298,6 @@ const Pricing = ({
       });
     }
 
-    // Determine screen type display
     const screenType = plan.screen_type || 'mobile_with_desktop';
     const screenTypeDisplay = screenType === 'mobile_with_desktop' ? 'mobile_with_desktop' : screenType.charAt(0).toUpperCase() + screenType.slice(1);
 
@@ -361,7 +368,6 @@ const Pricing = ({
   const filterPlans = () => {
     let filtered = [...plans];
 
-    // Filter by screen type
     if (selectedScreenType !== "all") {
       filtered = filtered.filter(plan => {
         const planScreenType = plan.screen_type || 'mobile_with_desktop';
@@ -377,7 +383,6 @@ const Pricing = ({
       });
     }
 
-    // Filter by duration
     if (selectedDuration !== "all") {
       const durationDays = parseInt(selectedDuration);
       filtered = filtered.filter(plan => {
@@ -399,18 +404,6 @@ const Pricing = ({
 
     setFilteredPlans(transformedPlans);
   };
-
-  useEffect(() => {
-    const loadPlans = async () => {
-      try {
-        await fetchPlans();
-      } catch (error) {
-        console.error("Error fetching plans:", error);
-      }
-    };
-
-    loadPlans();
-  }, [fetchPlans]);
 
   useEffect(() => {
     if (plans && plans.length > 0) {
@@ -542,7 +535,6 @@ const Pricing = ({
       return;
     }
 
-    // Prepare plan data for order summary
     const currentPriceData = getCurrentPrice(plan);
     const originalPriceData = getOriginalPrice(plan);
     const gstAmount = currentPriceData.price * (plan.gst / 100);
@@ -575,7 +567,6 @@ const Pricing = ({
       plan_duration: plan.plan_duration
     };
 
-    // Store in localStorage for OrderSummary
     localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
     sessionStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
 
@@ -1004,7 +995,10 @@ const Pricing = ({
     );
   };
 
-  if (loading) {
+  // ✅ Modified: Only show loading skeleton if no data and still loading
+  const showLoading = loading && !initialData?.plans && !plans.length;
+
+  if (showLoading) {
     return (
       <div className="pb-28 pt-8 md:pb-28 md:pt-12 bg-gradient-to-br from-gray-50 via-white to-gray-50 font-['Inter',system-ui,-apple-system,sans-serif] relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1082,7 +1076,7 @@ const Pricing = ({
     );
   }
 
-  if (error) {
+  if (error && !initialData?.plans && !plans.length) {
     return (
       <div className="py-40 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-[600px] flex items-center justify-center">
         <div className="text-center bg-white p-10 rounded-3xl shadow-2xl max-w-md">
@@ -1106,7 +1100,6 @@ const Pricing = ({
 
   const displayPlans = filteredPlans.length > 0 ? filteredPlans : [];
 
-  // Get all features for comparison
   const allFeaturesForComparison = allFeatures && allFeatures.length > 0
     ? allFeatures
     : displayPlans.length > 0 && displayPlans[0].allFeaturesList

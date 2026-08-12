@@ -16,6 +16,17 @@ export const useTestimonialStore = create(
       currentPage: 1,
       lastFetched: null,
 
+      // ✅ NEW: Set testimonials directly (for server data)
+      setTestimonials: (testimonials) => {
+        set({
+          testimonials,
+          loading: false,
+          error: null,
+          lastFetched: Date.now(),
+        });
+        logger.log('📦 Testimonials set from server:', testimonials.length, 'items');
+      },
+
       // Actions
       /**
        * Fetch testimonials from API

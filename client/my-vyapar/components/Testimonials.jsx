@@ -1,34 +1,53 @@
-"use client";
+// components/Testimonials.jsx
+'use client';
+
 import SectionTitle from "../components/SectionTitle";
 import Container from "../components/Container";
 import React, { useState, useEffect } from "react";
 import { useTestimonialStore } from "../store/testimonialStore";
 
-const Testimonials = () => {
+const Testimonials = ({ initialData = null }) => { // ✅ Accept initialData
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
   const {
     testimonials,
     loading: isLoading,
     error,
     fetchTestimonials,
-    clearError
+    clearError,
+    setTestimonials, // ✅ Now available
   } = useTestimonialStore();
 
   useEffect(() => {
-    loadTestimonials();
+    setIsClient(true);
   }, []);
 
-  const loadTestimonials = async () => {
-    try {
-      await fetchTestimonials();
-    } catch (err) {
-      console.error('Error loading testimonials:', err);
-      clearError('Failed to load testimonials. Please try again.');
-    }
-  };
+  // ✅ Load testimonials - use server data if available
+  useEffect(() => {
+    const loadTestimonials = async () => {
+      try {
+        // If we have server data, use it
+        if (initialData?.testimonials?.length > 0) {
+          console.log('📦 Using server data for testimonials:', initialData.testimonials.length);
+          setTestimonials(initialData.testimonials);
+        } else {
+          // ⚠️ Fallback to client fetch
+          console.log('🔄 No server data, fetching testimonials from client...');
+          await fetchTestimonials();
+        }
+      } catch (err) {
+        console.error('Error loading testimonials:', err);
+        if (!initialData?.testimonials) {
+          clearError('Failed to load testimonials. Please try again.');
+        }
+      }
+    };
+
+    loadTestimonials();
+  }, [fetchTestimonials, clearError, initialData, setTestimonials]);
 
   useEffect(() => {
     if (isHovered || isLoading || testimonials.length === 0) return;
@@ -59,7 +78,10 @@ const Testimonials = () => {
     setCurrentIndex(index);
   };
 
-  if (isLoading) {
+  // ✅ Only show loading if no server data and still loading
+  const showLoading = isLoading && !initialData?.testimonials?.length && !testimonials.length;
+
+  if (showLoading) {
     return (
       <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-hidden font-sans">
         <Container size="default">
@@ -80,7 +102,8 @@ const Testimonials = () => {
     );
   }
 
-  if (testimonials.length === 0) {
+  // Only show "no testimonials" if no server data and no client data
+  if (testimonials.length === 0 && !initialData?.testimonials?.length) {
     return (
       <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-hidden font-sans">
         <Container size="default">
@@ -100,6 +123,9 @@ const Testimonials = () => {
       </section>
     );
   }
+
+  // ✅ Use testimonials from server or client
+  const displayTestimonials = testimonials.length > 0 ? testimonials : (initialData?.testimonials || []);
 
   return (
     <section 
@@ -137,11 +163,11 @@ const Testimonials = () => {
 
           {/* Carousel Container */}
           <div className="relative h-auto min-h-[380px] sm:min-h-[400px] md:min-h-[420px] w-full flex items-center justify-center [perspective:1200px]">
-            {testimonials.map((item, index) => {
+            {displayTestimonials.map((item, index) => {
               let position = "hidden";
               if (index === currentIndex) position = "active";
-              else if (index === (currentIndex + 1) % testimonials.length) position = "next";
-              else if (index === (currentIndex - 1 + testimonials.length) % testimonials.length) position = "prev";
+              else if (index === (currentIndex + 1) % displayTestimonials.length) position = "next";
+              else if (index === (currentIndex - 1 + displayTestimonials.length) % displayTestimonials.length) position = "prev";
 
               return (
                 <div
@@ -160,7 +186,7 @@ const Testimonials = () => {
           </div>
 
           {/* Navigation Controls */}
-          {testimonials.length > 0 && (
+          {displayTestimonials.length > 0 && (
             <div className="flex flex-col items-center gap-6 mt-10">
               {/* Navigation Buttons */}
               <div className="flex gap-3">
@@ -189,7 +215,7 @@ const Testimonials = () => {
               
               {/* Dots Indicator */}
               <div className="flex gap-2">
-                {testimonials.map((_, i) => (
+                {displayTestimonials.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => goToSlide(i)}
