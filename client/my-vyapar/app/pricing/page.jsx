@@ -7,7 +7,7 @@ export const metadata = createMetadata({
   title: "Pricing Plans – GST Billing Software | The Fast Bill",
   description: "Explore The Fast Bill's flexible billing software pricing plans. Start free, no hidden fees, cancel anytime. Find the perfect GST billing plan for your business.",
   keywords: "thefastbill pricing, gst billing software pricing, billing software plans",
-  path: '/pricing',
+  path: 'pricing',
  
 });
 
