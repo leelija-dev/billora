@@ -8,7 +8,7 @@ export const metadata = createMetadata({
   title: "GDPR Compliance | The Fast Bill",
   description: "Understand how The Fast Bill handles data protection and your rights under GDPR, including access, correction, erasure, and how to contact us about your data.",
   keywords: "thefastbill GDPR Compliance",
-  path: '/gdpr',
+  path: 'gdpr',
 });
 
 const GDPRNotice = () => {

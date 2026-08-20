@@ -7,7 +7,7 @@ export const metadata = createMetadata({
   title: "Terms of Service | The Fast Bill",
   description: "Review the Terms of Service governing your use of The Fast Bill's GST billing and inventory software, including accounts, plans, and acceptable use.",
   keywords: "thefastbill terms & service",
-  path: '/terms-service',
+  path: 'terms-service',
 });
 
 const TermsOfService = () => {

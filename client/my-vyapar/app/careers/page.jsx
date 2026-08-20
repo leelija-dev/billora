@@ -6,7 +6,7 @@ export const metadata = createMetadata({
   title: "Careers – Join Our Team | The Fast Bill",
   description: "Join The Fast Bill and help empower millions of Indian businesses. Explore remote-friendly roles, benefits, and our culture. See current openings & apply.",
   keywords:"thefastbill career",
-  path: '/careers',
+  path: 'careers',
 });
 
 const page = () => {

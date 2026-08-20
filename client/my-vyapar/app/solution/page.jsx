@@ -17,7 +17,7 @@ export const metadata = createMetadata({
   title: "Billing & Inventory Solutions for Every Business | The Fast Bill",
   description: "Tailored GST billing, inventory, and accounting solutions for retail, enterprises, and professionals. POS, multi-branch, analytics & more. Book a free demo.",
   keywords:"Inventory Solutions, accounting solutions, GST billing solution",
-  path: '/solutions',
+  path: 'solutions',
 });
 
 export default function SolutionPage() {

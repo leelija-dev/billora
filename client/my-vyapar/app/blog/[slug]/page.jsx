@@ -3,6 +3,8 @@ import blogApi from '@/services/blogApi';
 import BlogPostClient from './BlogPostClient'; 
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { createMetadata } from '@/utils/seo';
+import { siteConfig } from '@/lib/site';
 
 // Generate static params at build time for better performance
 export async function generateStaticParams() {
@@ -19,8 +21,6 @@ export async function generateStaticParams() {
 }
 
 // ISR: Revalidate every 60 seconds (1 minute)
-// This means the page will be regenerated in the background
-// when a request comes in after 60 seconds
 export const revalidate = 60;
 
 // Generate metadata for SEO
@@ -31,36 +31,28 @@ export async function generateMetadata({ params }) {
     const data = response.data;
     
     if (!data.status || !data.blog) {
-      return {
+      return createMetadata({
         title: 'Blog Post Not Found',
-        description: 'The requested blog post could not be found.'
-      };
+        description: 'The requested blog post could not be found.',
+        noIndex: true,
+      });
     }
 
     const blog = data.blog;
-    return {
+    
+    // Use createMetadata without modifying it
+    return createMetadata({
       title: `${blog.title} | The Fast Bill Blog`,
       description: blog.excerpt || `Read ${blog.title} on The Fast Bill Blog.`,
-      openGraph: {
-        title: blog.title,
-        description: blog.excerpt,
-        images: blog.feature_image ? [blog.feature_image] : [],
-        type: 'article',
-        publishedTime: blog.created_at,
-        authors: blog.user ? [blog.user.fname + ' ' + blog.user.lname] : [],
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: blog.title,
-        description: blog.excerpt,
-        images: blog.feature_image ? [blog.feature_image] : [],
-      }
-    };
+      path: `blog/${slug}`,
+      image: blog.feature_image || "/blog-default-og.jpg",
+      keywords: blog.tags?.join(', ') || 'blog, articles',
+    });
   } catch (error) {
-    return {
+    return createMetadata({
       title: 'Blog Post',
-      description: 'Read our latest blog post.'
-    };
+      description: 'Read our latest blog post.',
+    });
   }
 }
 
@@ -130,13 +122,53 @@ export default async function BlogPostPage({ params }) {
     // Process content for table of contents on the server
     const processedContent = processContentForTOC(blogData.content);
 
+    // Generate JSON-LD structured data
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": blogData.title,
+      "description": blogData.excerpt || blogData.title,
+      "image": blogData.feature_image || `${siteConfig.url}/blog-default-og.jpg`,
+      "datePublished": blogData.created_at,
+      "dateModified": blogData.updated_at || blogData.created_at,
+      "author": {
+        "@type": "Person",
+        "name": formattedUser.fullName,
+        ...(formattedUser.avatar && {
+          "image": formattedUser.avatar
+        })
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": siteConfig.name || "The Fast Bill",
+        "logo": {
+          "@type": "ImageObject",
+          "url": `${siteConfig.url}/logo.png`
+        }
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": `${siteConfig.url}/blog/${slug}`
+      },
+      "keywords": blogData.tags?.join(', ') || '',
+      "articleSection": blogData.category || 'Blog',
+    };
+
     return (
-      <BlogPostClient 
-        initialBlog={formattedBlog}
-        initialRelatedBlogs={relatedBlogs}
-        initialToc={processedContent.toc}
-        lastUpdated={new Date().toISOString()}
-      />
+      <>
+        {/* Add JSON-LD structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        
+        <BlogPostClient 
+          initialBlog={formattedBlog}
+          initialRelatedBlogs={relatedBlogs}
+          initialToc={processedContent.toc}
+          lastUpdated={new Date().toISOString()}
+        />
+      </>
     );
   } catch (error) {
     console.error('Error fetching blog:', error);

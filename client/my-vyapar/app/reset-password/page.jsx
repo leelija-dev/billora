@@ -6,7 +6,7 @@ export const metadata = createMetadata({
   title: "Reset Your Password – The Fast Bill",
   description: "Reset your password for The Fast Bill. Get back into your account quickly and easily.",
 
-  path: '/reset-password',
+  path: 'reset-password',
   noIndex: true, // Recommended for reset password pages
 });
 

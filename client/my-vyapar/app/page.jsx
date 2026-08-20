@@ -84,7 +84,7 @@ export const metadata = createMetadata({
     "Fast Bill is the best billing software for retail shops in India that creates customized GST bills within 10 seconds, & helps you manage inventory & track sales.",
   keywords:
     "best billing software in india, billing software, gst billing software",
-  path: "/",
+  path: "",
 });
 
 export default async function Page() {
