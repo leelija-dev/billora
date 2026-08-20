@@ -190,7 +190,7 @@ class UserOrdersController extends Controller
                 'message' => 'Redirect to payment'
             ]);
         }
-
+        Cache::tags(["order_user_" . $data['user_id']])->flush();
         //  CASH
         return response()->json([
             'status' => true,
