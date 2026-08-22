@@ -136,7 +136,7 @@ const Hero = () => {
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center lg:justify-start items-center animate-fade-in-up">
                 {isLoggedIn && hasActivePlan ? (
                   <Link
-                    href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000"}/dashboard`}
+                    href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://app.thefastbill.com/"}dashboard`}
                     className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-primary rounded-full text-white font-semibold text-text-sm sm:text-text-md shadow-lg shadow-sky-600/30 hover:shadow-sky-600/50 transition-all duration-300 hover:scale-105 active:scale-95"
                     target="_blank"
                     rel="noopener noreferrer"

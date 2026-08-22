@@ -162,13 +162,7 @@ export default function BlogPostClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      {/* ISR Status Indicator */}
-      {showUpdateIndicator && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs py-1.5 px-4 text-center">
-          <RefreshCw className="inline-block h-3 w-3 mr-1 animate-spin" />
-          This page is updated automatically every 60 seconds
-        </div>
-      )}
+      
 
       {/* Breadcrumb */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-slate-100 sticky top-0 z-20">
@@ -486,11 +480,9 @@ export default function BlogPostClient({
                       )}
                     </div>
                     
-                    <p className="text-[rgb(65,135,249)] text-xs sm:text-sm mb-2 sm:mb-2 capitalize">
-                      {user?.role}
-                    </p>
+                   
                     
-                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed capitalize">
+                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed ">
                       {user.bio || user.description || 'Passionate about sharing insights and helping businesses grow through valuable content. With years of experience in digital marketing and business strategy.'}
                     </p>
                     
