@@ -17,7 +17,7 @@ class BlogController extends Controller
         $search = $request->search;
         $categoryId = $request->category_id;
 
-        $blogs = Blog::with(['categories','tags','faqs','user:id,fname,lname,image,description'])
+        $blogs = Blog::with(['categories','tags','faqs','user:id,fname,lname,image,description','user.roles:id,name'])
             ->where('status', true)
             ->orderBy('created_at', 'desc')
             // Search

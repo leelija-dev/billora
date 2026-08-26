@@ -63,6 +63,7 @@ export default async function BlogPostPage({ params }) {
     // Fetch blog data on the server
     const response = await blogApi.getBlog(slug);
     const data = response.data;
+    console.log("Fetched Blog Data:", data);
 
     if (!data.status || !data.blog) {
       return <NotFound />;
@@ -70,6 +71,7 @@ export default async function BlogPostPage({ params }) {
 
     // Get the blog data
     const blogData = data.blog;
+    console.log("Blog Data:", blogData);
     
     // Format user data properly
     const formattedUser = {
@@ -82,7 +84,7 @@ export default async function BlogPostPage({ params }) {
         : blogData.user?.username || 'Editorial Team',
       avatar: blogData.user?.image || null,
       bio: blogData.user?.description || 'Content writer and industry expert.',
-      role: blogData.user?.username || 'contributor',
+      role: blogData.user?.roles?.[0]?.name || 'contributor',
       email: blogData.user?.email || '',
       created_at: blogData.user?.created_at || null,
       updated_at: blogData.user?.updated_at || null,

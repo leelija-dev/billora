@@ -22,7 +22,7 @@ export default async function sitemap() {
   
   // Generate static URLs
   const staticUrls = staticPages.map((page) => ({
-    url: `${baseUrl}/${page.url}`,
+    url: `${baseUrl}${page.url}`,
     lastModified: page.lastModified,
     changeFrequency: page.changeFrequency,
     priority: page.priority,
