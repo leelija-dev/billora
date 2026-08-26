@@ -86,7 +86,7 @@ public function blogTags($tag)
                 $query->where('tag_name', $tag);
             })
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(2);
 
         return response()->json([
             'status' => true,
