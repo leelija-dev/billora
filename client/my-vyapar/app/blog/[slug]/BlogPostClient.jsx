@@ -351,7 +351,7 @@ export default function BlogPostClient({
                         {authorName}
                       </p>
                       <p className="text-xs text-slate-500 truncate">
-                        { 'Content Writer'}
+                        {user?.role || 'Content Writer'}
                       </p>
                     </div>
                     {/* <Link
@@ -473,6 +473,11 @@ export default function BlogPostClient({
                       {user.role === 'admin' && (
                         <span className="inline-flex items-center px-2.5 py-0.5 bg-[rgb(65,135,249)]/10 text-[rgb(65,135,249)] text-xs font-medium rounded-full">
                           Admin
+                        </span>
+                      )}
+                      {user.role === 'superadmin' && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 bg-[rgb(65,135,249)]/10 text-[rgb(65,135,249)] text-xs font-medium rounded-full">
+                          Super Admin
                         </span>
                       )}
                       {user.role === 'editor' && (

@@ -71,7 +71,7 @@ export default async function BlogPostPage({ params }) {
 
     // Get the blog data
     const blogData = data.blog;
-    console.log("Blog Data:", blogData);
+    // console.log("Blog Data:", blogData);
     
     // Format user data properly
     const formattedUser = {
@@ -89,6 +89,7 @@ export default async function BlogPostPage({ params }) {
       created_at: blogData.user?.created_at || null,
       updated_at: blogData.user?.updated_at || null,
     };
+    // console.log("Formatted User Data:", formattedUser);
 
     // Format the blog data with proper user information
     const formattedBlog = {

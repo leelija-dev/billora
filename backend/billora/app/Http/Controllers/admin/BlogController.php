@@ -86,7 +86,7 @@ class BlogController extends Controller
  }
  public function show($slug){
     try{
-        $blog = Blog::with(['categories','tags','faqs','user'])->where('status',true)->where('slug',$slug)->first();
+        $blog = Blog::with(['categories','tags','faqs','user:id,fname,lname,image,description','user.roles:id,name'])->where('status',true)->where('slug',$slug)->first();
 
         return response()->json([
             'status'=>true,
