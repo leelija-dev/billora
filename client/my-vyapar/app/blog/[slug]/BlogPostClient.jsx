@@ -160,7 +160,7 @@ export default function BlogPostClient({
   const userAvatarUrl = user.avatar || user.image || user.profile_image || null;
   const avatarImageUrl = getUserAvatarUrl(userAvatarUrl);
 
-  console.log("checking Users",user);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">

@@ -63,7 +63,7 @@ export default async function BlogPostPage({ params }) {
     // Fetch blog data on the server
     const response = await blogApi.getBlog(slug);
     const data = response.data;
-    console.log("Fetched Blog Data:", data);
+    // console.log("Fetched Blog Data:", data);
 
     if (!data.status || !data.blog) {
       return <NotFound />;
