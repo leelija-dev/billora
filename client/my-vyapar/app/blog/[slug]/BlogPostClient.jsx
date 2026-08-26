@@ -160,6 +160,10 @@ export default function BlogPostClient({
   const userAvatarUrl = user.avatar || user.image || user.profile_image || null;
   const avatarImageUrl = getUserAvatarUrl(userAvatarUrl);
 
+  console.log("Checking Single Blog", blog);
+
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       
@@ -349,7 +353,7 @@ export default function BlogPostClient({
                         {authorName}
                       </p>
                       <p className="text-xs text-slate-500 truncate">
-                        {user.bio || user.description || 'Content Writer'}
+                        {user?.role || 'Content Writer'}
                       </p>
                     </div>
                     {/* <Link
@@ -423,7 +427,7 @@ export default function BlogPostClient({
                       className="inline-flex items-center px-2.5 py-1 sm:px-3 sm:py-1.5 bg-slate-100 text-slate-700 text-xs sm:text-sm rounded-full hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/10 hover:to-[#ec4899]/10 hover:text-[rgb(65,135,249)] transition-all cursor-pointer"
                     >
                       <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
-                      {tag.name}
+                      {tag.tag_name}
                     </span>
                   ))}
                 </div>
@@ -473,7 +477,12 @@ export default function BlogPostClient({
                           Admin
                         </span>
                       )}
-                      {user.role === 'editor' && (
+                      {user.role === 'superadmin' && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 bg-[rgb(65,135,249)]/10 text-[rgb(65,135,249)] text-xs font-medium rounded-full">
+                          Super Admin
+                        </span>
+                      )}
+                      {user.role === 'Editor' && (
                         <span className="inline-flex items-center px-2.5 py-0.5 bg-[#ec4899]/10 text-[#ec4899] text-xs font-medium rounded-full">
                           Editor
                         </span>
@@ -519,7 +528,7 @@ export default function BlogPostClient({
                   <div className="w-1 h-6 sm:h-8 bg-gradient-to-b from-[rgb(65,135,249)] to-[#ec4899] rounded-full"></div>
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Related Posts</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                <div className="grid grid-cols-1 smx:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
                   {relatedBlogs.map((relatedBlog) => (
                     <BlogCard key={relatedBlog.id} blog={relatedBlog} />
                   ))}

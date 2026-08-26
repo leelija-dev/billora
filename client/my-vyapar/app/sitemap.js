@@ -22,7 +22,7 @@ export default async function sitemap() {
   
   // Generate static URLs
   const staticUrls = staticPages.map((page) => ({
-    url: `${baseUrl}/${page.url}`,
+    url: `${baseUrl}${page.url}`,
     lastModified: page.lastModified,
     changeFrequency: page.changeFrequency,
     priority: page.priority,
@@ -43,7 +43,7 @@ export default async function sitemap() {
       const blogs = data.blogs?.data || data.data || data.blogs || data || []
       
       blogUrls = blogs.map((blog) => ({
-        url: `${baseUrl}/blog/${blog.slug}`,
+        url: `${baseUrl}blog/${blog.slug}`,
         lastModified: blog.updated_at ? new Date(blog.updated_at) : (blog.created_at ? new Date(blog.created_at) : new Date()),
         changeFrequency: 'weekly',
         priority: 0.7,
