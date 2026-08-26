@@ -480,7 +480,7 @@ export default function BlogPostClient({
                           Super Admin
                         </span>
                       )}
-                      {user.role === 'editor' && (
+                      {user.role === 'Editor' && (
                         <span className="inline-flex items-center px-2.5 py-0.5 bg-[#ec4899]/10 text-[#ec4899] text-xs font-medium rounded-full">
                           Editor
                         </span>
@@ -526,7 +526,7 @@ export default function BlogPostClient({
                   <div className="w-1 h-6 sm:h-8 bg-gradient-to-b from-[rgb(65,135,249)] to-[#ec4899] rounded-full"></div>
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Related Posts</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                <div className="grid grid-cols-1 smx:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
                   {relatedBlogs.map((relatedBlog) => (
                     <BlogCard key={relatedBlog.id} blog={relatedBlog} />
                   ))}
