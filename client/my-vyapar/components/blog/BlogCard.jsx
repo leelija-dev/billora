@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, User, Tag, ArrowRight, Clock, Eye } from 'lucide-react';
+import { slugify } from '@/utils/slug';
 
 export default function BlogCard({ blog }) {
   const formatDate = (dateString) => {
@@ -146,7 +147,7 @@ export default function BlogCard({ blog }) {
             {blog.tags.slice(0, 2).map((tag) => (
               <Link
                 key={tag.id}
-                href={`/blog/tag/${tag.tag_name || tag.name}`}
+                href={`/blog/tag/${slugify(tag.tag_name || tag.name)}`}
                 className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-500 text-xs rounded-full hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/10 hover:to-[#ec4899]/10 hover:text-[rgb(65,135,249)] transition-colors"
               >
                 <Tag className="h-3 w-3" />

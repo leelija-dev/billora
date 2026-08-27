@@ -6,8 +6,9 @@ import { Tag, ArrowLeft, Clock, Eye, Hash, Grid, List, BookOpen } from 'lucide-r
 import Link from 'next/link';
 import BlogCard from '@/components/blog/BlogCard';
 import { blogApi } from '@/services/blogApi';
+import { decodeSlug } from '@/utils/slug';
 
-export default function TagClient({ initialData, tagSlug }) {
+export default function TagClient({ initialData, tagSlug, tagName }) {
   const [blogs, setBlogs] = useState(initialData?.blogs?.data || []);
   const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -31,7 +32,8 @@ export default function TagClient({ initialData, tagSlug }) {
         setLoadingMore(true);
       }
 
-      const response = await blogApi.getBlogsByTag(tagSlug, { page });
+      // Use the decoded tag name for the API call
+      const response = await blogApi.getBlogsByTag(tagName, { page });
       const data = response.data;
 
       if (data.status) {
@@ -57,7 +59,7 @@ export default function TagClient({ initialData, tagSlug }) {
       setLoadingMore(false);
       setIsInitialLoad(false);
     }
-  }, [tagSlug]);
+  }, [tagName]);
 
   // Initial data handling
   useEffect(() => {
@@ -128,39 +130,58 @@ export default function TagClient({ initialData, tagSlug }) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="container  mx-auto">
           {/* Header Section */}
-          <div className="mb-8 flex items-center">
-  <Link
-    href="/blog"
-    className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors mb-4 group"
-  >
-    <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-    Back to Blog
-  </Link>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors mb-4 group"
+              >
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Blog
+              </Link>
 
-  <div className="ml-auto flex items-center gap-2">
-    <button
-      onClick={() => setViewMode("grid")}
-      className={`p-2 rounded-lg transition-all duration-300 ${
-        viewMode === "grid"
-          ? "bg-indigo-100 text-indigo-600 shadow-sm"
-          : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-      }`}
-    >
-      <Grid className="h-5 w-5" />
-    </button>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                  <Hash className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-slate-900 mb-1">
+                    Tag: <span className="text-indigo-600">{tagName}</span>
+                  </h1>
+                  <p className="text-slate-500">
+                    {blogs.length > 0 
+                      ? `Found ${blogs.length} article${blogs.length !== 1 ? 's' : ''} tagged with "${tagName}"`
+                      : `No articles found tagged with "${tagName}"`
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
 
-    <button
-      onClick={() => setViewMode("list")}
-      className={`p-2 rounded-lg transition-all duration-300 ${
-        viewMode === "list"
-          ? "bg-indigo-100 text-indigo-600 shadow-sm"
-          : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-      }`}
-    >
-      <List className="h-5 w-5" />
-    </button>
-  </div>
-</div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  viewMode === "grid"
+                    ? "bg-indigo-100 text-indigo-600 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <Grid className="h-5 w-5" />
+              </button>
+
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  viewMode === "list"
+                    ? "bg-indigo-100 text-indigo-600 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <List className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
 
           {/* Blog Grid/List */}
           {loading ? (
@@ -205,7 +226,7 @@ export default function TagClient({ initialData, tagSlug }) {
                 No articles found
               </h3>
               <p className="text-slate-500 mb-8 max-w-md mx-auto">
-                There are no articles tagged with <span className="text-indigo-600 font-medium">#{tagSlug}</span> yet.
+                There are no articles tagged with <span className="text-indigo-600 font-medium">#{tagName}</span> yet.
                 Check back later or explore other topics.
               </p>
               <Link
