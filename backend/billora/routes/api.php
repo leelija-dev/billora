@@ -270,6 +270,7 @@ Route::prefix('/blog')->group(function (){
    Route::get('/{slug}', [BlogController::class, 'show']);
    Route::get('/all-categories', [BlogController::class, 'allCategrories']);
    Route::get('/tag/{tag}', [BlogController::class, 'blogTags']);
+   Route::get('/category/{id}', [BlogController::class, 'blogCategory']);
    
 });
 Route::middleware('auth:sanctum')->prefix('gst-collection')->group(function () {

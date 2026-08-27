@@ -60,6 +60,12 @@ export const blogApi = {
     const response = await apiClient.get(`/blog/tag/${tagName}`, { params });
     return response;
   },
+
+  // Get blogs by category
+  getBlogsByCategory: async (categoryId, params = {}) => {
+    const response = await apiClient.get(`/blog/category/${categoryId}`, { params });
+    return response;
+  },
 };
 
 export default blogApi;

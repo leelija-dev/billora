@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, User, Tag, ArrowRight, Clock, Eye } from 'lucide-react';
+import { Calendar, User, Tag, ArrowRight, Clock, Eye, Folder } from 'lucide-react';
 import { slugify } from '@/utils/slug';
 
 export default function BlogCard({ blog }) {
@@ -81,9 +81,12 @@ export default function BlogCard({ blog }) {
         {/* Category Badge */}
         {blog.categories && blog.categories.length > 0 && (
           <div className="absolute top-4 left-4 z-10">
-            <span className="inline-flex items-center px-3 py-1 bg-white/90 backdrop-blur-sm text-[rgb(65,135,249)] text-xs font-semibold rounded-full shadow-sm border border-slate-100">
+            <Link
+              href={`/blog/category/${blog.categories[0].id}`}
+              className="inline-flex items-center px-3 py-1 bg-white/90 backdrop-blur-sm text-[rgb(65,135,249)] text-xs font-semibold rounded-full shadow-sm border border-slate-100 hover:bg-white hover:shadow-md transition-all"
+            >
               {blog.categories[0].name}
-            </span>
+            </Link>
           </div>
         )}
       </div>

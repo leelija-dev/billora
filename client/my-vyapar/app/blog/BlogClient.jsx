@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Filter, X, ChevronRight, TrendingUp, Clock, Eye } from 'lucide-react';
+import { Search, Filter, X, ChevronRight, ChevronDown, TrendingUp, Clock, Eye } from 'lucide-react';
+import Link from 'next/link';
 import BlogCard from '@/components/blog/BlogCard';
 import { blogApi } from '@/services/blogApi';
 
@@ -13,7 +14,6 @@ export default function BlogClient({ initialData }) {
   const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [currentPage, setCurrentPage] = useState(initialData?.blogs?.current_page || 1);
   const [hasMore, setHasMore] = useState(() => {
     if (initialData?.blogs) {
@@ -58,10 +58,6 @@ export default function BlogClient({ initialData }) {
         params.name = searchTerm;
       }
 
-      if (selectedCategory) {
-        params.category_id = selectedCategory;
-      }
-
       const response = await blogApi.getBlogs(params);
       const data = response.data;
 
@@ -93,7 +89,7 @@ export default function BlogClient({ initialData }) {
       setLoadingMore(false);
       setIsInitialLoad(false);
     }
-  }, [searchTerm, selectedCategory, categories.length]);
+  }, [searchTerm, categories.length]);
 
   // Initial data handling
   useEffect(() => {
@@ -104,14 +100,14 @@ export default function BlogClient({ initialData }) {
     }
   }, [initialData]);
 
-  // Fetch when search or category changes
+  // Fetch when search changes
   useEffect(() => {
     if (!isInitialLoad || !initialData) {
       setCurrentPage(1);
       setHasMore(true);
       fetchBlogs(1, true);
     }
-  }, [searchTerm, selectedCategory, isInitialLoad, initialData, fetchBlogs]);
+  }, [searchTerm, isInitialLoad, initialData, fetchBlogs]);
 
   // Initial fetch if no initial data
   useEffect(() => {
@@ -133,14 +129,8 @@ export default function BlogClient({ initialData }) {
     setHasMore(true);
   };
 
-  const handleCategoryChange = (category) => {
-    setSelectedCategory(category);
-    setCurrentPage(1);
-    setHasMore(true);
-  };
-
-  // Featured post (first blog post) - only show if no filters are applied
-  const featuredPost = (!searchTerm && !selectedCategory && blogs.length > 0) ? blogs[0] : null;
+  // Featured post (first blog post) - only show if no search is applied
+  const featuredPost = (!searchTerm && blogs.length > 0) ? blogs[0] : null;
 
   // Helper to format date
   const formatDate = (dateString) => {
@@ -231,12 +221,10 @@ export default function BlogClient({ initialData }) {
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-slate-400" />
                 <span className="text-sm truncate">
-                  {selectedCategory 
-                    ? categories.find(c => c.id === parseInt(selectedCategory))?.name || 'All Categories'
-                    : 'All Categories'}
+                  Browse Categories
                 </span>
               </div>
-              <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-90' : ''}`} />
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Dropdown Menu */}
@@ -249,46 +237,19 @@ export default function BlogClient({ initialData }) {
                 
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="max-h-64 overflow-y-auto">
-                    <button
-                      onClick={() => {
-                        handleCategoryChange('');
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/5 hover:to-[#ec4899]/5 transition-colors ${
-                        !selectedCategory ? 'bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] font-medium' : 'text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span>All Categories</span>
-                        {!selectedCategory && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-[rgb(65,135,249)]"></div>
-                        )}
-                      </div>
-                    </button>
-                    
-                    <div className="h-px bg-slate-100 my-1"></div>
-                    
                     {categories.length > 0 ? (
                       categories.map((category) => (
-                        <button
+                        <Link
                           key={category.id}
-                          onClick={() => {
-                            handleCategoryChange(category.id.toString());
-                            setIsDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/5 hover:to-[#ec4899]/5 transition-colors ${
-                            selectedCategory === category.id.toString() 
-                              ? 'bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] font-medium' 
-                              : 'text-slate-700'
-                          }`}
+                          href={`/blog/category/${category.id}`}
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="w-full block text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/5 hover:to-[#ec4899]/5 transition-colors text-slate-700"
                         >
                           <div className="flex items-center justify-between">
                             <span>{category.name}</span>
-                            {selectedCategory === category.id.toString() && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-[rgb(65,135,249)]"></div>
-                            )}
+                            <ChevronRight className="h-3 w-3 text-slate-400" />
                           </div>
-                        </button>
+                        </Link>
                       ))
                     ) : (
                       <div className="px-4 py-3 text-sm text-slate-500">
@@ -303,24 +264,14 @@ export default function BlogClient({ initialData }) {
         </div>
 
         {/* Active Filters */}
-        {(searchTerm || selectedCategory) && (
+        {searchTerm && (
           <div className="my-4 flex flex-wrap gap-2 px-2">
-            {searchTerm && (
-              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] border border-[rgb(65,135,249)]/20">
-                Search: {searchTerm}
-                <button onClick={() => setSearchTerm('')} className="hover:text-[#ec4899] transition-colors ml-1">
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {selectedCategory && (
-              <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] border border-[rgb(65,135,249)]/20">
-                Category: {categories.find(c => c.id === parseInt(selectedCategory))?.name || 'Unknown'}
-                <button onClick={() => setSelectedCategory('')} className="hover:text-[#ec4899] transition-colors ml-1">
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] border border-[rgb(65,135,249)]/20">
+              Search: {searchTerm}
+              <button onClick={() => setSearchTerm('')} className="hover:text-[#ec4899] transition-colors ml-1">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
           </div>
         )}
     
@@ -440,11 +391,11 @@ export default function BlogClient({ initialData }) {
               <Search className="h-8 w-8 text-[rgb(65,135,249)]" />
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">
-              {searchTerm || selectedCategory ? 'No articles found' : 'No articles yet'}
+              {searchTerm ? 'No articles found' : 'No articles yet'}
             </h3>
             <p className="text-slate-500">
-              {searchTerm || selectedCategory 
-                ? 'Try adjusting your search or filter criteria' 
+              {searchTerm 
+                ? 'Try adjusting your search criteria' 
                 : 'Check back later for new content'}
             </p>
           </div>

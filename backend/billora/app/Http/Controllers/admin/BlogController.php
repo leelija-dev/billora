@@ -103,6 +103,38 @@ public function blogTags($tag)
     }
 }
 
+public function blogCategory($id)
+{
+    try {
+
+        $blogs = Blog::with([
+                'categories',
+                'tags',
+                'faqs',
+                'user:id,fname,lname,image,description',
+                'user.roles:id,name'
+            ])
+            ->where('status', true)
+            ->whereHas('categories', function ($query) use ($id) {
+                $query->where('categories.id', $id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(2);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Blogs by category',
+            'blogs' => $blogs
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
  public function show($slug){
     try{
         $blog = Blog::with(['categories','tags','faqs','user:id,fname,lname,image,description','user.roles:id,name'])->where('status',true)->where('slug',$slug)->first();

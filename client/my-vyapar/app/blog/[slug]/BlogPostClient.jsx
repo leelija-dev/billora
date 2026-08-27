@@ -275,9 +275,12 @@ export default function BlogPostClient({
                 {/* Category */}
                 {blog.categories && blog.categories.length > 0 && (
                   <div className="mb-4">
-                    <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] text-xs font-semibold rounded-full">
+                    <Link
+                      href={`/blog/category/${blog.categories[0].id}`}
+                      className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-[rgb(65,135,249)]/10 to-[#ec4899]/10 text-[rgb(65,135,249)] text-xs font-semibold rounded-full hover:from-[rgb(65,135,249)]/20 hover:to-[#ec4899]/20 transition-all"
+                    >
                       {blog.categories[0].name}
-                    </span>
+                    </Link>
                   </div>
                 )}
 
