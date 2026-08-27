@@ -103,7 +103,7 @@ public function blogTags($tag)
     }
 }
 
-public function blogCategory($id)
+public function blogCategory($slug)
 {
     try {
 
@@ -115,8 +115,8 @@ public function blogCategory($id)
                 'user.roles:id,name'
             ])
             ->where('status', true)
-            ->whereHas('categories', function ($query) use ($id) {
-                $query->where('categories.id', $id);
+            ->whereHas('categories', function ($query) use ($slug) {
+                $query->where('categories.slug', $slug);
             })
             ->orderBy('created_at', 'desc')
             ->paginate(2);
