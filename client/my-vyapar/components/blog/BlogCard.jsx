@@ -144,13 +144,14 @@ export default function BlogCard({ blog }) {
         {blog.tags && blog.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-4 pt-3 border-t border-slate-100">
             {blog.tags.slice(0, 2).map((tag) => (
-              <span
+              <Link
                 key={tag.id}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-500 text-xs rounded-full"
+                href={`/blog/tag/${tag.tag_name || tag.name}`}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-500 text-xs rounded-full hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/10 hover:to-[#ec4899]/10 hover:text-[rgb(65,135,249)] transition-colors"
               >
                 <Tag className="h-3 w-3" />
-                {tag.name}
-              </span>
+                {tag.tag_name || tag.name}
+              </Link>
             ))}
             {blog.tags.length > 2 && (
               <span className="text-xs text-slate-400">

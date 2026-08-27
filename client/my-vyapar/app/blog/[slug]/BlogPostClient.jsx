@@ -422,13 +422,14 @@ export default function BlogPostClient({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {blog.tags.map((tag) => (
-                    <span
+                    <Link
                       key={tag.id}
+                      href={`/blog/tag/${tag.tag_name}`}
                       className="inline-flex items-center px-2.5 py-1 sm:px-3 sm:py-1.5 bg-slate-100 text-slate-700 text-xs sm:text-sm rounded-full hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/10 hover:to-[#ec4899]/10 hover:text-[rgb(65,135,249)] transition-all cursor-pointer"
                     >
                       <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                       {tag.tag_name}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </div>

@@ -54,6 +54,12 @@ export const blogApi = {
     });
     return response;
   },
+
+  // Get blogs by tag
+  getBlogsByTag: async (tagName, params = {}) => {
+    const response = await apiClient.get(`/blog/tag/${tagName}`, { params });
+    return response;
+  },
 };
 
 export default blogApi;

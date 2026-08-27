@@ -5,6 +5,7 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Blog;
+use App\Models\BlogTags;
 use App\Models\Category;
 use App\Models\Tags;
 
@@ -69,21 +70,39 @@ class BlogController extends Controller
         ]);
     }
 }
- public function allCategrories(){
-    try{
-    $categories = Category::where('status',true)->get();
-    return response()->json([
-        'status'=>true,
-        'message'=>'All categories',
-        'categories'=>$categories
-    ]);
-    }catch(\Exception $e){
+public function blogTags($tag)
+{
+    try {
+
+        $blogs = Blog::with([
+                'categories',
+                'tags',
+                'faqs',
+                'user:id,fname,lname,image,description',
+                'user.roles:id,name'
+            ])
+            ->where('status', true)
+            ->whereHas('tags', function ($query) use ($tag) {
+                $query->where('tag_name', $tag);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(2);
+
         return response()->json([
-            'status'=>false,
-            'message'=>$e->getMessage()
+            'status' => true,
+            'message' => 'Blogs by tag',
+            'blogs' => $blogs
+        ]);
+
+    } catch (\Exception $e) {
+
+        return response()->json([
+            'status' => false,
+            'message' => $e->getMessage()
         ]);
     }
- }
+}
+
  public function show($slug){
     try{
         $blog = Blog::with(['categories','tags','faqs','user:id,fname,lname,image,description','user.roles:id,name'])->where('status',true)->where('slug',$slug)->first();
