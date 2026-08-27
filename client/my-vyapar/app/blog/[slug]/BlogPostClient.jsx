@@ -160,7 +160,7 @@ export default function BlogPostClient({
   const userAvatarUrl = user.avatar || user.image || user.profile_image || null;
   const avatarImageUrl = getUserAvatarUrl(userAvatarUrl);
 
-  console.log("Checking Single Blog", blog);
+  // console.log("Checking Single Blog", blog);
 
 
 
