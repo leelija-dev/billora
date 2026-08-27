@@ -154,7 +154,7 @@ export default function CategoryClient({ initialData, categorySlug, categoryName
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-slate-900 mb-1">
-                    Category: <span className="text-indigo-600">{displayName}</span>
+                    Category: <span className="text-indigo-600 capitalize">{displayName}</span>
                   </h1>
                   <p className="text-slate-500">
                     {blogs.length > 0 

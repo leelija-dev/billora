@@ -167,10 +167,15 @@ class BlogController extends Controller
 
             //Save Tags
 
-            if (!empty($validated['tags'])) {
+            $tags = array_filter($validated['tags'] ?? [],fn ($tag) => !is_null($tag) && trim($tag) !== '');
+
+            if (!empty($tags)) {
+                
 
                 $tagData = [];
-
+                Log::info('Tag data prepared for insertion', 
+                    $validated['tags']
+                );
                 foreach ($validated['tags'] as $tagName) {
                     $tagData[] = [
                         'blog_id' => $blog->id,
@@ -362,7 +367,9 @@ class BlogController extends Controller
 
             BlogTags::where('blog_id', $blog->id)->delete();
 
-            if (!empty($validated['tags'])) {
+           $tags = array_filter($validated['tags'] ?? [],fn ($tag) => !is_null($tag) && trim($tag) !== '');
+
+            if (!empty($tags)) {
 
                 $tagData = [];
 

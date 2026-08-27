@@ -678,7 +678,7 @@
 
                     <div class="form-group">
                         <label class="form-label">
-                            Tags<span>*</span>
+                            Tags
                         </label>
 
                         <div id="tagsWrapper" class="space-y-3">
