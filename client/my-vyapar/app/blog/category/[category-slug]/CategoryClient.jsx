@@ -1,4 +1,4 @@
-// app/blog/category/[category-id]/CategoryClient.js
+// app/blog/category/[category-slug]/CategoryClient.js
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -6,8 +6,9 @@ import { Folder, ArrowLeft, Clock, Eye, Hash, Grid, List, BookOpen } from 'lucid
 import Link from 'next/link';
 import BlogCard from '@/components/blog/BlogCard';
 import { blogApi } from '@/services/blogApi';
+import { decodeSlug } from '@/utils/slug';
 
-export default function CategoryClient({ initialData, categoryId }) {
+export default function CategoryClient({ initialData, categorySlug, categoryName }) {
   const [blogs, setBlogs] = useState(initialData?.blogs?.data || []);
   const [category, setCategory] = useState(initialData?.category || null);
   const [loading, setLoading] = useState(!initialData);
@@ -32,7 +33,8 @@ export default function CategoryClient({ initialData, categoryId }) {
         setLoadingMore(true);
       }
 
-      const response = await blogApi.getBlogsByCategory(categoryId, { page });
+      // Use the decoded category name for the API call
+      const response = await blogApi.getBlogsByCategory(categoryName, { page });
       const data = response.data;
 
       if (data.status) {
@@ -63,7 +65,7 @@ export default function CategoryClient({ initialData, categoryId }) {
       setLoadingMore(false);
       setIsInitialLoad(false);
     }
-  }, [categoryId, category]);
+  }, [categoryName, category]);
 
   // Initial data handling
   useEffect(() => {
@@ -129,7 +131,7 @@ export default function CategoryClient({ initialData, categoryId }) {
     );
   }
 
-  const categoryName = category?.name || 'Category';
+  const displayName = category?.name || categoryName;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/20 to-slate-50">
@@ -152,12 +154,12 @@ export default function CategoryClient({ initialData, categoryId }) {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-slate-900 mb-1">
-                    Category: <span className="text-indigo-600">{categoryName}</span>
+                    Category: <span className="text-indigo-600">{displayName}</span>
                   </h1>
                   <p className="text-slate-500">
                     {blogs.length > 0 
-                      ? `Found ${blogs.length} article${blogs.length !== 1 ? 's' : ''} in ${categoryName}`
-                      : `No articles found in ${categoryName}`
+                      ? `Found ${blogs.length} article${blogs.length !== 1 ? 's' : ''} in ${displayName}`
+                      : `No articles found in ${displayName}`
                     }
                   </p>
                 </div>
@@ -232,7 +234,7 @@ export default function CategoryClient({ initialData, categoryId }) {
                 No articles found
               </h3>
               <p className="text-slate-500 mb-8 max-w-md mx-auto">
-                There are no articles in <span className="text-indigo-600 font-medium">{categoryName}</span> yet.
+                There are no articles in <span className="text-indigo-600 font-medium">{displayName}</span> yet.
                 Check back later or explore other categories.
               </p>
               <Link

@@ -82,7 +82,7 @@ export default function BlogCard({ blog }) {
         {blog.categories && blog.categories.length > 0 && (
           <div className="absolute top-4 left-4 z-10">
             <Link
-              href={`/blog/category/${blog.categories[0].id}`}
+              href={`/blog/category/${slugify(blog.categories[0].name)}`}
               className="inline-flex items-center px-3 py-1 bg-white/90 backdrop-blur-sm text-[rgb(65,135,249)] text-xs font-semibold rounded-full shadow-sm border border-slate-100 hover:bg-white hover:shadow-md transition-all"
             >
               {blog.categories[0].name}

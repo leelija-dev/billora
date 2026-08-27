@@ -6,6 +6,7 @@ import { Search, Filter, X, ChevronRight, ChevronDown, TrendingUp, Clock, Eye } 
 import Link from 'next/link';
 import BlogCard from '@/components/blog/BlogCard';
 import { blogApi } from '@/services/blogApi';
+import { slugify } from '@/utils/slug';
 
 export default function BlogClient({ initialData }) {
   // Initialize state with initial data if available
@@ -241,7 +242,7 @@ export default function BlogClient({ initialData }) {
                       categories.map((category) => (
                         <Link
                           key={category.id}
-                          href={`/blog/category/${category.id}`}
+                          href={`/blog/category/${slugify(category.name)}`}
                           onClick={() => setIsDropdownOpen(false)}
                           className="w-full block text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/5 hover:to-[#ec4899]/5 transition-colors text-slate-700"
                         >

@@ -62,8 +62,8 @@ export const blogApi = {
   },
 
   // Get blogs by category
-  getBlogsByCategory: async (categoryId, params = {}) => {
-    const response = await apiClient.get(`/blog/category/${categoryId}`, { params });
+  getBlogsByCategory: async (categoryName, params = {}) => {
+    const response = await apiClient.get(`/blog/category/${categoryName}`, { params });
     return response;
   },
 };

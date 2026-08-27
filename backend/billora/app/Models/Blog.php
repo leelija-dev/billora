@@ -36,7 +36,8 @@ public function categories()
         Category::class,
         'blog_categories',
         'blog_id',
-        'category_id'
+        'category_id',
+       
     );
 }
 public function faqs()
