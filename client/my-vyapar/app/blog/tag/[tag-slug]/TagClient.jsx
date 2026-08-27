@@ -36,7 +36,7 @@ export default function TagClient({ initialData, tagSlug }) {
 
       if (data.status) {
         const blogData = data.blogs?.data || [];
-        
+
         if (reset) {
           setBlogs(blogData);
         } else {
@@ -86,10 +86,10 @@ export default function TagClient({ initialData, tagSlug }) {
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
-      return new Date(dateString).toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
       });
     } catch {
       return '';
@@ -128,54 +128,39 @@ export default function TagClient({ initialData, tagSlug }) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="container  mx-auto">
           {/* Header Section */}
-          <div className="mb-8">
-            <Link 
-              href="/blog"
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors mb-4 group"
-            >
-              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Blog
-            </Link>
-            
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                  <Hash className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-                    #{tagSlug}
-                  </h1>
-                  <p className="text-sm text-slate-500">
-                    {blogs.length} {blogs.length === 1 ? 'article' : 'articles'} found
-                  </p>
-                </div>
-              </div>
-              
-              <div className="ml-auto flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-all duration-300 ${
-                    viewMode === 'grid' 
-                      ? 'bg-indigo-100 text-indigo-600 shadow-sm' 
-                      : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  <Grid className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-all duration-300 ${
-                    viewMode === 'list' 
-                      ? 'bg-indigo-100 text-indigo-600 shadow-sm' 
-                      : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  <List className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <div className="mb-8 flex items-center">
+  <Link
+    href="/blog"
+    className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors mb-4 group"
+  >
+    <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+    Back to Blog
+  </Link>
+
+  <div className="ml-auto flex items-center gap-2">
+    <button
+      onClick={() => setViewMode("grid")}
+      className={`p-2 rounded-lg transition-all duration-300 ${
+        viewMode === "grid"
+          ? "bg-indigo-100 text-indigo-600 shadow-sm"
+          : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+      }`}
+    >
+      <Grid className="h-5 w-5" />
+    </button>
+
+    <button
+      onClick={() => setViewMode("list")}
+      className={`p-2 rounded-lg transition-all duration-300 ${
+        viewMode === "list"
+          ? "bg-indigo-100 text-indigo-600 shadow-sm"
+          : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+      }`}
+    >
+      <List className="h-5 w-5" />
+    </button>
+  </div>
+</div>
 
           {/* Blog Grid/List */}
           {loading ? (
@@ -220,7 +205,7 @@ export default function TagClient({ initialData, tagSlug }) {
                 No articles found
               </h3>
               <p className="text-slate-500 mb-8 max-w-md mx-auto">
-                There are no articles tagged with <span className="text-indigo-600 font-medium">#{tagSlug}</span> yet. 
+                There are no articles tagged with <span className="text-indigo-600 font-medium">#{tagSlug}</span> yet.
                 Check back later or explore other topics.
               </p>
               <Link
@@ -232,7 +217,7 @@ export default function TagClient({ initialData, tagSlug }) {
             </div>
           ) : (
             <>
-              <div className={viewMode === 'grid' 
+              <div className={viewMode === 'grid'
                 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xll:grid-cols-4 gap-6'
                 : 'space-y-4'
               }>
