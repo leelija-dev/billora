@@ -146,7 +146,7 @@ export default function TagClient({ initialData, tagSlug, tagName }) {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-slate-900 mb-1">
-                    Tag: <span className="text-indigo-600">{tagName}</span>
+                    Tag: <span className="text-indigo-600 capitalize">{tagName}</span>
                   </h1>
                   <p className="text-slate-500">
                     {blogs.length > 0 
