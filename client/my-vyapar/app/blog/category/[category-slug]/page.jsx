@@ -10,7 +10,7 @@ async function getBlogsByCategory(categorySlug) {
     // Decode the slug to get the original category name
     const categoryName = decodeSlug(categorySlug);
     const response = await blogApi.getBlogsByCategory(categoryName, { page: 1 });
-    console.log('Fetched blogs for category:',  response.data); // Debugging line to check the fetched data
+    // console.log('Fetched blogs for category:',  response.data); // Debugging line to check the fetched data
     return response.data;
 
   } catch (error) {
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }) {
   try {
     const response = await blogApi.getBlogsByCategory(categoryName, { page: 1 });
     categoryData = response.data?.category;
-    console.log(categoryData);
+    // console.log(categoryData);
   } catch (error) {
     console.error('Error fetching category for metadata:', error);
   }

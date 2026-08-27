@@ -11,6 +11,7 @@ export async function generateStaticParams() {
   try {
     const response = await blogApi.getBlogs({ page: 1, limit: 100 });
     const blogs = response.data?.blogs?.data || [];
+    
     return blogs.map(blog => ({
       slug: blog.slug
     }));

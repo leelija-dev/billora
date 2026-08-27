@@ -242,7 +242,7 @@ export default function BlogClient({ initialData }) {
                       categories.map((category) => (
                         <Link
                           key={category.id}
-                          href={`/blog/category/${slugify(category.name)}`}
+                          href={`/blog/category/${category.slug}`}
                           onClick={() => setIsDropdownOpen(false)}
                           className="w-full block text-left px-4 py-3 text-sm hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/5 hover:to-[#ec4899]/5 transition-colors text-slate-700"
                         >
