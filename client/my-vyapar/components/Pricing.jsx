@@ -1,5 +1,5 @@
 // components/Pricing.jsx
-'use client';
+"use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import Container from "@/components/Container";
@@ -7,12 +7,12 @@ import { usePricingStore } from "../store/pricingStore";
 import { useAuthStore } from "../store/authStoreZustand";
 import { useFilterStore } from "../store/filterStore";
 import { useRouter, usePathname } from "next/navigation";
-import { 
-  Check, 
-  Loader2, 
-  ArrowRight, 
-  Lock, 
-  Layers, 
+import {
+  Check,
+  Loader2,
+  ArrowRight,
+  Lock,
+  Layers,
   AlertCircle,
   Crown,
   Sparkles,
@@ -27,7 +27,7 @@ import {
   Monitor,
   Smartphone,
   Calendar,
-  Clock
+  Clock,
 } from "lucide-react";
 
 const Pricing = ({
@@ -50,7 +50,9 @@ const Pricing = ({
   const durationDropdownRef = useRef(null);
   const pathname = usePathname();
 
-  const [selectedScreenType, setSelectedScreenType] = useState("mobile_with_desktop");
+  const [selectedScreenType, setSelectedScreenType] = useState(
+    "mobile_with_desktop",
+  );
   const [selectedDuration, setSelectedDuration] = useState("365");
 
   const {
@@ -103,21 +105,31 @@ const Pricing = ({
   ];
 
   const getSelectedScreenLabel = () => {
-    const selected = screenTypes.find(type => type.value === selectedScreenType);
+    const selected = screenTypes.find(
+      (type) => type.value === selectedScreenType,
+    );
     return selected ? selected.label : "All Screens";
   };
 
   const getSelectedDurationLabel = () => {
-    const selected = durationOptions.find(option => option.value === selectedDuration);
+    const selected = durationOptions.find(
+      (option) => option.value === selectedDuration,
+    );
     return selected ? selected.label : "All Durations";
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (screenDropdownRef.current && !screenDropdownRef.current.contains(event.target)) {
+      if (
+        screenDropdownRef.current &&
+        !screenDropdownRef.current.contains(event.target)
+      ) {
         setIsScreenDropdownOpen(false);
       }
-      if (durationDropdownRef.current && !durationDropdownRef.current.contains(event.target)) {
+      if (
+        durationDropdownRef.current &&
+        !durationDropdownRef.current.contains(event.target)
+      ) {
         setIsDurationDropdownOpen(false);
       }
     };
@@ -127,32 +139,35 @@ const Pricing = ({
 
   const getPlanAction = (currentPlan, targetPlan) => {
     if (!currentPlan) {
-      return { 
-        isUpgrade: false, 
-        isDowngrade: false, 
-        isSame: false, 
+      return {
+        isUpgrade: false,
+        isDowngrade: false,
+        isSame: false,
         canPurchase: true,
         isActive: false,
-        action: 'new_purchase',
+        action: "new_purchase",
         canUpgrade: false,
-        canReactivate: false
+        canReactivate: false,
       };
     }
 
-    const isActive = currentPlan.is_active === 1 || 
-                     currentPlan.is_active === true || 
-                     currentPlan.status === 'active' ||
-                     currentPlan.is_active === '1';
-    
+    const isActive =
+      currentPlan.is_active === 1 ||
+      currentPlan.is_active === true ||
+      currentPlan.status === "active" ||
+      currentPlan.is_active === "1";
+
     // Handle both transformed plan objects (with price.monthly) and raw plan objects (with price as string)
-    const currentPrice = typeof currentPlan.price === 'object' 
-      ? (currentPlan.price?.monthly || currentPlan.price?.yearly || 0)
-      : parseFloat(currentPlan.price) || 0;
-    
-    const targetPrice = typeof targetPlan.price === 'object'
-      ? (targetPlan.price?.monthly || targetPlan.price?.yearly || 0)
-      : parseFloat(targetPlan.price) || 0;
-    
+    const currentPrice =
+      typeof currentPlan.price === "object"
+        ? currentPlan.price?.monthly || currentPlan.price?.yearly || 0
+        : parseFloat(currentPlan.price) || 0;
+
+    const targetPrice =
+      typeof targetPlan.price === "object"
+        ? targetPlan.price?.monthly || targetPlan.price?.yearly || 0
+        : parseFloat(targetPlan.price) || 0;
+
     if (!isActive) {
       // Plan is expired - user can buy new plan but NOT lower than expired plan price
       if (targetPrice < currentPrice) {
@@ -162,14 +177,15 @@ const Pricing = ({
           isSame: false,
           canPurchase: false,
           isActive: false,
-          action: 'downgrade_not_allowed_expired',
+          action: "downgrade_not_allowed_expired",
           isInactive: true,
           canUpgrade: false,
           canReactivate: false,
-          reason: "You cannot purchase a plan with a lower price than your expired plan. Please choose a plan with equal or higher price."
+          reason:
+            "You cannot purchase a plan with a lower price than your expired plan. Please choose a plan with equal or higher price.",
         };
       }
-      
+
       // Can purchase same or higher priced plans
       return {
         isUpgrade: targetPrice > currentPrice,
@@ -177,13 +193,13 @@ const Pricing = ({
         isSame: targetPrice === currentPrice,
         canPurchase: true,
         isActive: false,
-        action: targetPrice > currentPrice ? 'upgrade_expired' : 'renewal',
+        action: targetPrice > currentPrice ? "upgrade_expired" : "renewal",
         isInactive: true,
         canUpgrade: true,
-        canReactivate: true
+        canReactivate: true,
       };
     }
-    
+
     // Plan is active - only allow upgrades
     if (targetPrice > currentPrice) {
       return {
@@ -192,9 +208,9 @@ const Pricing = ({
         isSame: false,
         canPurchase: true,
         isActive: true,
-        action: 'upgrade',
+        action: "upgrade",
         canUpgrade: true,
-        canReactivate: false
+        canReactivate: false,
       };
     } else if (targetPrice < currentPrice) {
       return {
@@ -203,10 +219,11 @@ const Pricing = ({
         isSame: false,
         canPurchase: false,
         isActive: true,
-        action: 'downgrade_not_allowed',
+        action: "downgrade_not_allowed",
         canUpgrade: false,
         canReactivate: false,
-        reason: "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan."
+        reason:
+          "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.",
       };
     } else {
       return {
@@ -215,10 +232,10 @@ const Pricing = ({
         isSame: true,
         canPurchase: false,
         isActive: true,
-        action: 'same_plan',
+        action: "same_plan",
         canUpgrade: false,
         canReactivate: false,
-        reason: "You are already subscribed to this plan."
+        reason: "You are already subscribed to this plan.",
       };
     }
   };
@@ -227,23 +244,22 @@ const Pricing = ({
     if (!isLoggedIn || !user?.plan_id) {
       return { hasPlan: false, isActive: false, plan: null };
     }
-    
+
     const currentPlan = plans.find((plan) => plan.id === user.plan_id);
-    
+
     if (!currentPlan) {
       return { hasPlan: false, isActive: false, plan: null };
     }
-    
+
     // Use user's is_active to determine if subscription is active, not plan's is_active
-    const isActive = user.is_active === 1 || 
-                     user.is_active === true || 
-                     user.is_active === '1';
-    
+    const isActive =
+      user.is_active === 1 || user.is_active === true || user.is_active === "1";
+
     return {
       hasPlan: true,
       isActive: isActive,
       plan: currentPlan,
-      planId: user.plan_id
+      planId: user.plan_id,
     };
   };
 
@@ -261,26 +277,30 @@ const Pricing = ({
       try {
         // If we have server data, use it
         if (initialData?.plans?.length > 0) {
-          console.log('📦 Using server data:', initialData.plans.length, 'plans');
+          console.log(
+            "📦 Using server data:",
+            initialData.plans.length,
+            "plans",
+          );
           setPlans(initialData.plans);
-          
+
           if (initialData.allFeatures) {
             setAllFeatures(initialData.allFeatures);
           }
-          
+
           setHasLoadedOnce(true);
         } else {
           // ⚠️ Fallback to client fetch
-          console.log('🔄 No server data, fetching from client...');
+          console.log("🔄 No server data, fetching from client...");
           await fetchPlans();
         }
       } catch (error) {
-        console.error('❌ Error loading plans:', error);
+        console.error("❌ Error loading plans:", error);
         if (!initialData?.plans) {
           try {
             await fetchPlans();
           } catch (fallbackError) {
-            console.error('❌ Fallback fetch failed:', fallbackError);
+            console.error("❌ Fallback fetch failed:", fallbackError);
           }
         }
       }
@@ -291,11 +311,12 @@ const Pricing = ({
 
   // Transform a single plan with feature mapping
   const transformPlan = (plan, index) => {
-    const planFeatureNames = plan.features?.map(f => f.name) || [];
-    
+    const planFeatureNames = plan.features?.map((f) => f.name) || [];
+
     const monthlyPrice = parseFloat(plan.price);
     const discount = parseFloat(plan.discount) || 0;
-    const monthlyDiscountedPrice = monthlyPrice - (monthlyPrice * discount) / 100;
+    const monthlyDiscountedPrice =
+      monthlyPrice - (monthlyPrice * discount) / 100;
     const gstRate = parseFloat(plan.gst) || 0;
 
     const transformedBusinessTypes = (plan.business_types || []).map((bt) => ({
@@ -312,19 +333,22 @@ const Pricing = ({
 
     const featureMap = {};
     const globalFeatures = allFeatures || [];
-    
+
     if (globalFeatures.length > 0) {
-      globalFeatures.forEach(feature => {
+      globalFeatures.forEach((feature) => {
         featureMap[feature.name] = planFeatureNames.includes(feature.name);
       });
     } else {
-      planFeatureNames.forEach(feature => {
+      planFeatureNames.forEach((feature) => {
         featureMap[feature] = true;
       });
     }
 
-    const screenType = plan.screen_type || 'mobile_with_desktop';
-    const screenTypeDisplay = screenType === 'mobile_with_desktop' ? 'mobile_with_desktop' : screenType.charAt(0).toUpperCase() + screenType.slice(1);
+    const screenType = plan.screen_type || "mobile_with_desktop";
+    const screenTypeDisplay =
+      screenType === "mobile_with_desktop"
+        ? "mobile_with_desktop"
+        : screenType.charAt(0).toUpperCase() + screenType.slice(1);
 
     return {
       id: plan.id,
@@ -355,18 +379,21 @@ const Pricing = ({
         : "",
       features: planFeatureNames,
       featureMap: featureMap,
-      allFeaturesList: globalFeatures.length > 0 ? globalFeatures : planFeatureNames.map(f => ({ name: f })),
+      allFeaturesList:
+        globalFeatures.length > 0
+          ? globalFeatures
+          : planFeatureNames.map((f) => ({ name: f })),
       color: index === 1 ? "#8b5cf6" : "#1e293b",
       buttonText: `Select Plan`,
       popular: false,
-      status: plan.status || 'active',
+      status: plan.status || "active",
       is_active: plan.is_active !== undefined ? plan.is_active : true,
       permissions: plan.permissions || [],
-      slug: plan.slug || '',
+      slug: plan.slug || "",
       raw: plan,
       screen_type: screenType,
       screen_type_display: screenTypeDisplay,
-      duration_days: plan.duration_days || 365
+      duration_days: plan.duration_days || 365,
     };
   };
 
@@ -380,10 +407,13 @@ const Pricing = ({
       return [];
     }
 
-    const sortedPlans = [...plansData].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-    
+    const sortedPlans = [...plansData].sort(
+      (a, b) => parseFloat(a.price) - parseFloat(b.price),
+    );
+
     return sortedPlans.map((plan, index) => {
-      const isPopular = index === Math.floor(sortedPlans.length / 2) && sortedPlans.length > 1;
+      const isPopular =
+        index === Math.floor(sortedPlans.length / 2) && sortedPlans.length > 1;
       const transformed = transformPlan(plan, index);
       transformed.popular = isPopular;
       return transformed;
@@ -394,15 +424,15 @@ const Pricing = ({
     let filtered = [...plans];
 
     if (selectedScreenType !== "all") {
-      filtered = filtered.filter(plan => {
-        const planScreenType = plan.screen_type || 'mobile_with_desktop';
-        
-        if (selectedScreenType === 'desktop') {
-          return planScreenType === 'desktop';
-        } else if (selectedScreenType === 'mobile') {
-          return planScreenType === 'mobile';
-        } else if (selectedScreenType === 'mobile_with_desktop') {
-          return planScreenType === 'mobile_with_desktop';
+      filtered = filtered.filter((plan) => {
+        const planScreenType = plan.screen_type || "mobile_with_desktop";
+
+        if (selectedScreenType === "desktop") {
+          return planScreenType === "desktop";
+        } else if (selectedScreenType === "mobile") {
+          return planScreenType === "mobile";
+        } else if (selectedScreenType === "mobile_with_desktop") {
+          return planScreenType === "mobile_with_desktop";
         }
         return true;
       });
@@ -410,7 +440,7 @@ const Pricing = ({
 
     if (selectedDuration !== "all") {
       const durationDays = parseInt(selectedDuration);
-      filtered = filtered.filter(plan => {
+      filtered = filtered.filter((plan) => {
         const planDuration = plan.duration_days || 365;
         if (durationDays === 365) {
           return planDuration <= 365;
@@ -450,58 +480,70 @@ const Pricing = ({
 
           try {
             const planAction = getPlanAction(userPlanStatus.plan, plan);
-            
-            if (userPlanStatus.hasPlan && userPlanStatus.isActive && userPlanStatus.plan.id === plan.id) {
+
+            if (
+              userPlanStatus.hasPlan &&
+              userPlanStatus.isActive &&
+              userPlanStatus.plan.id === plan.id
+            ) {
               eligibilityData[plan.id] = {
                 canPurchase: false,
                 reason: "You are already subscribed to this plan.",
                 action: "same_plan",
-                isSame: true
+                isSame: true,
               };
-            } else if (userPlanStatus.hasPlan && !userPlanStatus.isActive && userPlanStatus.plan.id === plan.id) {
+            } else if (
+              userPlanStatus.hasPlan &&
+              !userPlanStatus.isActive &&
+              userPlanStatus.plan.id === plan.id
+            ) {
               eligibilityData[plan.id] = {
                 canPurchase: true,
                 reason: "Your plan is inactive. You can reactivate it.",
                 action: "reactivation",
                 isInactive: true,
-                canReactivate: true
+                canReactivate: true,
               };
             } else if (userPlanStatus.hasPlan && userPlanStatus.isActive) {
               const isUpgrade = planAction.isUpgrade;
               const isDowngrade = planAction.isDowngrade;
-              
+
               if (isUpgrade) {
                 eligibilityData[plan.id] = {
                   canPurchase: true,
                   reason: "You can upgrade to this plan.",
                   action: "upgrade",
                   isUpgrade: true,
-                  canUpgrade: true
+                  canUpgrade: true,
                 };
               } else if (isDowngrade) {
                 eligibilityData[plan.id] = {
                   canPurchase: false,
-                  reason: "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.",
+                  reason:
+                    "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.",
                   action: "downgrade_not_allowed",
                   isDowngrade: true,
-                  canPurchase: false
+                  canPurchase: false,
                 };
               } else {
                 eligibilityData[plan.id] = {
                   canPurchase: false,
                   reason: "This plan is not available for purchase.",
-                  action: "unavailable"
+                  action: "unavailable",
                 };
               }
             } else {
               const eligibility = await checkPlanPurchaseEligibility(plan.id);
               eligibilityData[plan.id] = {
                 ...eligibility,
-                action: eligibility.action || "new_purchase"
+                action: eligibility.action || "new_purchase",
               };
             }
           } catch (error) {
-            console.error(`Error checking eligibility for plan ${plan.id}:`, error);
+            console.error(
+              `Error checking eligibility for plan ${plan.id}:`,
+              error,
+            );
             eligibilityData[plan.id] = {
               canPurchase: false,
               reason: "Error checking eligibility",
@@ -545,9 +587,13 @@ const Pricing = ({
     const userPlanStatus = getUserPlanStatus();
     const planAction = getPlanAction(userPlanStatus.plan, plan);
     const hasInactivePlan = userPlanStatus.hasPlan && !userPlanStatus.isActive;
-    
-    const isInactiveRepurchase = hasInactivePlan && userPlanStatus.plan.id === plan.id;
-    const isSameActivePlan = userPlanStatus.hasPlan && userPlanStatus.isActive && userPlanStatus.plan.id === plan.id;
+
+    const isInactiveRepurchase =
+      hasInactivePlan && userPlanStatus.plan.id === plan.id;
+    const isSameActivePlan =
+      userPlanStatus.hasPlan &&
+      userPlanStatus.isActive &&
+      userPlanStatus.plan.id === plan.id;
     const isDowngrade = planAction.isDowngrade;
 
     if (isSameActivePlan) {
@@ -556,7 +602,10 @@ const Pricing = ({
     }
 
     if (isDowngrade) {
-      alert(planAction.reason || "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.");
+      alert(
+        planAction.reason ||
+          "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.",
+      );
       return;
     }
 
@@ -589,11 +638,11 @@ const Pricing = ({
       permissions: plan.permissions,
       features: plan.features,
       screen_type: plan.screen_type,
-      plan_duration: plan.plan_duration
+      plan_duration: plan.plan_duration,
     };
 
-    localStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
-    sessionStorage.setItem('selectedPlan', JSON.stringify(selectedPlanData));
+    localStorage.setItem("selectedPlan", JSON.stringify(selectedPlanData));
+    sessionStorage.setItem("selectedPlan", JSON.stringify(selectedPlanData));
 
     if (!isLoggedIn) {
       setPendingPlan(selectedPlanData);
@@ -602,7 +651,8 @@ const Pricing = ({
     }
 
     if (planAction.isUpgrade) {
-      const dashboardUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000";
+      const dashboardUrl =
+        process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3000";
       window.open(`${dashboardUrl}billing`, "_blank");
     } else if (isInactiveRepurchase) {
       selectPlan(selectedPlanData);
@@ -814,7 +864,9 @@ const Pricing = ({
               <Table className="w-7 h-7 text-purple-600" />
               Plan Comparison
             </h3>
-            <p className="text-gray-500 mt-1">Compare all features across plans</p>
+            <p className="text-gray-500 mt-1">
+              Compare all features across plans
+            </p>
           </div>
           <button
             onClick={() => setShowComparison(!showComparison)}
@@ -871,10 +923,7 @@ const Pricing = ({
                     {plans.map((plan) => {
                       const priceData = getCurrentPrice(plan);
                       return (
-                        <td
-                          key={plan.id}
-                          className="px-6 py-4 text-center"
-                        >
+                        <td key={plan.id} className="px-6 py-4 text-center">
                           <div className="flex flex-col items-center">
                             <span className="text-lg font-bold text-gray-900">
                               ₹{priceData.displayPrice}
@@ -918,46 +967,50 @@ const Pricing = ({
                         key={plan.id}
                         className="px-6 py-4 text-center text-sm text-gray-600 capitalize"
                       >
-                        {plan.screen_type_display || 'mobile_with_desktop'}
+                        {plan.screen_type_display || "mobile_with_desktop"}
                       </td>
                     ))}
                   </tr>
 
                   {/* Features Rows */}
-                  {features.length > 0 && features.map((feature, idx) => {
-                    const featureName = typeof feature === 'string' ? feature : feature.name;
-                    return (
-                      <tr
-                        key={idx}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-3 text-sm text-gray-700">
-                          {featureName}
-                        </td>
-                        {plans.map((plan) => {
-                          const isIncluded = plan.featureMap && plan.featureMap[featureName] !== undefined
-                            ? plan.featureMap[featureName]
-                            : plan.features.includes(featureName);
-                          return (
-                            <td
-                              key={plan.id}
-                              className="px-6 py-3 text-center"
-                            >
-                              {isIncluded ? (
-                                <div className="inline-flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
-                                  <Check className="w-4 h-4 text-green-600" />
-                                </div>
-                              ) : (
-                                <div className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full">
-                                  <X className="w-4 h-4 text-gray-400" />
-                                </div>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
+                  {features.length > 0 &&
+                    features.map((feature, idx) => {
+                      const featureName =
+                        typeof feature === "string" ? feature : feature.name;
+                      return (
+                        <tr
+                          key={idx}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-3 text-sm text-gray-700">
+                            {featureName}
+                          </td>
+                          {plans.map((plan) => {
+                            const isIncluded =
+                              plan.featureMap &&
+                              plan.featureMap[featureName] !== undefined
+                                ? plan.featureMap[featureName]
+                                : plan.features.includes(featureName);
+                            return (
+                              <td
+                                key={plan.id}
+                                className="px-6 py-3 text-center"
+                              >
+                                {isIncluded ? (
+                                  <div className="inline-flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full">
+                                    <X className="w-4 h-4 text-gray-400" />
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
 
                   {/* Action Row */}
                   <tr className="bg-gray-50">
@@ -966,43 +1019,72 @@ const Pricing = ({
                     </td>
                     {plans.map((plan) => {
                       const userPlanStatus = getUserPlanStatus();
-                      const planAction = getPlanAction(userPlanStatus.plan, plan);
-                      const isCurrentActivePlan = userPlanStatus.hasPlan && userPlanStatus.isActive && userPlanStatus.plan.id === plan.id;
+                      const planAction = getPlanAction(
+                        userPlanStatus.plan,
+                        plan,
+                      );
+                      const isCurrentActivePlan =
+                        userPlanStatus.hasPlan &&
+                        userPlanStatus.isActive &&
+                        userPlanStatus.plan.id === plan.id;
                       const isDowngrade = planAction.isDowngrade;
-                      const hasInactivePlan = userPlanStatus.hasPlan && !userPlanStatus.isActive;
-                      const isInactiveRepurchase = hasInactivePlan && userPlanStatus.plan.id === plan.id;
+                      const hasInactivePlan =
+                        userPlanStatus.hasPlan && !userPlanStatus.isActive;
+                      const isInactiveRepurchase =
+                        hasInactivePlan && userPlanStatus.plan.id === plan.id;
                       const eligibility = planEligibility[plan.id];
-                      
+
                       let buttonText = "Subscribe";
-                      let buttonStyle = "bg-purple-600 hover:bg-purple-700 text-white";
-                      
+                      let buttonStyle =
+                        "bg-purple-600 hover:bg-purple-700 text-white";
+
                       if (isInactiveRepurchase) {
                         buttonText = "Reactivate";
-                        buttonStyle = "bg-green-600 hover:bg-green-700 text-white";
+                        buttonStyle =
+                          "bg-green-600 hover:bg-green-700 text-white";
                       } else if (isCurrentActivePlan) {
                         buttonText = "Current Plan";
-                        buttonStyle = "bg-green-100 text-green-700 hover:bg-green-200";
+                        buttonStyle =
+                          "bg-green-100 text-green-700 hover:bg-green-200";
                       } else if (isDowngrade) {
                         buttonText = "Not Allowed";
-                        buttonStyle = "bg-gray-200 text-gray-400 cursor-not-allowed";
+                        buttonStyle =
+                          "bg-gray-200 text-gray-400 cursor-not-allowed";
                       } else if (planAction.isUpgrade) {
                         buttonText = "Upgrade";
-                        buttonStyle = "bg-blue-600 hover:bg-blue-700 text-white";
-                      } else if (isLoggedIn && eligibility && !eligibility.canPurchase) {
+                        buttonStyle =
+                          "bg-blue-600 hover:bg-blue-700 text-white";
+                      } else if (
+                        isLoggedIn &&
+                        eligibility &&
+                        !eligibility.canPurchase
+                      ) {
                         buttonText = "Unavailable";
-                        buttonStyle = "bg-gray-200 text-gray-400 cursor-not-allowed";
+                        buttonStyle =
+                          "bg-gray-200 text-gray-400 cursor-not-allowed";
                       }
-                      
+
                       return (
-                        <td
-                          key={plan.id}
-                          className="px-6 py-4 text-center"
-                        >
+                        <td key={plan.id} className="px-6 py-4 text-center">
                           <button
                             onClick={() => handleSubscribe(plan)}
-                            disabled={isCurrentActivePlan || isDowngrade || (isLoggedIn && eligibility && !eligibility.canPurchase && !isInactiveRepurchase)}
+                            disabled={
+                              isCurrentActivePlan ||
+                              isDowngrade ||
+                              (isLoggedIn &&
+                                eligibility &&
+                                !eligibility.canPurchase &&
+                                !isInactiveRepurchase)
+                            }
                             className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${buttonStyle} ${
-                              isCurrentActivePlan || isDowngrade || (isLoggedIn && eligibility && !eligibility.canPurchase && !isInactiveRepurchase) ? "opacity-60 cursor-not-allowed" : "hover:scale-105"
+                              isCurrentActivePlan ||
+                              isDowngrade ||
+                              (isLoggedIn &&
+                                eligibility &&
+                                !eligibility.canPurchase &&
+                                !isInactiveRepurchase)
+                                ? "opacity-60 cursor-not-allowed"
+                                : "hover:scale-105"
                             }`}
                           >
                             {buttonText}
@@ -1125,11 +1207,12 @@ const Pricing = ({
 
   const displayPlans = filteredPlans.length > 0 ? filteredPlans : [];
 
-  const allFeaturesForComparison = allFeatures && allFeatures.length > 0
-    ? allFeatures
-    : displayPlans.length > 0 && displayPlans[0].allFeaturesList
-      ? displayPlans[0].allFeaturesList
-      : [];
+  const allFeaturesForComparison =
+    allFeatures && allFeatures.length > 0
+      ? allFeatures
+      : displayPlans.length > 0 && displayPlans[0].allFeaturesList
+        ? displayPlans[0].allFeaturesList
+        : [];
 
   return (
     <div className="pb-28 pt-8 md:pb-28 md:pt-12 bg-gradient-to-br from-gray-50 via-white to-gray-50 font-['Inter',system-ui,-apple-system,sans-serif] relative overflow-hidden">
@@ -1170,7 +1253,9 @@ const Pricing = ({
                     {getSelectedScreenLabel()}
                   </span>
                 </div>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isScreenDropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isScreenDropdownOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {isScreenDropdownOpen && (
@@ -1186,12 +1271,16 @@ const Pricing = ({
                           setIsScreenDropdownOpen(false);
                         }}
                         className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
-                          isActive ? "bg-purple-50 text-purple-700" : "text-gray-700"
+                          isActive
+                            ? "bg-purple-50 text-purple-700"
+                            : "text-gray-700"
                         }`}
                       >
                         <Icon className="w-4 h-4" />
                         <span>{type.label}</span>
-                        {isActive && <Check className="w-4 h-4 ml-auto text-purple-600" />}
+                        {isActive && (
+                          <Check className="w-4 h-4 ml-auto text-purple-600" />
+                        )}
                       </button>
                     );
                   })}
@@ -1202,7 +1291,9 @@ const Pricing = ({
             {/* Duration Dropdown */}
             <div className="relative" ref={durationDropdownRef}>
               <button
-                onClick={() => setIsDurationDropdownOpen(!isDurationDropdownOpen)}
+                onClick={() =>
+                  setIsDurationDropdownOpen(!isDurationDropdownOpen)
+                }
                 className="flex items-center justify-between gap-3 bg-white rounded-[40px] px-6 py-3 min-w-[200px] shadow-md border border-gray-200 hover:border-purple-300 transition-all duration-300"
               >
                 <div className="flex items-center gap-2">
@@ -1211,7 +1302,9 @@ const Pricing = ({
                     {getSelectedDurationLabel()}
                   </span>
                 </div>
-                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDurationDropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isDurationDropdownOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {isDurationDropdownOpen && (
@@ -1227,12 +1320,16 @@ const Pricing = ({
                           setIsDurationDropdownOpen(false);
                         }}
                         className={`w-full px-6 py-3 text-left hover:bg-purple-50 transition-colors duration-200 flex items-center gap-2 ${
-                          isActive ? "bg-purple-50 text-purple-700" : "text-gray-700"
+                          isActive
+                            ? "bg-purple-50 text-purple-700"
+                            : "text-gray-700"
                         }`}
                       >
                         <Icon className="w-4 h-4" />
                         <span>{option.label}</span>
-                        {isActive && <Check className="w-4 h-4 ml-auto text-purple-600" />}
+                        {isActive && (
+                          <Check className="w-4 h-4 ml-auto text-purple-600" />
+                        )}
                       </button>
                     );
                   })}
@@ -1264,29 +1361,41 @@ const Pricing = ({
                 const currentPriceData = getCurrentPrice(plan);
                 const originalPriceData = getOriginalPrice(plan);
                 const isHovered = hoveredPlan === plan.id;
-                
+
                 const userPlanStatus = getUserPlanStatus();
                 const planAction = getPlanAction(userPlanStatus.plan, plan);
-                const hasInactivePlan = userPlanStatus.hasPlan && !userPlanStatus.isActive;
-                const isInactiveRepurchase = hasInactivePlan && userPlanStatus.plan.id === plan.id;
-                const isCurrentActivePlan = userPlanStatus.hasPlan && userPlanStatus.isActive && userPlanStatus.plan.id === plan.id;
+                const hasInactivePlan =
+                  userPlanStatus.hasPlan && !userPlanStatus.isActive;
+                const isInactiveRepurchase =
+                  hasInactivePlan && userPlanStatus.plan.id === plan.id;
+                const isCurrentActivePlan =
+                  userPlanStatus.hasPlan &&
+                  userPlanStatus.isActive &&
+                  userPlanStatus.plan.id === plan.id;
                 const isDowngrade = planAction.isDowngrade;
                 const eligibility = planEligibility[plan.id];
 
-                const isButtonDisabled = 
+                const isButtonDisabled =
                   subscribing === plan.id ||
                   checkingEligibility[plan.id] ||
                   (isCurrentActivePlan && !isInactiveRepurchase) ||
                   isDowngrade ||
-                  (isLoggedIn && eligibility && !eligibility.canPurchase && !isInactiveRepurchase);
+                  (isLoggedIn &&
+                    eligibility &&
+                    !eligibility.canPurchase &&
+                    !isInactiveRepurchase);
 
-                let buttonStyle = "bg-gray-900 text-white hover:bg-gray-800 shadow-md";
+                let buttonStyle =
+                  "bg-gray-900 text-white hover:bg-gray-800 shadow-md";
                 if (isPopular) {
-                  buttonStyle = "bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl";
+                  buttonStyle =
+                    "bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl";
                 } else if (planAction.isUpgrade) {
-                  buttonStyle = "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg hover:shadow-xl";
+                  buttonStyle =
+                    "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg hover:shadow-xl";
                 } else if (isInactiveRepurchase) {
-                  buttonStyle = "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl";
+                  buttonStyle =
+                    "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl";
                 } else if (isDowngrade) {
                   buttonStyle = "bg-gray-400 text-white cursor-not-allowed";
                 }
@@ -1318,9 +1427,10 @@ const Pricing = ({
                   }
                 }
 
-                const featuresToDisplay = plan.allFeaturesList && plan.allFeaturesList.length > 0 
-                  ? plan.allFeaturesList 
-                  : [];
+                const featuresToDisplay =
+                  plan.allFeaturesList && plan.allFeaturesList.length > 0
+                    ? plan.allFeaturesList
+                    : [];
 
                 return (
                   <div
@@ -1376,7 +1486,10 @@ const Pricing = ({
                           <div className="mt-2 flex justify-center gap-2 flex-wrap">
                             <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                               <Monitor className="w-3 h-3" />
-                              {plan.screen_type_display || 'mobile_with_desktop'}
+                              {plan.screen_type_display ===
+                              "mobile_with_desktop"
+                                ? "Mobile + Desktop"
+                                : plan.screen_type_display}
                             </span>
                             <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                               <Calendar className="w-3 h-3" />
@@ -1438,46 +1551,53 @@ const Pricing = ({
 
                           <div className="space-y-2.5 text-left max-w-sm mx-auto">
                             {featuresToDisplay.length > 0 ? (
-                              featuresToDisplay.slice(0, 6).map((feature, idx) => {
-                                const featureName = typeof feature === 'string' ? feature : feature.name;
-                                const isIncluded = plan.featureMap && plan.featureMap[featureName] !== undefined 
-                                  ? plan.featureMap[featureName] 
-                                  : plan.features.includes(featureName);
-                                
-                                return (
-                                  <div
-                                    key={idx}
-                                    className="flex items-start gap-3 group/item"
-                                  >
+                              featuresToDisplay
+                                .slice(0, 6)
+                                .map((feature, idx) => {
+                                  const featureName =
+                                    typeof feature === "string"
+                                      ? feature
+                                      : feature.name;
+                                  const isIncluded =
+                                    plan.featureMap &&
+                                    plan.featureMap[featureName] !== undefined
+                                      ? plan.featureMap[featureName]
+                                      : plan.features.includes(featureName);
+
+                                  return (
                                     <div
-                                      className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all duration-300 ${
-                                        isIncluded
-                                          ? isPopular
-                                            ? "bg-purple-100 group-hover/item:bg-purple-200"
-                                            : "bg-green-100 group-hover/item:bg-green-200"
-                                          : "bg-gray-100 group-hover/item:bg-gray-200"
-                                      }`}
+                                      key={idx}
+                                      className="flex items-start gap-3 group/item"
                                     >
-                                      {isIncluded ? (
-                                        <Check
-                                          className={`w-3 h-3 ${isPopular ? "text-purple-600" : "text-green-600"}`}
-                                        />
-                                      ) : (
-                                        <X
-                                          className="w-3 h-3 text-gray-400"
-                                        />
-                                      )}
+                                      <div
+                                        className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all duration-300 ${
+                                          isIncluded
+                                            ? isPopular
+                                              ? "bg-purple-100 group-hover/item:bg-purple-200"
+                                              : "bg-green-100 group-hover/item:bg-green-200"
+                                            : "bg-gray-100 group-hover/item:bg-gray-200"
+                                        }`}
+                                      >
+                                        {isIncluded ? (
+                                          <Check
+                                            className={`w-3 h-3 ${isPopular ? "text-purple-600" : "text-green-600"}`}
+                                          />
+                                        ) : (
+                                          <X className="w-3 h-3 text-gray-400" />
+                                        )}
+                                      </div>
+                                      <span
+                                        className={`text-sm transition-colors ${
+                                          isIncluded
+                                            ? "text-gray-700 group-hover/item:text-gray-900"
+                                            : "text-gray-400 group-hover/item:text-gray-500"
+                                        }`}
+                                      >
+                                        {featureName}
+                                      </span>
                                     </div>
-                                    <span className={`text-sm transition-colors ${
-                                      isIncluded 
-                                        ? "text-gray-700 group-hover/item:text-gray-900" 
-                                        : "text-gray-400 group-hover/item:text-gray-500"
-                                    }`}>
-                                      {featureName}
-                                    </span>
-                                  </div>
-                                );
-                              })
+                                  );
+                                })
                             ) : (
                               <div className="text-center text-gray-400 text-sm py-4">
                                 No features available
@@ -1522,9 +1642,12 @@ const Pricing = ({
                             ) : (
                               <>
                                 {buttonText}
-                                {!isButtonDisabled && buttonText !== "Current Plan" && buttonText !== "Currently Unavailable" && buttonText !== "Downgrade Not Allowed" && (
-                                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                )}
+                                {!isButtonDisabled &&
+                                  buttonText !== "Current Plan" &&
+                                  buttonText !== "Currently Unavailable" &&
+                                  buttonText !== "Downgrade Not Allowed" && (
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                  )}
                               </>
                             )}
                           </span>
@@ -1547,12 +1670,14 @@ const Pricing = ({
             </div>
 
             {/* Comparison Table - Only show on /pricing page */}
-            {isPricingPage && displayPlans.length > 0 && allFeaturesForComparison.length > 0 && (
-              <ComparisonTable 
-                plans={displayPlans} 
-                features={allFeaturesForComparison}
-              />
-            )}
+            {isPricingPage &&
+              displayPlans.length > 0 &&
+              allFeaturesForComparison.length > 0 && (
+                <ComparisonTable
+                  plans={displayPlans}
+                  features={allFeaturesForComparison}
+                />
+              )}
 
             {/* View All Button */}
             {showViewAllButton && (
