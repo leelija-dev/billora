@@ -128,7 +128,7 @@ export default async function BlogPostPage({ params }) {
 
     // Helper function to get full image URL
     const getImageUrl = (imagePath) => {
-      if (!imagePath) return `${siteConfig.url}/blog-default-og.jpg`;
+      if (!imagePath) return `${siteConfig.url}blog-default-og.jpg`;
       if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
         return imagePath;
       }
@@ -138,9 +138,9 @@ export default async function BlogPostPage({ params }) {
       return `${API_BASE_URL}/${cleanPath}`;
     };
 
-    const blogUrl = `${siteConfig.url}/blog/${slug}`;
+    const blogUrl = `${siteConfig.url}blog/${slug}`;
     const imageUrl = getImageUrl(blogData.feature_image);
-    const authorUrl = `${siteConfig.url}/blog/author/${formattedUser.username || formattedUser.id}`;
+    const authorUrl = `${siteConfig.url}blog/author/${formattedUser.username || formattedUser.id}`;
     const authorHash = `person-${formattedUser.id || formattedUser.username}`;
 
     // Generate JSON-LD structured data
@@ -152,7 +152,7 @@ export default async function BlogPostPage({ params }) {
           "@id": `${blogUrl}#webpage`,
           "url": blogUrl,
           "name": blogData.title,
-          "isPartOf": { "@id": `${siteConfig.url}/blog/#website` },
+          "isPartOf": { "@id": `${siteConfig.url}blog/#website` },
           "primaryImageOfPage": { "@id": `${blogUrl}#primaryimage` },
           "image": { "@id": `${blogUrl}#primaryimage` },
           "thumbnailUrl": imageUrl,
@@ -185,7 +185,7 @@ export default async function BlogPostPage({ params }) {
               "@type": "ListItem",
               "position": 1,
               "name": "Home",
-              "item": `${siteConfig.url}/blog`
+              "item": `${siteConfig.url}blog`
             },
             {
               "@type": "ListItem",
@@ -197,17 +197,17 @@ export default async function BlogPostPage({ params }) {
         },
         {
           "@type": "WebSite",
-          "@id": `${siteConfig.url}/blog/#website`,
-          "url": `${siteConfig.url}/blog/`,
+          "@id": `${siteConfig.url}blog/#website`,
+          "url": `${siteConfig.url}blog/`,
           "name": siteConfig.name || "The Fast Bill",
           "description": "Explore stories · filter by topic · search anything",
-          "publisher": { "@id": `${siteConfig.url}/blog/#organization` },
+          "publisher": { "@id": `${siteConfig.url}blog/#organization` },
           "potentialAction": [
             {
               "@type": "SearchAction",
               "target": {
                 "@type": "EntryPoint",
-                "urlTemplate": `${siteConfig.url}/blog?search={search_term_string}`
+                "urlTemplate": `${siteConfig.url}blog?search={search_term_string}`
               },
               "query-input": {
                 "@type": "PropertyValueSpecification",
@@ -220,24 +220,24 @@ export default async function BlogPostPage({ params }) {
         },
         {
           "@type": "Organization",
-          "@id": `${siteConfig.url}/blog/#organization`,
+          "@id": `${siteConfig.url}blog/#organization`,
           "name": siteConfig.name || "The Fast Bill",
           "url": siteConfig.url,
           "logo": {
             "@type": "ImageObject",
             "inLanguage": "en-US",
-            "@id": `${siteConfig.url}/#/schema/logo/image/`,
-            "url": `${siteConfig.url}/logo.png`,
-            "contentUrl": `${siteConfig.url}/logo.png`,
+            "@id": `${siteConfig.url}#/schema/logo/image/`,
+            "url": `${siteConfig.url}logo.png`,
+            "contentUrl": `${siteConfig.url}logo.png`,
             "width": 281,
             "height": 109,
             "caption": siteConfig.name || "The Fast Bill"
           },
-          "image": { "@id": `${siteConfig.url}/#/schema/logo/image/` }
+          "image": { "@id": `${siteConfig.url}#/schema/logo/image/` }
         },
         {
           "@type": "Person",
-          "@id": `${siteConfig.url}/blog/#/schema/person/${authorHash}`,
+          "@id": `${siteConfig.url}blog/#/schema/person/${authorHash}`,
           "name": formattedUser.fullName,
           ...(formattedUser.avatar && {
             "image": {
@@ -256,14 +256,14 @@ export default async function BlogPostPage({ params }) {
           "@type": "Article",
           "@id": `${blogUrl}#article`,
           "isPartOf": { "@id": `${blogUrl}` },
-          "author": { "@id": `${siteConfig.url}/blog/#/schema/person/${authorHash}` },
+          "author": { "@id": `${siteConfig.url}blog/#/schema/person/${authorHash}` },
           "headline": blogData.title,
           "datePublished": blogData.created_at,
           "dateModified": blogData.updated_at || blogData.created_at,
           "mainEntityOfPage": { "@id": blogUrl },
           "wordCount": blogData.content?.replace(/<[^>]*>/g, '').split(/\s+/).length || 0,
           "commentCount": 0,
-          "publisher": { "@id": `${siteConfig.url}/blog/#organization` },
+          "publisher": { "@id": `${siteConfig.url}blog/#organization` },
           "image": { "@id": `${blogUrl}#primaryimage` },
           "thumbnailUrl": imageUrl,
           "articleSection": blogData.categories?.map(c => c.name) || ['Blog'],
