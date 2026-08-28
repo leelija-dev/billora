@@ -144,23 +144,47 @@ const Pricing = ({
                      currentPlan.status === 'active' ||
                      currentPlan.is_active === '1';
     
-    const currentPrice = parseFloat(currentPlan.price) || 0;
-    const targetPrice = parseFloat(targetPlan.price) || 0;
+    // Handle both transformed plan objects (with price.monthly) and raw plan objects (with price as string)
+    const currentPrice = typeof currentPlan.price === 'object' 
+      ? (currentPlan.price?.monthly || currentPlan.price?.yearly || 0)
+      : parseFloat(currentPlan.price) || 0;
+    
+    const targetPrice = typeof targetPlan.price === 'object'
+      ? (targetPlan.price?.monthly || targetPlan.price?.yearly || 0)
+      : parseFloat(targetPlan.price) || 0;
     
     if (!isActive) {
+      // Plan is expired - user can buy new plan but NOT lower than expired plan price
+      if (targetPrice < currentPrice) {
+        return {
+          isUpgrade: false,
+          isDowngrade: true,
+          isSame: false,
+          canPurchase: false,
+          isActive: false,
+          action: 'downgrade_not_allowed_expired',
+          isInactive: true,
+          canUpgrade: false,
+          canReactivate: false,
+          reason: "You cannot purchase a plan with a lower price than your expired plan. Please choose a plan with equal or higher price."
+        };
+      }
+      
+      // Can purchase same or higher priced plans
       return {
-        isUpgrade: false,
+        isUpgrade: targetPrice > currentPrice,
         isDowngrade: false,
-        isSame: false,
+        isSame: targetPrice === currentPrice,
         canPurchase: true,
         isActive: false,
-        action: 'reactivation',
+        action: targetPrice > currentPrice ? 'upgrade_expired' : 'renewal',
         isInactive: true,
-        canUpgrade: false,
+        canUpgrade: true,
         canReactivate: true
       };
     }
     
+    // Plan is active - only allow upgrades
     if (targetPrice > currentPrice) {
       return {
         isUpgrade: true,
@@ -205,14 +229,15 @@ const Pricing = ({
     }
     
     const currentPlan = plans.find((plan) => plan.id === user.plan_id);
+    
     if (!currentPlan) {
       return { hasPlan: false, isActive: false, plan: null };
     }
     
-    const isActive = currentPlan.is_active === 1 || 
-                     currentPlan.is_active === true || 
-                     currentPlan.status === 'active' ||
-                     currentPlan.is_active === '1';
+    // Use user's is_active to determine if subscription is active, not plan's is_active
+    const isActive = user.is_active === 1 || 
+                     user.is_active === true || 
+                     user.is_active === '1';
     
     return {
       hasPlan: true,
@@ -531,7 +556,7 @@ const Pricing = ({
     }
 
     if (isDowngrade) {
-      alert("Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.");
+      alert(planAction.reason || "Downgrading is not allowed. Please contact support if you need to change to a lower tier plan.");
       return;
     }
 
@@ -951,7 +976,10 @@ const Pricing = ({
                       let buttonText = "Subscribe";
                       let buttonStyle = "bg-purple-600 hover:bg-purple-700 text-white";
                       
-                      if (isCurrentActivePlan) {
+                      if (isInactiveRepurchase) {
+                        buttonText = "Reactivate";
+                        buttonStyle = "bg-green-600 hover:bg-green-700 text-white";
+                      } else if (isCurrentActivePlan) {
                         buttonText = "Current Plan";
                         buttonStyle = "bg-green-100 text-green-700 hover:bg-green-200";
                       } else if (isDowngrade) {
@@ -960,9 +988,6 @@ const Pricing = ({
                       } else if (planAction.isUpgrade) {
                         buttonText = "Upgrade";
                         buttonStyle = "bg-blue-600 hover:bg-blue-700 text-white";
-                      } else if (isInactiveRepurchase) {
-                        buttonText = "Reactivate";
-                        buttonStyle = "bg-green-600 hover:bg-green-700 text-white";
                       } else if (isLoggedIn && eligibility && !eligibility.canPurchase) {
                         buttonText = "Unavailable";
                         buttonStyle = "bg-gray-200 text-gray-400 cursor-not-allowed";
@@ -1251,7 +1276,7 @@ const Pricing = ({
                 const isButtonDisabled = 
                   subscribing === plan.id ||
                   checkingEligibility[plan.id] ||
-                  isCurrentActivePlan ||
+                  (isCurrentActivePlan && !isInactiveRepurchase) ||
                   isDowngrade ||
                   (isLoggedIn && eligibility && !eligibility.canPurchase && !isInactiveRepurchase);
 
