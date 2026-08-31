@@ -80,7 +80,7 @@ const PaidUser = () => {
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
   const [upgradeData, setUpgradeData] = useState({
     plan_id: "",
-    business_type_id: "",
+    screen_type: "",
     customer_id: "",
     customer_phone: "",
     amount: 0,
@@ -796,7 +796,7 @@ const PaidUser = () => {
 
         setUpgradeData({
           plan_id: plan.id,
-          business_type_id: user?.business_type_id || "",
+          screen_type: plan.screen_type || "mobile_with_desktop",
           customer_id: user?.customer_id || getUserId(),
           customer_phone: user?.phone || "",
           amount: pricing.baseAmount,
@@ -864,7 +864,7 @@ const PaidUser = () => {
       const upgradePayload = {
         amount: amountToSend,
         plan_id: upgradeData.plan_id,
-        business_type_id: upgradeData.business_type_id,
+        screen_type: upgradeData.screen_type,
         customer_id: upgradeData.customer_id,
         customer_phone: upgradeData.customer_phone,
         upgrade_amount: upgradeData.upgrade_amount,
@@ -919,7 +919,7 @@ const PaidUser = () => {
           setSelectedPlan(null);
           setUpgradeData({
             plan_id: "",
-            business_type_id: "",
+            screen_type: "",
             customer_id: "",
             customer_phone: "",
             amount: 0,
@@ -1398,7 +1398,7 @@ const PaidUser = () => {
                     </div>
                   ) : (
                     <SubscriptionForm
-                      plans={upgradablePlans}
+                      plans={plans}
                       currentPlan={currentPlan}
                       onSubmit={handleUpgrade}
                       onCancel={() => setShowChangePlanForm(false)}

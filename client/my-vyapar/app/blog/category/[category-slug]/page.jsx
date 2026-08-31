@@ -7,10 +7,9 @@ import { decodeSlug } from '@/utils/slug';
 // This runs on the server - no authentication needed
 async function getBlogsByCategory(categorySlug) {
   try {
-    // Decode the slug to get the original category name
-    const categoryName = decodeSlug(categorySlug);
-    const response = await blogApi.getBlogsByCategory(categoryName, { page: 1 });
-    // console.log('Fetched blogs for category:',  response.data); // Debugging line to check the fetched data
+    // Pass the slug directly to the API (backend expects slug, not decoded name)
+    const response = await blogApi.getBlogsByCategory(categorySlug, { page: 1 });
+    // console.log('Fetched blogs for category:',  response); // Debugging line to check the fetched data
     return response.data;
 
   } catch (error) {
@@ -26,7 +25,7 @@ export async function generateMetadata({ params }) {
   // Fetch category data to get actual name and description
   let categoryData = null;
   try {
-    const response = await blogApi.getBlogsByCategory(categoryName, { page: 1 });
+    const response = await blogApi.getBlogsByCategory(categorySlug, { page: 1 });
     categoryData = response.data?.category;
     // console.log(categoryData);
   } catch (error) {

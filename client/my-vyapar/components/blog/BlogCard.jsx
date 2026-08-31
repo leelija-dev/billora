@@ -82,7 +82,7 @@ export default function BlogCard({ blog }) {
         {blog.categories && blog.categories.length > 0 && (
           <div className="absolute top-4 left-4 z-10">
             <Link
-              href={`/blog/category/${slugify(blog.categories[0].name)}`}
+              href={`/blog/category/${blog.categories[0].slug}`}
               className="inline-flex items-center px-3 py-1 bg-white/90 backdrop-blur-sm text-[rgb(65,135,249)] text-xs font-semibold rounded-full shadow-sm border border-slate-100 hover:bg-white hover:shadow-md transition-all"
             >
               {blog.categories[0].name}
@@ -150,7 +150,7 @@ export default function BlogCard({ blog }) {
             {blog.tags.slice(0, 2).map((tag) => (
               <Link
                 key={tag.id}
-                href={`/blog/tag/${slugify(tag.tag_name || tag.name)}`}
+                href={`/blog/tag/${ tag.tag_name}`}
                 className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 text-slate-500 text-xs rounded-full hover:bg-gradient-to-r hover:from-[rgb(65,135,249)]/10 hover:to-[#ec4899]/10 hover:text-[rgb(65,135,249)] transition-colors"
               >
                 <Tag className="h-3 w-3" />
