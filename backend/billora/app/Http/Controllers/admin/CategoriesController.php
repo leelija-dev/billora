@@ -136,6 +136,7 @@ class CategoriesController extends Controller
                 'message' =>'You do not have any active plan. Please upgrade your plan.'
             ]);
         }
+        $data['slug'] = Str::slug($data['name']);
         $category = Categories::where('id', $id)
             ->where('user_id', $userId)
             ->firstOrFail();
