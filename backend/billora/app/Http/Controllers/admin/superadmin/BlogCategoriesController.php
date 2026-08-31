@@ -60,6 +60,7 @@ class BlogCategoriesController extends Controller
             ]);
         
         try{
+            $data['slug'] = Str::slug($data['name']);
             $category->update($data);
             Cache::tags(['blog_categories'])->flush();
             return redirect()->route('admin.category.index')
