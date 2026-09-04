@@ -612,15 +612,15 @@
 
         <!-- Form Container - Full Width -->
         <div class="form-container">
-            <form id="planForm" action="{{ route('admin.blogs.update', $blog->id) }}" method="POST"
+            <form id="blogForm" action="{{ route('admin.blogs.update', $blog->id) }}" method="POST"
                 enctype="multipart/form-data" novalidate>
                 @csrf
 
-                <!-- Plan Details -->
-                <div class="form-title">Plan Details</div>
-
+                <!-- Blog Details -->
+                <div class="form-title">Blog Details</div>
+                
                 <div class="form-grid">
-                    <!-- Plan Name -->
+                    <!-- Blog Name -->
                     <div class="form-group">
                         <label class="form-label">
                             Title <span>*</span>
