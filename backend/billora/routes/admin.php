@@ -142,6 +142,8 @@ Route::middleware(['web', 'admin.auth'])->prefix('admin')->group(function () {
         Route::get('/trashed',[BlogController::class,'trashed'])->name('admin.blogs.trash');
         Route::delete('/force-delete/{id}',[BlogController::class,'forceDelete'])->name('admin.blogs.force-delete');
         Route::post('/restore/{id}',[BlogController::class,'restore'])->name('admin.blogs.restore');
+
+        Route::post('/update-admin-user/{id}',[BlogController::class,'updateAdminUser'])->name('admin.blogs.update-admin-user');
         
     });
     Route::prefix('blog-tag')->group(function (){

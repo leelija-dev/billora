@@ -10,6 +10,7 @@ use App\Models\Tags;
 use App\Models\BlogCategories;
 use App\Models\BlogFaq;
 use App\Models\BlogTags;
+use App\Models\AdminUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
@@ -40,12 +41,14 @@ class BlogController extends Controller
             $totalBlog = Blog::withTrashed()->count();
             $activeBlog = Blog::where('status', true)->count();
             $inactiveBlog = Blog::where('status', false)->count();
+            $users = AdminUser::all();
             return [
                 'blogs' => $blogs,
                 'deletedBlog' => $deletedBlog,
                 'totalBlog' => $totalBlog,
                 'activeBlog' => $activeBlog,
-                'inactiveBlog' => $inactiveBlog
+                'inactiveBlog' => $inactiveBlog,
+                'users' => $users
             ];
         });
         return view('admin.blogs.index', $data);
@@ -521,6 +524,22 @@ class BlogController extends Controller
                 'trashed_blogs'
             ])->flush();
             return redirect()->route('admin.blogs.trash')->with('success', 'Blog permanently deleted successfully');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+     public function updateAdminUser($id,Request $request){
+        $validated = $request->validate([
+            'user_id' => 'required|exists:admin_users,id',
+        ]);
+        // dd($id, $validated);
+        try {
+            $blog = Blog::withTrashed()->findOrFail($id);
+           $blog->created_by = $validated['user_id'];
+            $blog->save();
+            Cache::tags(['blogs'])->flush();
+               return back()->with('success', 'Blog admin user updated successfully');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }

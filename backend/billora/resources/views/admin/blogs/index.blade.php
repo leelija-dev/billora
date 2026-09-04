@@ -869,11 +869,24 @@
                                         </div>
 
                                         @if ($blog->user)
-                                            <div class="text-xs  text-gray-500">
+                                            <div class="text-xs text-gray-500">
                                                 {{ $blog->user->fname ?? '' }} {{ $blog->user->lname ?? '' }}
                                             </div>
                                         @endif
-                                    </td>
+
+                                        <button type="button"
+                                            onclick="openEditUserModal(
+                '{{ $blog->id }}',
+                '{{ $blog->created_by }}',
+                '{{ route('admin.blogs.update-admin-user', $blog->id) }}'
+            )"
+                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-xl 
+                bg-gray-100 text-gray-600 hover:bg-gray-600 hover:text-white 
+                transition-all duration-300 shadow-sm hover:shadow-md"
+                                                    title="Edit Blog Author">
+                                                    <i class="fas fa-edit text-xs text-gray-400"></i>
+                                                </button>
+                                            </td>
                                     <td class="text-center">
                                         {{ $blog->created_at->format('d M Y h:i A') }}
                                     </td>
@@ -938,6 +951,70 @@
                         @endif
                     </tbody>
                 </table>
+                 <div id="editUserModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+                    <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl" onclick="event.stopPropagation()">
+
+                        {{-- Header --}}
+                        <div class="flex items-center justify-between border-b px-6 py-4">
+                            <h2 class="text-lg font-semibold text-gray-800">
+                                Edit Blog Author
+                            </h2>
+
+                            <button type="button" onclick="closeEditUserModal()"
+                                class="text-gray-400 hover:text-gray-700 text-2xl">
+                                &times;
+                            </button>
+                        </div>
+
+                        {{-- Form --}}
+                        <form id="editUserForm" method="POST">
+
+                            @csrf
+
+
+                            <div class="px-6 py-5">
+
+                                <label for="edit_user_id" class="block mb-2 text-sm font-semibold text-gray-700">
+                                    Select Author
+                                </label>
+
+                                <select id="edit_user_id" name="user_id" required
+                                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700">
+                                    <option value="" hidden>Select Author</option>
+
+                                    @foreach ($users as $user)
+                                        <option value="{{ $user->id }}">
+                                            {{ $user->username }}
+
+                                            @if ($user->fname || $user->lname)
+                                                - {{ $user->fname }} {{ $user->lname }}
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                            </div>
+
+                            {{-- Footer --}}
+                            <div class="flex justify-end gap-3 border-t px-6 py-4">
+
+                                <button type="button" onclick="closeEditUserModal()"
+                                    class="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold
+                           text-gray-700 hover:bg-red-400 hover:text-white transition">
+                                    Cancel
+                                </button>
+
+                                <button type="submit"
+                                    class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold
+                           text-white hover:bg-blue-700 transition">
+                                    Update Author
+                                </button>
+
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
             </div>
 
             <!-- Pagination -->
@@ -1075,5 +1152,54 @@
 
             });
         }
+    </script>
+    <script>
+        function openEditUserModal(blogId, userId, updateUrl) {
+
+            const modal = document.getElementById('editUserModal');
+            const form = document.getElementById('editUserForm');
+            const userSelect = document.getElementById('edit_user_id');
+
+            // Set update URL
+            form.action = updateUrl;
+
+            // Select current user
+            userSelect.value = userId || '';
+
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Prevent background scrolling
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeEditUserModal() {
+
+            const modal = document.getElementById('editUserModal');
+
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        // Close when clicking outside modal
+        document.getElementById('editUserModal').addEventListener('click', function(event) {
+
+            if (event.target === this) {
+                closeEditUserModal();
+            }
+
+        });
+
+        // Close with ESC
+        document.addEventListener('keydown', function(event) {
+
+            if (event.key === 'Escape') {
+                closeEditUserModal();
+            }
+
+        });
     </script>
 @endsection
