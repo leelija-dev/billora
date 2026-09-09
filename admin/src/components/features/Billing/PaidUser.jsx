@@ -29,6 +29,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { plansAPI, invoiceAPI, billingAPI, authService } from "../../../services";
 import { usePermissionStore } from "../../../store/permissionStore";
+import { useBusinessTypeStore } from "../../../store/businessTypeStore";
 import SubscriptionCard from "./SubscriptionCard";
 import PaymentHistory from "./PaymentHistory";
 import SubscriptionForm from "./SubscriptionForm";
@@ -43,6 +44,7 @@ import toast from "react-hot-toast";
 
 const PaidUser = () => {
   const { canAccess, user, permissions } = usePermissionStore();
+  const { businessTypes, fetchBusinessTypes, loading: businessTypesLoading } = useBusinessTypeStore();
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -74,12 +76,14 @@ const PaidUser = () => {
   const [showPurchaseForm, setShowPurchaseForm] = useState(false);
   const [purchaseData, setPurchaseData] = useState({
     plan_id: "",
+    business_type_id: "",
     customer_id: "",
     amount: 0,
   });
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
   const [upgradeData, setUpgradeData] = useState({
     plan_id: "",
+    screen_type: "",
     business_type_id: "",
     customer_id: "",
     customer_phone: "",
@@ -610,6 +614,11 @@ const PaidUser = () => {
     }
   }, [paymentStatus]);
 
+  // Fetch business types on component mount
+  useEffect(() => {
+    fetchBusinessTypes();
+  }, [fetchBusinessTypes]);
+
   // Refresh function (manual refresh)
   const refreshData = useCallback(async () => {
     if (fetchInProgressRef.current) {
@@ -796,7 +805,8 @@ const PaidUser = () => {
 
         setUpgradeData({
           plan_id: plan.id,
-          business_type_id: user?.business_type_id || "",
+          screen_type: plan.screen_type || "mobile_with_desktop",
+          business_type_id: user?.business_type_id?.toString() || "",
           customer_id: user?.customer_id || getUserId(),
           customer_phone: user?.phone || "",
           amount: pricing.baseAmount,
@@ -843,9 +853,10 @@ const PaidUser = () => {
     if (
       !upgradeData.plan_id ||
       !upgradeData.customer_id ||
-      !upgradeData.customer_phone
+      !upgradeData.customer_phone ||
+      !upgradeData.business_type_id
     ) {
-      setError("Please fill all required fields");
+      setError("Please fill all required fields including business type");
       return;
     }
 
@@ -864,6 +875,7 @@ const PaidUser = () => {
       const upgradePayload = {
         amount: amountToSend,
         plan_id: upgradeData.plan_id,
+        screen_type: upgradeData.screen_type,
         business_type_id: upgradeData.business_type_id,
         customer_id: upgradeData.customer_id,
         customer_phone: upgradeData.customer_phone,
@@ -919,6 +931,7 @@ const PaidUser = () => {
           setSelectedPlan(null);
           setUpgradeData({
             plan_id: "",
+            screen_type: "",
             business_type_id: "",
             customer_id: "",
             customer_phone: "",
@@ -963,6 +976,7 @@ const PaidUser = () => {
     setSelectedPlan(plan);
     setPurchaseData({
       plan_id: plan.id,
+      business_type_id: user?.business_type_id?.toString() || "",
       customer_id: "",
       amount: plan.price || plan.amount || 0,
     });
@@ -974,9 +988,10 @@ const PaidUser = () => {
     if (
       !purchaseData.plan_id ||
       !purchaseData.customer_id ||
-      !purchaseData.amount
+      !purchaseData.amount ||
+      !purchaseData.business_type_id
     ) {
-      setError("Please fill all required fields");
+      setError("Please fill all required fields including business type");
       return;
     }
 
@@ -988,6 +1003,7 @@ const PaidUser = () => {
       const orderResponse = await billingAPI.createCashfreeOrder({
         amount: purchaseData.amount,
         plan_id: purchaseData.plan_id,
+        business_type_id: purchaseData.business_type_id,
         customer_id: purchaseData.customer_id,
       });
 
@@ -1644,6 +1660,26 @@ const PaidUser = () => {
                         </div>
                       </div>
 
+                      {/* Business Type Selector */}
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Business Type *
+                        </label>
+                        <Select
+                          value={upgradeData.business_type_id}
+                          onChange={(e) =>
+                            setUpgradeData((prev) => ({
+                              ...prev,
+                              business_type_id: e.target.value,
+                            }))
+                          }
+                          options={businessTypes.filter(type => type.value !== '')}
+                          className="w-full"
+                          placeholder="Select business type"
+                          loading={businessTypesLoading}
+                        />
+                      </div>
+
                       <div className="flex items-center justify-end space-x-3">
                         <Button
                           type="button"
@@ -2147,6 +2183,25 @@ const PaidUser = () => {
                       }
                       required
                     />
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Business Type *
+                      </label>
+                      <Select
+                        value={purchaseData.business_type_id}
+                        onChange={(e) =>
+                          setPurchaseData({
+                            ...purchaseData,
+                            business_type_id: e.target.value,
+                          })
+                        }
+                        options={businessTypes.filter(type => type.value !== '')}
+                        className="w-full"
+                        placeholder="Select business type"
+                        loading={businessTypesLoading}
+                      />
+                    </div>
 
                     <Input
                       type="hidden"

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Stocks;
 use Illuminate\Support\Facades\Cache;
 class GenerateStockQrJob implements ShouldQueue
@@ -45,6 +46,6 @@ class GenerateStockQrJob implements ShouldQueue
                     'gst_collection_user_' . $stock->user_id,
                     'billing_user_' . $stock->user_id,
                     'seller_user_' . $stock->user_id
-            ])->flush();
+                ])->flush();
     }
 }

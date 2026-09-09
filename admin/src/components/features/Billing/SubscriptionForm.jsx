@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   FiCheckCircle,
@@ -13,10 +13,11 @@ import {
   FiShield,
   FiCloud,
   FiAward,
+  FiMonitor,
+  FiSmartphone,
 } from "react-icons/fi";
 import Button from "../../common/Button/Button";
 import Select from "../../common/Select/Select";
-import { useBusinessTypeStore } from "../../../store/businessTypeStore";
 
 const SubscriptionForm = ({
   plans,
@@ -32,10 +33,14 @@ const SubscriptionForm = ({
     currentPlan,
   );
   const [selectedPlanId, setSelectedPlanId] = useState(currentPlan?.id || "");
-  const [selectedBusinessType, setSelectedBusinessType] = useState("");
+  const [selectedScreenType, setSelectedScreenType] = useState("mobile_with_desktop");
   const [error, setError] = useState("");
 
-  const { businessTypes, fetchBusinessTypes, loading } = useBusinessTypeStore();
+  const screenTypes = [
+    { value: "desktop", label: "Desktop Only", icon: FiMonitor },
+    { value: "mobile", label: "Mobile Only", icon: FiSmartphone },
+    { value: "mobile_with_desktop", label: "Mobile+Desktop", icon: FiMonitor },
+  ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -103,10 +108,6 @@ const SubscriptionForm = ({
     return features.slice(0, 2);
   };
 
-  useEffect(() => {
-    fetchBusinessTypes();
-  }, [fetchBusinessTypes]);
-
   return (
     <motion.form
       initial={{ opacity: 0 }}
@@ -146,22 +147,16 @@ const SubscriptionForm = ({
         </div>
       </div>
 
-      {/* Business Type Filter */}
+      {/* Screen Type Filter */}
       <div className="flex justify-center">
         <div className="w-full max-w-xs">
           <Select
-            label="Filter by Business Type"
-            value={selectedBusinessType}
-            onChange={(e) => setSelectedBusinessType(e.target.value)}
-            options={businessTypes}
+            label="Filter by Screen Type"
+            value={selectedScreenType}
+            onChange={(e) => setSelectedScreenType(e.target.value)}
+            options={screenTypes}
             className="w-full"
-            disabled={loading}
           />
-          {loading && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
-              Loading business types...
-            </p>
-          )}
         </div>
       </div>
 
@@ -176,19 +171,8 @@ const SubscriptionForm = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
         {plans
           .filter((plan) => {
-            if (!selectedBusinessType) return true;
-            if (!plan.business_types || !Array.isArray(plan.business_types))
-              return false;
-            return plan.business_types.some((bt) => {
-              const businessTypeId = bt.business_type_id?.toString();
-              const businessTypeName = bt.business_type?.name?.toLowerCase();
-              const selectedTypeLower = selectedBusinessType.toLowerCase();
-              return (
-                businessTypeId === selectedTypeLower ||
-                businessTypeName === selectedTypeLower ||
-                bt.business_type?.slug?.toLowerCase() === selectedTypeLower
-              );
-            });
+            if (!selectedScreenType) return true;
+            return plan.screen_type === selectedScreenType;
           })
           .map((plan, index) => {
             const Icon = getPlanIcon(plan.name);
@@ -443,7 +427,7 @@ const SubscriptionForm = ({
               <span className="font-semibold text-gray-900 dark:text-white">
                 Need help choosing?
               </span>{" "}
-              Filter plans by business type to find the best plan for your
+              Filter plans by screen type to find the best plan for your
               needs. All plans include 24/7 support and regular updates.
               Discounted prices are shown where applicable.
             </p>

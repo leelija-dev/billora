@@ -876,17 +876,17 @@
 
                                         <button type="button"
                                             onclick="openEditUserModal(
-        '{{ $blog->id }}',
-        '{{ $blog->created_by }}',
-        '{{ route('admin.blogs.update-admin-user', $blog->id) }}'
-    )"
-                                            class="inline-flex items-center justify-center w-10 h-10 rounded-xl 
-           bg-gray-100 text-gray-600 hover:bg-gray-600 hover:text-white 
-           transition-all duration-300 shadow-sm hover:shadow-md"
-                                            title="Edit Blog Author">
-                                            <i class="fas fa-edit text-xs text-gray-400"></i>
-                                        </button>
-                                    </td>
+                '{{ $blog->id }}',
+                '{{ $blog->created_by }}',
+                '{{ route('admin.blogs.update-admin-user', $blog->id) }}'
+            )"
+                                                    class="inline-flex items-center justify-center w-10 h-10 rounded-xl 
+                bg-gray-100 text-gray-600 hover:bg-gray-600 hover:text-white 
+                transition-all duration-300 shadow-sm hover:shadow-md"
+                                                    title="Edit Blog Author">
+                                                    <i class="fas fa-edit text-xs text-gray-400"></i>
+                                                </button>
+                                            </td>
                                     <td class="text-center">
                                         {{ $blog->created_at->format('d M Y h:i A') }}
                                     </td>
@@ -951,7 +951,7 @@
                         @endif
                     </tbody>
                 </table>
-                <div id="editUserModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+                 <div id="editUserModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
                     <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl" onclick="event.stopPropagation()">
 
                         {{-- Header --}}

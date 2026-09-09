@@ -33,9 +33,11 @@ export default function CategoryClient({ initialData, categorySlug, categoryName
         setLoadingMore(true);
       }
 
-      // Use the decoded category name for the API call
-      const response = await blogApi.getBlogsByCategory(categoryName, { page });
+      // Use the slug directly for the API call (backend expects slug, not decoded name)
+      const response = await blogApi.getBlogsByCategory(categorySlug, { page });
       const data = response.data;
+
+      // console.log('Fetched blogs by category:', data);
 
       if (data.status) {
         const blogData = data.blogs?.data || [];

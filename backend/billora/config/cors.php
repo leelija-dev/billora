@@ -24,7 +24,7 @@ return [
         '*',
         'Content-Type',
         'Authorization',
-        'X-Requested-With',
+        'X-Requested-With',  
         'X-CSRF-TOKEN',
         'Accept',
     ],

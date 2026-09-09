@@ -31,14 +31,6 @@ export const blogApi = {
     return response;
   },
 
-  // Get blogs by category
-  getBlogsByCategory: async (categoryId, params = {}) => {
-    const response = await apiClient.get('/blog', {
-      params: { category_id: categoryId, ...params }
-    });
-    return response;
-  },
-
   // Search blogs
   searchBlogs: async (query, params = {}) => {
     const response = await apiClient.get('/blog', {
@@ -61,9 +53,9 @@ export const blogApi = {
     return response;
   },
 
-  // Get blogs by category
-  getBlogsByCategory: async (categoryName, params = {}) => {
-    const response = await apiClient.get(`/blog/category/${categoryName}`, { params });
+  // Get blogs by category slug
+  getBlogsByCategory: async (categorySlug, params = {}) => {
+    const response = await apiClient.get(`/blog/category/${categorySlug}`, { params });
     return response;
   },
 };

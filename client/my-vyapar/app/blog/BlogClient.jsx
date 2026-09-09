@@ -61,6 +61,7 @@ export default function BlogClient({ initialData }) {
 
       const response = await blogApi.getBlogs(params);
       const data = response.data;
+      // console.log('Fetched blogs:', data);
 
       if (data.status) {
         const blogData = data.blogs?.data || [];

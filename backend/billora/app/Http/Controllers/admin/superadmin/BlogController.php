@@ -529,7 +529,7 @@ class BlogController extends Controller
         }
     }
 
-    public function updateAdminUser($id,Request $request){
+     public function updateAdminUser($id,Request $request){
         $validated = $request->validate([
             'user_id' => 'required|exists:admin_users,id',
         ]);
