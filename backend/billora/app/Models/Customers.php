@@ -104,5 +104,8 @@ public function plan()
     {
         return $this->hasMany(Store::class, 'user_id');
     }
-
+    public function notifications()
+{
+    return $this->hasMany(Notification::class, 'user_id');
+}
 }

@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Http;
 use function PHPSTORM_META\map;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use App\Events\NewOrderNotification;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Log;
 class UserOrdersController extends Controller
 {
     public function store(Request $request)   // store order and order items
@@ -176,7 +179,34 @@ class UserOrdersController extends Controller
         }
 
         DB::commit();
-
+            $adminId = (int) $data['user_id'];
+ 
+// Create notification in database
+Notification::create([
+    'user_id' => $adminId,
+    'title' => 'New Order',
+    'message' => 'You have received a new order #' . $orders->order_id,
+    'notification_type' => 'new_order',
+]);
+ 
+// Broadcast real-time notification
+Log::info('About to broadcast order notification', [
+    'adminId' => $adminId, 
+    'orderId' => $orders->id,
+    'order_id' => $orders->order_id
+]);
+ 
+broadcast(new NewOrderNotification(
+    $adminId,
+    $orders->id,
+    $orders->order_id,
+    'New Order',
+    'You have received a new order #' . $orders->order_id,
+    $orders->created_at->toDateTimeString()
+));
+ 
+Log::info('Order notification broadcast completed');
+ 
         // =========================
         // RESPONSE
         // =========================

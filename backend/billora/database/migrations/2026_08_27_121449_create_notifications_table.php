@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
-            $table->unsingnedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id');
             $table->string('title')->nullable();
             $table->string('message')->nullable();
-            $table->boolean('read_at')->default(false);
+            $table->string('notification_type')->nullable();
+            $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });
     }
@@ -27,5 +28,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('notifications');
+        
     }
 };

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use App\Models\Stocks;
+use Illuminate\Support\Facades\Cache;
 class GenerateStockQrJob implements ShouldQueue
 {
     use Queueable;
@@ -38,5 +39,12 @@ class GenerateStockQrJob implements ShouldQueue
             'bar_code' => $barcode['url'],
             'bar_code_public_id' => $barcode['public_id'],
         ]);
+        Cache::tags([
+                    'stock_user_' . $stock->user_id,
+                    'products_user_' . $stock->user_id,
+                    'gst_collection_user_' . $stock->user_id,
+                    'billing_user_' . $stock->user_id,
+                    'seller_user_' . $stock->user_id
+            ])->flush();
     }
 }
