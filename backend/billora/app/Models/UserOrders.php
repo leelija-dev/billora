@@ -20,6 +20,7 @@ class UserOrders extends Model
         'customer_name',
         'customer_phone',
         'order_by',
+        'view_order_status',
         'created_by'
         
     ];

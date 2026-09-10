@@ -133,6 +133,8 @@ Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::put('/update-payment-status/{id}', [UserOrdersController::class, 'updatePaymentStatus']);
    Route::put('/update-order-payment/{id}', [UserOrdersController::class, 'updateOrderPayment']);
    Route::get('/user-order-due/{id}',[UserOrdersController::class,'userOrderDue']);
+
+   Route::put('/update-order-view-status/{id}', [UserOrdersController::class, 'updateOrderViewStatus']);
 });
 //bill generate from product table(with out stock management)
 Route::prefix('invoices')->group(function () {

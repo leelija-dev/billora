@@ -467,4 +467,33 @@ Log::info('Order notification broadcast completed');
             ]);
         }
     }
+
+    public function updateOrderViewStatus($id){
+        try{
+            $user= Auth::user()->id;
+            $order = UserOrders::where('id', $id)->where('user_id', $user)->first();
+            if(!$order){
+                return response()->json([
+                    'status' =>false,
+                    'message'=>'order not found!'
+                ]);
+              }else{
+                $order->update([
+                    'view_order_status' => true
+                ]);
+                 Cache::tags(["order_user_" . $order->user_id])->flush();
+                 return response()->json([
+                    'status' =>true,
+                    'message'=>'order view status updated successfully',
+                    'data' => $order
+                 ]);
+              }
+
+        }catch(\Exception $e){
+            return response()->json([
+                'status' =>false,
+                'message' =>$e->getMessage()
+            ]);
+        }
+    }
 }
