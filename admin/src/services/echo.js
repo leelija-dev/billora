@@ -2,6 +2,9 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 
+const token= localStorage.getItem('auth_token');
+
+
 window.Pusher = Pusher;
 
 window.Echo = new Echo({
@@ -22,7 +25,7 @@ window.Echo = new Echo({
     auth: {
         headers: {
             Accept: "application/json",
-            Authorization: `Bearer 384|504OEuZ59I2JWmBEIo5uVHI575C7DMeA3WDR1Xrx13cfe12b`,
+            Authorization: `Bearer ${token}`,
         },
     },
 });

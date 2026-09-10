@@ -3,10 +3,14 @@ import React, { useEffect, useRef } from 'react';
 import AppRoutes from './routes/AppRoutes';
 import { useAuthStore } from './store/authStore';
 import { useUIStore } from './store/uiStore';
+import { setupAutoNotificationListener } from './services/notificationListener';
+import { useNotificationStore } from './store/notificationStore';
+import CustomToast from './components/common/CustomToast/CustomToast';
 
 function App() {
   const { theme } = useUIStore();
   const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
+  const { addNotification } = useNotificationStore();
   const authChecked = useRef(false);
 
   useEffect(() => {
@@ -25,6 +29,44 @@ function App() {
     }
   }, [checkAuth]);
 
+  // Setup notification listener
+  useEffect(() => {
+    const cleanup = setupAutoNotificationListener((event) => {
+      console.log("🔔 New order notification received:", event);
+      
+      const newNotification = {
+        id: `order-${event.order_id}-${Date.now()}`,
+        title: event.title || 'New Order',
+        description: event.message || 'You have a new order',
+        type: 'order',
+        priority: 'high',
+        read: false,
+        time: event.order_time || new Date().toISOString(),
+        data: {
+          orderId: event.order_id,
+          link: `/orders/${event.order_id}`,
+        },
+      };
+
+      // Add notification to store (this updates the UI)
+      addNotification(newNotification);
+
+      // Show custom green toast with title, time, and message
+      if (window.showCustomToast) {
+        window.showCustomToast({
+          title: event.title || 'New Order',
+          message: event.message || 'You have a new order',
+          time: event.order_time || new Date().toLocaleString(),
+          duration: 5000
+        });
+      }
+    });
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [addNotification]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -39,6 +81,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <AppRoutes />
+      <CustomToast />
     </div>
   );
 }

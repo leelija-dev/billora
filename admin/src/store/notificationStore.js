@@ -141,6 +141,15 @@ export const useNotificationStore = create(
           };
         });
       },
+
+      // Add new notification (for real-time notifications)
+      addNotification: (notification) => {
+        set((state) => ({
+          notifications: [notification, ...state.notifications],
+        }));
+        // Show toast notification
+        // toast.success(notification.title || 'New notification');
+      },
     }),
     {
       name: 'notification-storage',

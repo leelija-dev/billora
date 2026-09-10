@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/authStore';
 import { useUIStore } from '../../../store/uiStore';
 import { useNotificationStore } from '../../../store/notificationStore';
-import { listenForNotifications } from "../../../services/notificationListener";
+import toast from 'react-hot-toast';
 import {
   FiMenu,
   FiSun,
@@ -55,43 +55,6 @@ const Navbar = () => {
       initializeNotifications(user.id);
     }
   }, [user?.id, initializeNotifications]);
-  //lakshman add
-  useEffect(() => {
-    if (!user?.id) {
-        return;
-    }
-
-    console.log("Starting notification listener for user:", user.id);
-
-   const stopListening = listenForNotifications(
-    user.id,
-    (event) => {
-        console.log("🔔 NEW ORDER RECEIVED:", event);
-
-        const newNotification = {
-            id: `order-${event.order_id}-${Date.now()}`,
-            title: event.title || 'New Order',
-            description: event.message || 'You have a new order',
-            type: 'order',
-            priority: 'high',
-            read: false,
-            time: event.order_time || new Date().toISOString(),
-            data: {
-                orderId: event.order_id,
-                link: `/orders/${event.order_id}`,
-            },
-        };
-
-        // ✅ Add notification to store (this updates the UI)
-        useNotificationStore.getState().addNotification(newNotification);
-    }
-);
-
-    return () => {
-        stopListening();
-    };
-}, [user?.id]);
-  //lakshman end
 
   // Handle click outside
   useEffect(() => {
@@ -232,20 +195,7 @@ const Navbar = () => {
       const unreadNotifications = sortedNotifications.filter(n => !n.read);
       
       for (const notification of unreadNotifications) {
-        if (notification.id === 'plan-expiry') {
-          // Update plan expiry reminder in store
-          updateNotification({ 
-            ...notification, 
-            read: true,
-            planExpireReminder: {
-              ...planExpireReminder,
-              read: true
-            }
-          });
-        } else {
-          // Update regular notification
-          updateNotification({ ...notification, read: true });
-        }
+        updateNotification({ ...notification, read: true });
       }
       
       toast.success('All notifications marked as read');
@@ -260,18 +210,7 @@ const Navbar = () => {
   // Mark single notification as read
   const markAsRead = async (notification) => {
     try {
-      if (notification.id === 'plan-expiry') {
-        updateNotification({ 
-          ...notification, 
-          read: true,
-          planExpireReminder: {
-            ...planExpireReminder,
-            read: true
-          }
-        });
-      } else {
-        updateNotification({ ...notification, read: true });
-      }
+      updateNotification({ ...notification, read: true });
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }

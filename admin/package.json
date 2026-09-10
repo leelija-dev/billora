@@ -21,7 +21,7 @@
     "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
-    "laravel-echo": "^2.4.0",
+    "laravel-echo": "^2.5.0",
     "lodash": "^4.18.1",
     "lucide-react": "^1.7.0",
     "pusher-js": "^8.6.0",
