@@ -33,22 +33,64 @@ export default async function sitemap() {
   try {
     // Remove /api suffix if present to avoid double /api in URL
     const apiBaseUrl = API_BASE_URL.replace(/\/api$/, '')
-    const response = await fetch(`${apiBaseUrl}/api/blog`, {
-      next: { revalidate: 3600 } // Revalidate every hour
-    })
+    // const response = await fetch(`${apiBaseUrl}/api/blog`, {
+    //   next: { revalidate: 3600 } // Revalidate every hour
+    // })
     
-    if (response.ok) {
-      const data = await response.json()
-      // Handle Laravel pagination structure: { blogs: { data: [...] } }
-      const blogs = data.blogs?.data || data.data || data.blogs || data || []
+    // if (response.ok) {
+    //   const data = await response.json()
+    //   // Handle Laravel pagination structure: { blogs: { data: [...] } }
+    //   const blogs = data.blogs?.data || data.data || data.blogs || data || []
       
-      blogUrls = blogs.map((blog) => ({
-        url: `${baseUrl}blog/${blog.slug}`,
-        lastModified: blog.updated_at ? new Date(blog.updated_at) : (blog.created_at ? new Date(blog.created_at) : new Date()),
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      }))
+    //   blogUrls = blogs.map((blog) => ({
+    //     url: `${baseUrl}blog/${blog.slug}`,
+    //     lastModified: blog.updated_at ? new Date(blog.updated_at) : (blog.created_at ? new Date(blog.created_at) : new Date()),
+    //     changeFrequency: 'weekly',
+    //     priority: 0.7,
+    //   }))
+    // }
+    const response = await fetch(`${apiBaseUrl}/api/blog?page=1`, {
+  next: { revalidate: 3600 }
+})
+
+if (response.ok) {
+  const firstData = await response.json()
+
+  const lastPage = firstData.blogs?.last_page || 1
+
+  let allBlogs = firstData.blogs?.data || []
+
+  // Automatically fetch remaining pages
+  if (lastPage > 1) {
+    for (let page = 2; page <= lastPage; page++) {
+      const pageResponse = await fetch(
+        `${apiBaseUrl}/api/blog?page=${page}`,
+        {
+          next: { revalidate: 3600 }
+        }
+      )
+
+      if (pageResponse.ok) {
+        const pageData = await pageResponse.json()
+
+        const blogs = pageData.blogs?.data || []
+
+        allBlogs.push(...blogs)
+      }
     }
+  }
+
+  blogUrls = allBlogs.map((blog) => ({
+    url: `${baseUrl}/blog/${blog.slug}`,
+    lastModified: blog.updated_at
+      ? new Date(blog.updated_at)
+      : blog.created_at
+        ? new Date(blog.created_at)
+        : new Date(),
+    changeFrequency: 'weekly',
+    priority: 0.7,
+  }))
+}
   } catch (error) {
     console.error('Error fetching blogs for sitemap:', error)
     // Continue with static URLs if blog fetch fails

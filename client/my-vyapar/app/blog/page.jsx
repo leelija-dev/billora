@@ -3,6 +3,7 @@ import { createMetadata } from '@/utils/seo';
 import BlogClient from './BlogClient';
 import { blogApi } from '@/services/blogApi';
 
+export const dynamic = 'force-dynamic';
 // This runs on the server - no authentication needed
 async function getBlogs() {
   try {
