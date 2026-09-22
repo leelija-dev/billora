@@ -81,7 +81,7 @@ if (response.ok) {
   }
 
   blogUrls = allBlogs.map((blog) => ({
-    url: `${baseUrl}/blog/${blog.slug}`,
+    url: `${baseUrl}blog/${blog.slug}`,
     lastModified: blog.updated_at
       ? new Date(blog.updated_at)
       : blog.created_at
