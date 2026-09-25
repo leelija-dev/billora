@@ -12,6 +12,18 @@ function App() {
   const { checkAuth, isAuthenticated, isLoading } = useAuthStore();
   const { addNotification } = useNotificationStore();
   const authChecked = useRef(false);
+useEffect(() => {
+    fetch(import.meta.env.VITE_BACKEND_URL + '/api/session-token', {
+      credentials: 'include',
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.token) {
+          localStorage.setItem('auth_token', data.token);
+        }
+      })
+      .catch((err) => console.error('❌ session-token fetch failed:', err));
+  }, []);
 
   useEffect(() => {
     if (theme === 'dark') {

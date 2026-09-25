@@ -31,13 +31,24 @@ use App\Http\Controllers\admin\TestimonialsController;
 use App\Http\Controllers\SocialConnectController;
 use App\Models\User;
 use App\Models\UserOrders;
-
+use Illuminate\Support\Facades\Auth;
 
 // Public routes
 Route::get('/sanctum/csrf-cookie', function () {
     return response()->json(['message' => 'CSRF cookie set']);
 });
 
+
+Route::middleware('web')->get('/session-token', function (\Illuminate\Http\Request $request) {
+    if (!Auth::check()) {
+        return response()->json(['token' => null], 401);
+    }
+
+    $user = Auth::user();
+    $token = $user->createToken('auth-token')->plainTextToken;
+
+    return response()->json(['token' => $token]);
+});
 Route::get('/test', function () {
    return response()->json([
        'message' => 'Hello World',
