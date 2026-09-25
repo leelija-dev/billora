@@ -620,6 +620,7 @@
                 <div class="form-title">Blog Details</div>
                 
                 <div class="form-grid">
+                    <input type="hidden" name="page" value="{{ request()->query('page', 1) }}">
                     <!-- Blog Name -->
                     <div class="form-group">
                         <label class="form-label">

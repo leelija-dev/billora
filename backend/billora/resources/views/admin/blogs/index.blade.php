@@ -895,7 +895,7 @@
 
 
                                             <!-- Edit Button -->
-                                            <a href="{{ route('admin.blogs.edit', $blog->id) }}"
+                                            <a href="{{ route('admin.blogs.edit', ['id' => $blog->id, 'page' => request()->query('page', 1)]) }}"
                                                 class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
                                                 title="Edit Blog">
 

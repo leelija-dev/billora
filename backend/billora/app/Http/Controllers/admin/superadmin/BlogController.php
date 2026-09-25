@@ -116,7 +116,7 @@ class BlogController extends Controller
                 $validated['feature_image_public_id'] = $upload['public_id'];
             }
 
-
+            $validated['slug'] = Str::slug($validated['slug']);
             // Create Blog
             $blog = Blog::create([
                 'title'              => $validated['title'],
@@ -246,7 +246,7 @@ class BlogController extends Controller
     public function update(Request $request, $id)
     {
         $blog = Blog::withTrashed()->findOrFail($id);
-
+        $currentPage = $request->input('page', 1);
         $validated = $request->validate([
             'title'               => 'required|string|max:255',
             'slug'                => 'required|string|max:255|unique:blog,slug,' . $blog->id,
@@ -277,7 +277,7 @@ class BlogController extends Controller
         try {
 
             //Upload New Image & Delete Old Image
-
+        
          if ($request->hasFile('feature_image')) {
            if (!empty($blog->feature_image_public_id)) {
 
@@ -329,7 +329,7 @@ class BlogController extends Controller
 
             //Update Blog
 
-
+            $validated['slug'] = Str::slug($validated['slug']);
             $blog->update([
                 'title'              => $validated['title'],
                 'slug'               => $validated['slug'],
@@ -413,7 +413,7 @@ class BlogController extends Controller
             DB::commit();
             Cache::tags(['blogs'])->flush();
             return redirect()
-                ->route('admin.blogs.index')
+                ->route('admin.blogs.index',['page' => $currentPage,])
                 ->with('success', 'Blog updated successfully.');
         } catch (\Exception $e) {
 
