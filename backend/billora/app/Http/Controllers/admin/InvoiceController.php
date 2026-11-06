@@ -416,7 +416,8 @@ class InvoiceController extends Controller
                 'single_invoice_' . $user,
                 'with_out_stock_user_' . $user,
                 'gst_collection_user_' . $user,
-                'bill_customers_user_' . $user
+                'bill_customers_user_' . $user,
+                'stock_user_' . $user
 
             ])->flush();
             Cache::forget("report_{$invoice->user_id}_today_today_page_1");
