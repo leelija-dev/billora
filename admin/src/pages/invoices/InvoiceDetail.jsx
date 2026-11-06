@@ -58,7 +58,36 @@ const DUE_PAYMENT_METHOD_OPTIONS = [
   { value: "Bank Transfer", label: "Bank Transfer" },
   { value: "Cheque", label: "Cheque" },
 ];
+// "Red / XL" from a variant object
+const getVariantLabel = (variant) => {
+  if (!variant) return "";
+  if (typeof variant === "string") return variant;
+  if (variant.name) return variant.name;
+  return [
+    variant.size,
+    variant.color,
+    variant.material,
+    variant.gender,
+    variant.weight,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+};
 
+// Copy of the invoice with "Product (Variant)" names, used only for printing
+const buildPrintInvoice = (invoice, hasStockPermission) => {
+  if (!hasStockPermission) return invoice;
+
+  return {
+    ...invoice,
+    items: (invoice.items || []).map((item) => {
+      const label = getVariantLabel(item.variants?.[0]);
+      return label
+        ? { ...item, product_name: `${item.product_name} (${label})` }
+        : item;
+    }),
+  };
+};
 const InvoiceDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -412,7 +441,18 @@ const InvoiceDetail = () => {
                     ) {
                       productData = productResponse.data;
                     }
+                      // Variant sold on THIS invoice item (from its stock), not all product variants
+const allVariants =
+  Array.isArray(productData.variants) && productData.variants.length > 0
+    ? productData.variants
+    : item.product?.variants || [];
 
+const stockVariantId = item.stock?.product_variant_id;
+const soldVariant =
+  item.stock?.product_variant ||
+  (stockVariantId
+    ? allVariants.find((v) => Number(v.id) === Number(stockVariantId))
+    : null);
                     return {
                       ...item,
                       product_name:
@@ -421,7 +461,8 @@ const InvoiceDetail = () => {
                         item.name ||
                         `Product #${item.product_id || item.id || "Unknown"}`,
                       attributes: productData.attributes || [],
-                      variants: productData.variants || [],
+                      // variants: productData.variants || [],
+                      variants: soldVariant ? [soldVariant] : [],
                       product_image: productData.image || null,
 
                       price: parseFloat(
@@ -462,7 +503,18 @@ const InvoiceDetail = () => {
                       gst: parseFloat(item.gst || 0),
                       discount: parseFloat(item.discount || 0),
                       attributes: [],
-                      variants: [],
+                      // variants: [],
+                      variants: (() => {
+                        const id = item.stock?.product_variant_id;
+                        const v =
+                          item.stock?.product_variant ||
+                          (id
+                            ? (item.product?.variants || []).find(
+                                (x) => Number(x.id) === Number(id),
+                              )
+                            : null);
+                        return v ? [v] : [];
+                      })(),
                     };
                   });
               }
@@ -751,18 +803,29 @@ const InvoiceDetail = () => {
     }
   };
 
+  // const handlePrint = () => {
+  //   console.log("checking invoice ..........", invoice);
+  //   printA4Invoice(invoice);
+  // };
+
+  // const handlePrintThermal = () => {
+  //   printThermalInvoice(invoice);
+  // };
+
+  // const handleDownloadPDF = () => {
+  //   downloadInvoicePDF(invoice, "a4");
+  // };
   const handlePrint = () => {
-    console.log("checking invoice ..........", invoice);
-    printA4Invoice(invoice);
-  };
+  printA4Invoice(buildPrintInvoice(invoice, hasStockPermission));
+};
 
-  const handlePrintThermal = () => {
-    printThermalInvoice(invoice);
-  };
+const handlePrintThermal = () => {
+  printThermalInvoice(buildPrintInvoice(invoice, hasStockPermission));
+};
 
-  const handleDownloadPDF = () => {
-    downloadInvoicePDF(invoice, "a4");
-  };
+const handleDownloadPDF = () => {
+  downloadInvoicePDF(buildPrintInvoice(invoice, hasStockPermission), "a4");
+};
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -1503,23 +1566,23 @@ const InvoiceDetail = () => {
                                                   const variantValues = [];
                                                   if (variant.size)
                                                     variantValues.push(
-                                                      ` ${variant.size}`,
+                                                      `Size: ${variant.size}`,
                                                     );
                                                   if (variant.color)
                                                     variantValues.push(
-                                                      `${variant.color}`,
+                                                      `Color: ${variant.color}`,
                                                     );
                                                   if (variant.material)
                                                     variantValues.push(
-                                                      `${variant.material}`,
+                                                      `Material: ${variant.material}`,
                                                     );
                                                   if (variant.gender)
                                                     variantValues.push(
-                                                      `${variant.gender}`,
+                                                      `Gender: ${variant.gender}`,
                                                     );
                                                   if (variant.weight)
                                                     variantValues.push(
-                                                      `${variant.weight}`,
+                                                      `Weight: ${variant.weight}`,
                                                     );
 
                                                   // If variant is a string or has other properties

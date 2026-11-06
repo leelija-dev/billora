@@ -307,6 +307,14 @@ const BillGenerateForm = ({
               product.stocks.length > 0
             ) {
               product.stocks.forEach((stock, index) => {
+                // Variant that belongs to THIS stock only
+const stockVariant =
+  stock.product_variant ||
+  (stock.product_variant_id
+    ? (product.variants || []).find(
+        (v) => Number(v.id) === Number(stock.product_variant_id),
+      )
+    : null);
                 transformedProducts.push({
                   id: product.id,
                   stock_id: stock.id,
@@ -317,7 +325,9 @@ const BillGenerateForm = ({
                   category: product.category,
                   unit: product.unit,
                   attributes: product.attributes || [],
-                  variants: product.variants || [],
+                  // variants: product.variants || [],
+                  variants: stockVariant ? [stockVariant] : [],
+                  product_variant_id: stock.product_variant_id || null,
                   price: parseFloat(stock.selling_price || product.selling_price),
                   purchase_price: parseFloat(stock.purchase_price || product.purchase_price),
                   gst_percentage: parseFloat(stock.selling_gst_percentage || product.gst_percentage),
@@ -330,6 +340,7 @@ const BillGenerateForm = ({
                 });
               });
             } else {
+              
               transformedProducts.push({
                 id: product.id,
                 stock_id: null,
@@ -341,7 +352,9 @@ const BillGenerateForm = ({
                 unit: product.unit,
                 price: parseFloat(product.selling_price),
                 attributes: product.attributes || [],
-                variants: product.variants || [],
+                // variants: product.variants || [],
+                variants: [],            // no stock entry, so no variant to show
+                product_variant_id: null,
                 purchase_price: parseFloat(product.purchase_price),
                 gst_percentage: parseFloat(product.gst_percentage),
                 discount_percentage: parseFloat(product.discount_percentage),
@@ -992,6 +1005,7 @@ const BillGenerateForm = ({
             // Add attributes and variants to the item
             attributes: product.attributes || [],
             variants: product.variants || [],
+            product_variant_id: product.product_variant_id || null,
           };
 
           setFormData((prev) => ({

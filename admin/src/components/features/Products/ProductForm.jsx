@@ -667,10 +667,20 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
     });
 
     // Filter variants to only include those with actual data
-    const validVariants = variants.filter(
-      (variant) =>
-        variant.size || variant.color || variant.material || variant.gender,
-    );
+    // const validVariants = variants.filter(
+    //   (variant) =>
+    //     variant.size || variant.color || variant.material || variant.gender,
+    // );
+    // Keep only rows with data; keep id for existing variants
+const validVariants = variants
+  .filter((v) => v.size || v.color || v.material || v.gender)
+  .map((v) => ({
+    ...(v.id ? { id: v.id } : {}),   // existing variant keeps its id, new rows have none
+    size: v.size || "",
+    color: v.color || "",
+    material: v.material || "",
+    gender: v.gender || "",
+  }));
 
     console.log("🔍 Form submission variants:", variants);
     console.log("🔍 Valid variants after filtering:", validVariants);
@@ -710,6 +720,7 @@ const ProductForm = ({ product, onSubmit, onCancel, isSubmitting }) => {
         .filter((img) => img !== ""),
 
       variants: validVariants,
+      variants_present: 1,
       attributes: attributesArray.length > 0 ? attributesArray : [],
       // Only include warranty_months if user has permission to edit it
       ...(hasWarrantyPermission && {

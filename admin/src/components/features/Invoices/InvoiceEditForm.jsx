@@ -129,7 +129,14 @@ const getVariantDisplayString = (variant) => {
   }
   return String(variant);
 };
-
+// With stock permission, a stock row shows only the variant it points to
+const getStockVariants = (product, stock) => {
+  if (stock?.product_variant) return [stock.product_variant];
+  const variantId = stock?.product_variant_id;
+  if (!variantId) return [];
+  const all = Array.isArray(product?.variants) ? product.variants : [];
+  return all.filter((v) => Number(v.id) === Number(variantId));
+};
 // Helper function to safely render variant values
 const renderVariantValue = (variant) => {
   if (!variant) return null;
@@ -262,7 +269,7 @@ const InvoiceEditForm = ({
                   category: product.category,
                   unit: product.unit,
                   attributes: product.attributes || [],
-                  variants: product.variants || [],
+                  variants: getStockVariants(product, stock),   // was: product.variants || []
                   price: parseFloat(stock.selling_price || product.selling_price),
                   purchase_price: parseFloat(stock.purchase_price || product.purchase_price),
                   gst_percentage: parseFloat(stock.selling_gst_percentage || product.gst_percentage),
@@ -285,7 +292,7 @@ const InvoiceEditForm = ({
                 category: product.category,
                 unit: product.unit,
                 attributes: product.attributes || [],
-                variants: product.variants || [],
+                variants: hasStockPermission ? [] : product.variants || [],   // was: product.variants || []
                 price: parseFloat(product.selling_price),
                 purchase_price: parseFloat(product.purchase_price),
                 gst_percentage: parseFloat(product.gst_percentage),
@@ -623,7 +630,11 @@ const InvoiceEditForm = ({
               }
             }
           }
-
+            if (hasStockPermission) {
+  productVariants = getStockVariants(product, stockEntry).map(
+    getVariantDisplayString,
+  );
+}
           // Get variant info from stock entry or item
           let variantInfo = item.variant_info || stockEntry?.variant_info || null;
           

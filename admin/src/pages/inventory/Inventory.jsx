@@ -358,7 +358,17 @@ const Stock = () => {
     lowStock:
       stocks?.filter((s) => (parseInt(s.quantity) || 0) < 10).length || 0,
   };
-
+// Build a readable variant label (null values skipped)
+const getVariantLabel = (variant) => {
+  if (!variant) return null;
+  const parts = [
+    variant.size && `Size: ${variant.size}`,
+    variant.color && `Color: ${variant.color}`,
+    variant.material && `Material: ${variant.material}`,
+    variant.gender && `Gender: ${variant.gender}`,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" • ") : `Variant #${variant.id}`;
+};
   const columns = [
     {
       header: (
@@ -428,6 +438,18 @@ const Stock = () => {
 
                 {/* Product Attributes */}
                 {formatAttributes(product?.attributes)}
+                {/* Product Attributes */}
+{formatAttributes(product?.attributes)}
+
+{/* Variant: shown only if this stock has one */}
+{row.product_variant && (
+  <div className="mt-1">
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+      <FiTag className="w-2.5 h-2.5 mr-1" />
+      {getVariantLabel(row.product_variant)}
+    </span>
+  </div>
+)}
               </div>
             </div>
           </div>

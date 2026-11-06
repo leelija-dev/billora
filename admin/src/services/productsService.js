@@ -462,18 +462,30 @@ export const productsAPI = {
   });
 }
         // Handle variants (array) - send as individual objects for proper parsing
-        if (productData.variants && Array.isArray(productData.variants)) {
-          productData.variants.forEach((variant, index) => {
-            if (variant.size)
-              formData.append(`variants[${index}][size]`, variant.size);
-            if (variant.color)
-              formData.append(`variants[${index}][color]`, variant.color);
-            if (variant.material)
-              formData.append(`variants[${index}][material]`, variant.material);
-            if (variant.gender)
-              formData.append(`variants[${index}][gender]`, variant.gender);
-          });
-        }
+        // if (productData.variants && Array.isArray(productData.variants)) {
+        //   productData.variants.forEach((variant, index) => {
+        //     if (variant.size)
+        //       formData.append(`variants[${index}][size]`, variant.size);
+        //     if (variant.color)
+        //       formData.append(`variants[${index}][color]`, variant.color);
+        //     if (variant.material)
+        //       formData.append(`variants[${index}][material]`, variant.material);
+        //     if (variant.gender)
+        //       formData.append(`variants[${index}][gender]`, variant.gender);
+        //   });
+        // }
+        // Handle variants - keep id for existing ones
+if (Array.isArray(productData.variants)) {
+  productData.variants.forEach((variant, index) => {
+    if (variant.id) formData.append(`variants[${index}][id]`, variant.id);
+    formData.append(`variants[${index}][size]`, variant.size ?? "");
+    formData.append(`variants[${index}][color]`, variant.color ?? "");
+    formData.append(`variants[${index}][material]`, variant.material ?? "");
+    formData.append(`variants[${index}][gender]`, variant.gender ?? "");
+  });
+}
+// Tells backend variants were submitted, even if the list is empty
+formData.append("variants_present", 1);
 
         // Add _method field for Laravel PUT request via POST
         formData.append("_method", "PUT");

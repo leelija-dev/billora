@@ -56,6 +56,11 @@ const StockForm = ({
   const [isUnitSearchActive, setIsUnitSearchActive] = useState(false);
   const [unitSearchTerm, setUnitSearchTerm] = useState("");
 
+  // Variant states
+  const [variants, setVariants] = useState([]);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [variantError, setVariantError] = useState("");
+
   // State for Seller Form Modal
   const [showSellerModal, setShowSellerModal] = useState(false);
   const [isCreatingSeller, setIsCreatingSeller] = useState(false);
@@ -171,6 +176,39 @@ const StockForm = ({
     fetchSellersData();
   }, [user?.id, stock]);
 
+  // Readable label: Size • Color • Material • Gender (null values skipped)
+const getVariantLabel = (variant) => {
+  const parts = [
+    variant.size && `Size: ${variant.size}`,
+    variant.color && `Color: ${variant.color}`,
+    variant.material && `Material: ${variant.material}`,
+    variant.gender && `Gender: ${variant.gender}`,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" • ") : `Variant #${variant.id}`;
+};
+
+const loadVariants = (product) => {
+  setVariantError("");
+  const list = Array.isArray(product?.variants) ? product.variants : [];
+  setVariants(list);
+  return list;
+};
+
+const handleVariantSelect = (variantId) => {
+  const variant = variants.find((v) => v.id === parseInt(variantId));
+  if (variant) {
+    setSelectedVariant(variant);
+    setValue("product_variant_id", variant.id);
+    setVariantError("");
+  }
+};
+
+const getVariantOptions = () =>
+  variants.map((v) => ({
+    value: v.id.toString(),
+    label: getVariantLabel(v),
+  }));
+
   // Handle product selection
   const handleProductSelect = (productId) => {
     const id = parseInt(productId);
@@ -182,6 +220,11 @@ const StockForm = ({
     if (product) {
       setSelectedProduct(product);
       setValue("product_id", id);
+      // Reset old variant and load variants of the new product
+      setSelectedVariant(null);
+      setValue("product_variant_id", "");
+      loadVariants(product);
+
       setValue("selling_price", product.selling_price || product.price || "");
       setValue("purchase_price", product.purchase_price || product.cost || "");
 
@@ -970,6 +1013,7 @@ const StockForm = ({
       // Reset form with stock data
       reset({
         product_id: stock.product_id || "",
+        product_variant_id: stock.product_variant_id || "",
         seller_id: sellerId,
         quantity: stock.quantity || 0,
         selling_price: stock.selling_price || 0,
@@ -1023,7 +1067,35 @@ const StockForm = ({
           });
         }
       }
+      // Prefill variants
+// Prefill variants (edit mode)
+const productFromList = products?.find((p) => p.id === stock.product_id);
 
+// Use whichever source actually contains variants
+const productForVariants =
+  [productData, productFromList].find(
+    (p) => Array.isArray(p?.variants) && p.variants.length > 0,
+  ) || productData || productFromList;
+
+let list = Array.isArray(productForVariants?.variants)
+  ? productForVariants.variants
+  : [];
+
+// Fallback: if the product has no variants loaded but the stock has one, still show it
+if (list.length === 0 && stock.product_variant) {
+  list = [stock.product_variant];
+}
+
+setVariants(list);
+
+if (stock.product_variant_id) {
+  const v =
+    stock.product_variant ||
+    list.find((x) => x.id === Number(stock.product_variant_id));
+  setSelectedVariant(v || null);
+} else {
+  setSelectedVariant(null);
+}
       // Set selected seller if seller_id is present
       if (sellerId) {
         // Try to find seller in the sellers list first
@@ -1088,6 +1160,7 @@ const StockForm = ({
       // If no stock (creating new), reset to defaults
       reset({
         product_id: "",
+        product_variant_id: "",
         seller_id: "",
         quantity: 0,
         selling_price: 0,
@@ -1104,14 +1177,23 @@ const StockForm = ({
       setSelectedProduct(null);
       setSelectedSeller(null);
       setSelectedUnit(null);
+      setVariants([]);
+setSelectedVariant(null);
+setVariantError("");
       setInvoiceImagePreview(null);
       setInvoiceImageFile(null);
       setIsImageDeleted(false);
       setDeletedImageId(null);
     }
   }, [stock, reset, products, sellers, storeUnits]);
-
+  
   const onFormSubmit = (data) => {
+    // Variant is mandatory only when the product has variants
+if (variants.length > 0 && !selectedVariant) {
+  setVariantError("Please select a variant for this product");
+  toast.error("Please select a variant");
+  return;
+}
     // Create FormData to handle file upload
     const formData = new FormData();
 
@@ -1164,6 +1246,7 @@ const StockForm = ({
       if (
         key !== "invoice_image" &&
         key !== "deleted_image_id" &&
+        key !== "product_variant_id" &&
         processedData[key] !== undefined &&
         processedData[key] !== null
       ) {
@@ -1174,7 +1257,9 @@ const StockForm = ({
     // Append user fields
     formData.append("user_id", user.id);
     formData.append("created_by", user.id);
-
+    if (selectedVariant?.id) {
+  formData.append("product_variant_id", selectedVariant.id);
+}
     // Handle deleted image ID
     if (isImageDeleted && deletedImageId) {
       console.log("🗑️ Sending deleted_image_id:", deletedImageId);
@@ -1614,7 +1699,28 @@ const StockForm = ({
               )}
             </div>
           </div>
-
+              {/* Variant dropdown: only when the selected product has variants */}
+{selectedProduct && variants.length > 0 && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <SearchSelect
+        label="Variant"
+        options={getVariantOptions()}
+        value={selectedVariant?.id?.toString() || ""}
+        onChange={handleVariantSelect}
+        placeholder="Select variant (size, color, material...)"
+        required
+        minSearchLength={0}
+        noOptionsMessage="No variants available"
+      />
+      {variantError && (
+        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          {variantError}
+        </p>
+      )}
+    </div>
+  </div>
+)}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Purchase Price / Costing Price"
