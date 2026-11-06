@@ -6,7 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Stocks;
-use Illuminate\Support\Facades\Cache;
+// use Illuminate\Support\Facades\Cache;
 class GenerateStockQrJob implements ShouldQueue
 {
     use Queueable;

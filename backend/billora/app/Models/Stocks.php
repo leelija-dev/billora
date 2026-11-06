@@ -23,7 +23,8 @@ class Stocks extends Model
         'qr_code_public_id',
         'bar_code',
         'bar_code_public_id',
-        'created_by' 
+        'created_by',
+        'product_variant_id'
     ];
     public function product(){
         return $this->belongsTo(Products::class , 'product_id');
@@ -45,6 +46,9 @@ class Stocks extends Model
     }
     public function sellerProduct(){
         return $this->belongsTo(SellerProducts::class, 'seller_product_id');
+    }
+    public function productVariant(){
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }
  

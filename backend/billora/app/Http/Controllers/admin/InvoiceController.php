@@ -311,12 +311,12 @@ class InvoiceController extends Controller
                 $gst = (((($item['price'] * $qty) - $discount) * $item['gst'] ?? 0) / 100);
                 $totalPrice = ((($item['price'] * $qty) - $discount) + $gst);
                 $product = Products::find($item['product_id']);
-                if ($item['gst'] <  $product->gst_percentage) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'GST Percentage can not be less than product GST Percentage'
-                    ]);
-                }
+                // if ($item['gst'] <  $product->gst_percentage) {
+                //     return response()->json([
+                //         'status' => false,
+                //         'message' => 'GST Percentage can not be less than product GST Percentage'
+                //     ]);
+                // }
                 if ($item['price'] <  $purchasePrice) {
                     return response()->json([
                         'status' => false,
@@ -906,7 +906,7 @@ class InvoiceController extends Controller
 
                     $invoiceItem = InvoiceItems::where('invoice_id', $invoice->id)->where('id', $id)->first();
                     if ($hasStockPermission) {
-                        $stocks = Stocks::where('user_id', $data['user_id'])->where('product_id', $invoiceItem->product_id)->first();
+                        $stocks = Stocks::where('user_id', $data['user_id'])->where('id', $invoiceItem->stock_id)->where('product_id', $invoiceItem->product_id)->first();
                         if ($stocks) {
                             $stocks->update([
                                 'quantity' => $stocks->quantity + $invoiceItem->quantity
@@ -1098,7 +1098,7 @@ class InvoiceController extends Controller
                         'created_by'    => $request->created_by
                     ]);
                     if ($hasStockPermission) {
-                        $stocks = Stocks::where('user_id', $data['user_id'])->where('product_id', $item['product_id'])->first();
+                        $stocks = Stocks::where('user_id', $data['user_id'])->where('id', $item['stock_id'])->where('product_id', $item['product_id'])->first();
                         if ($stocks) {
                             $stocks->update([
                                 'quantity' => $stocks->quantity - $item['quantity']
@@ -1150,7 +1150,8 @@ class InvoiceController extends Controller
                 'single_invoice_' . $request->user_id,
                 'with_out_stock_user_' . $request->user_id,
                 'bill_customers_user_' . $request->user_id,
-                'gst_collection_user_' . $request->user_id
+                'gst_collection_user_' . $request->user_id,
+                'stock_user_' . $request->user_id
             ])->flush();
             return response()->json([
                 'status' => true,
@@ -1191,7 +1192,7 @@ class InvoiceController extends Controller
             //stock reverse/update
             if ($hasStockPermission) {
                 foreach ($invoiceItem as $item) {
-                    Stocks::where('user_id', $user)
+                    Stocks::where('user_id', $user)->where('id', $item->stock_id)
                         ->where('product_id', $item->product_id)
                         ->increment('quantity', $item->quantity);
                 }

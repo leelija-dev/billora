@@ -843,6 +843,7 @@ class ProductsController extends Controller
                 'images.*'              => 'nullable',
                 // Variants
                 'variants'              => 'nullable|array',
+                'variants.*.id'         => 'nullable|integer',
                 'variants.*.size'       => 'nullable|string',
                 'variants.*.color'      => 'nullable|string',
                 'variants.*.material'   => 'nullable|string',
@@ -1007,34 +1008,102 @@ class ProductsController extends Controller
                 }
             }
             //update variants
-            if ($request->has('variants')) {
+            // if ($request->has('variants')) {
 
-                // Delete old variants
-                ProductVariant::where('product_id', $product->id)->delete();
+            //     // Delete old variants
+            //     ProductVariant::where('product_id', $product->id)->delete();
 
-                // Insert new variants
-                foreach ($request->variants as $variant) {
+            //     // Insert new variants
+            //     foreach ($request->variants as $variant) {
 
-                    if (
-                        empty($variant['size']) &&
-                        empty($variant['color']) &&
-                        empty($variant['material']) &&
-                        empty($variant['gender'])
-                    ) {
-                        continue;
-                    }
+            //         if (
+            //             empty($variant['size']) &&
+            //             empty($variant['color']) &&
+            //             empty($variant['material']) &&
+            //             empty($variant['gender'])
+            //         ) {
+            //             continue;
+            //         }
 
-                    ProductVariant::create([
-                        'user_id'    => $user,
-                        'product_id' => $product->id,
-                        'size'       => $variant['size'] ?? null,
-                        'color'      => $variant['color'] ?? null,
-                        'material'   => $variant['material'] ?? null,
-                        'gender'     => $variant['gender'] ?? null,
-                        'created_by' => $user,
-                    ]);
-                }
-            }
+            //         ProductVariant::create([
+            //             'user_id'    => $user,
+            //             'product_id' => $product->id,
+            //             'size'       => $variant['size'] ?? null,
+            //             'color'      => $variant['color'] ?? null,
+            //             'material'   => $variant['material'] ?? null,
+            //             'gender'     => $variant['gender'] ?? null,
+            //             'created_by' => $user,
+            //         ]);
+            //     }
+            // }
+            //update variants (sync by id)
+if ($request->has('variants')) {
+
+    $keepIds = [];
+
+    foreach ($request->variants as $variant) {
+
+        if (!is_array($variant)) {
+            continue;
+        }
+
+        // skip fully empty rows
+        if (
+            empty($variant['size']) &&
+            empty($variant['color']) &&
+            empty($variant['material']) &&
+            empty($variant['gender'])
+        ) {
+            continue;
+        }
+
+        $payload = [
+            'size'     => $variant['size'] ?? null,
+            'color'    => $variant['color'] ?? null,
+            'material' => $variant['material'] ?? null,
+            'gender'   => $variant['gender'] ?? null,
+        ];
+
+        // Existing variant of THIS product and THIS user
+        $existing = null;
+        if (!empty($variant['id'])) {
+            $existing = ProductVariant::where('id', $variant['id'])
+                ->where('product_id', $product->id)
+                ->where('user_id', $user)
+                ->first();
+        }
+
+        if ($existing) {
+            // already exists: update only
+            $existing->update($payload);
+            $keepIds[] = $existing->id;
+        } else {
+            // new variant: create
+            $new = ProductVariant::create($payload + [
+                'user_id'    => $user,
+                'product_id' => $product->id,
+                'created_by' => $user,
+            ]);
+            $keepIds[] = $new->id;
+        }
+    }
+
+    // Delete variants removed from the form
+    $removed = ProductVariant::where('product_id', $product->id)
+        ->where('user_id', $user)
+        ->whereNotIn('id', $keepIds)
+        ->get();
+
+    foreach ($removed as $variant) {
+        // Do not delete a variant that stock is using
+        if (Stocks::where('product_variant_id', $variant->id)->exists()) {
+            throw new \Exception(
+                'Variant (' . trim(($variant->size ?? '') . ' ' . ($variant->color ?? '') . ' ' . ($variant->material ?? '') . ' ' . ($variant->gender ?? '')) . ') is used in stock, so it cannot be deleted.'
+            );
+        }
+        $variant->delete();
+    }
+}
             DB::commit();
             Cache::tags(['products_user_' . $user, 'stock_user_' . $user])->flush();
             return response()->json([

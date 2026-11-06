@@ -69,7 +69,7 @@ class StocksController extends Controller
                 $user = Auth::user()->id; // authenticated user
 
                 $stocks = Cache::tags(['stock_user_' . $user])->remember($cacheKey, 600, function () use ($user, $search, $stock, $product, $seller) {
-                    return Stocks::with('product', 'product.unit', 'sellerProduct')
+                    return Stocks::with('product', 'product.unit', 'sellerProduct','productVariant')
                         ->where('user_id', $user)
                         ->when($search, function ($query) use ($search) {
 
@@ -206,9 +206,10 @@ class StocksController extends Controller
             'invoice_number' => 'nullable',
             'invoice_date'   => 'nullable',
             'invoice_image'  => 'nullable|image',
+            'product_variant_id' => 'nullable|exists:product_variant,id'
 
         ]);
-        // Log::info('stock details: ' . json_encode($stocks));
+        
         try {
             // check permission 
             $customer =  Customers::findOrFail(Auth::user()->id);
@@ -449,8 +450,10 @@ class StocksController extends Controller
                     'selling_price' => 'required',
                     'unit_id'       => 'required',
                     'quantity'      => 'required',
-                    'seller_id'     => 'required',
+                    'seller_id'     => 'nullable',
+                    'product_variant_id' => 'nullable|exists:product_variant,id'
                 ]);
+                Log::info('product variant id:  ' . $data['product_variant_id']);
                 // $product = Products::findOrFail($data['product_id']);
                 // if(!$product){
                 //     return response()->json([
@@ -469,8 +472,9 @@ class StocksController extends Controller
                     ]);
                 }
                 $stock->update($data);
+                if($data['seller_id']){
                 $seller = Seller::where('user_id', $user)
-                    ->where('id', $request->seller_id)
+                    ->where('id', $data['seller_id'])
                     ->first();
 
                 if (!$seller) {
@@ -479,6 +483,7 @@ class StocksController extends Controller
                         'message' => 'Seller not found. Please select a valid seller!'
                     ]);
                 }
+                
 
                 $tempFile = null;
                 $upload = [];
@@ -537,6 +542,7 @@ class StocksController extends Controller
                         'invoice_image_public_url' => $upload['public_id'] ?? ($sellerProducts->invoice_image_public_url ?? null),
                     ]
                 );
+                
                 // $sellerProducts
                 if ($seller) {
                     $new = (float)$prePaid - (float)$request->paid_amount;
@@ -544,10 +550,12 @@ class StocksController extends Controller
                         'due_amount' => (float)$seller->due_amount + (float)$new
                     ]);
                 }
+                
                 $stock->update([
                     'seller_id' => $sellerProducts->seller_id,
                     'seller_product_id' => $sellerProducts->id
                 ]);
+                }
                 $stockHistory = StockHistory::where('stock_id', $stock->id)->where('user_id', $user)->get();
                 foreach ($stockHistory as $history) {
                     $history->update([
