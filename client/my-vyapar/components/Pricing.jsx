@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 const Pricing = ({
-  limit = 3,
+  limit = 0,
   showFilters = true,
   showViewAllButton = true,
   initialData = null, // ✅ Accept initial data from server
