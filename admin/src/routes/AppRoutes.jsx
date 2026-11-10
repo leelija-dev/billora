@@ -38,7 +38,7 @@ import SocialLink from '../pages/social-link/SocialLink'
 import Sellers from '../pages/seller/Sellers'
 import SellerDetails from '../pages/seller/SellerDetails'
 import NotFound from '../pages/NotFound'
-
+import InvoiceWaybills from '../pages/invoices/InvoiceWaybills'
 const AppRoutes = () => {
   return (
     <Routes>
@@ -76,7 +76,7 @@ const AppRoutes = () => {
         <Route path="gst" element={<ProtectedRoute feature="gst"><GstManagement /></ProtectedRoute>} />
         <Route path="social-link" element={<ProtectedRoute feature="social-link"><SocialLink /></ProtectedRoute>} />
         <Route path="notifications" element={<Notifications />} />
-
+        <Route path="invoices/:invoiceId/waybills" element={<ProtectedRoute feature="invoices"><InvoiceWaybills /></ProtectedRoute>} />
 
 
         <Route path="settings" element={<ProtectedRoute feature="settings"><Settings /></ProtectedRoute>} />

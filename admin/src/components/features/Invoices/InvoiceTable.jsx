@@ -11,6 +11,7 @@ import {
   FiSlash,
   FiCreditCard,
   FiX,
+  FiTruck,
 } from "react-icons/fi";
 import Table from "../../common/Table/Table";
 import StatusBadge from "../../common/StatusBadge/StatusBadge";
@@ -25,6 +26,7 @@ const InvoiceTable = ({
   onPayDue,
   onPrintA4,
   onPrintThermal,
+  onWaybill,
 }) => {
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -189,6 +191,24 @@ const InvoiceTable = ({
           />
         );
       },
+    },
+        {
+      header: "Waybill",
+      accessor: "waybill",
+      cell: (_, row) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();          // stops the row click from opening the invoice
+            if (onWaybill) onWaybill(row);
+          }}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/20 rounded-lg transition-colors"
+          title="View / generate waybills"
+        >
+          <FiTruck className="w-4 h-4" />
+          Waybill
+        </button>
+      ),
     },
     {
       header: "Actions",

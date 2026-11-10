@@ -1279,6 +1279,9 @@ const handlePrintThermal = async (invoice) => {
                       onPayDue={handleOpenPayDue}
                       onPrintA4={handlePrintA4}
                       onPrintThermal={handlePrintThermal}
+                      onWaybill={(inv) =>
+    navigate(`/invoices/${inv.id}/waybills`, { state: { invoice: inv } })
+  }
                     />
                     {totalInvoices > pageSize && (
                       <motion.div

@@ -31,6 +31,7 @@ use App\Http\Controllers\admin\TestimonialsController;
 use App\Http\Controllers\SocialConnectController;
 use App\Models\User;
 use App\Models\UserOrders;
+use App\Http\Controllers\admin\WayBillController;
 use Illuminate\Support\Facades\Auth;
 
 // Public routes
@@ -127,6 +128,7 @@ Route::middleware('auth:sanctum')->prefix('brands')->group(function () {
 Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::get('/', [InvoiceController::class, 'index']); //for bill generate
    Route::get('/products',[InvoiceController::class, 'products']);
+   Route::get('/waybills', [WayBillController::class, 'index']);
    Route::post('/store', [InvoiceController::class, 'store']);
    Route::put('/{id}', [InvoiceController::class, 'update']);
    Route::get('/bill-history', [InvoiceController::class, 'billHistory']);
@@ -146,6 +148,9 @@ Route::middleware('auth:sanctum')->prefix('invoice')->group(function () {
    Route::get('/user-order-due/{id}',[UserOrdersController::class,'userOrderDue']);
 
    Route::put('/update-order-view-status/{id}', [UserOrdersController::class, 'updateOrderViewStatus']);
+   
+   Route::post('/generate-waybill/{id}', [WayBillController::class, 'store']);
+   Route::put('/update-waybill/{id}', [WayBillController::class, 'update']); 
 });
 //bill generate from product table(with out stock management)
 Route::prefix('invoices')->group(function () {
