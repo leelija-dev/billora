@@ -4,7 +4,7 @@ namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customers;
-use App\Models\Waybill;
+use App\Models\WayBill;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -49,7 +49,7 @@ class WaybillController extends Controller
         $fromCache = Cache::tags($tag)->has($key);
  
         $waybills = Cache::tags($tag)->remember($key, 600, function () use ($user, $f) {
-            return Waybill::where('user_id', $user)                        // only MY waybills
+            return WayBill::where('user_id', $user)                        // only MY waybills
                 ->when($f['invoice_id'] ?? null, fn ($q, $i) => $q->where('invoice_id', $i))
                 ->when($f['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
                 ->when($f['search'] ?? null, function ($q, $s) {
@@ -88,7 +88,7 @@ class WaybillController extends Controller
 
         // withTrashed so a deleted number is never reused
         // (remove withTrashed() if your Waybill model has no SoftDeletes)
-        $last = Waybill::where('user_id', $userId)
+        $last = WayBill::where('user_id', $userId)
             ->orderByDesc('id')
             ->value('waybill_number');
 
@@ -203,7 +203,7 @@ class WaybillController extends Controller
                 $data['transport_mode'] = $data['transport_mode'] ?? 'road';
                 $data['status']         = $data['status'] ?? 'issued';
 
-                $waybill = new Waybill();
+                $waybill = new WayBill();
                 $waybill->forceFill($data)->save();   // works even if $fillable is not set
 
                 return $waybill;
@@ -279,7 +279,7 @@ class WaybillController extends Controller
 
     try {
         // only MY waybill can be edited
-        $waybill = Waybill::where('id', $id)->where('user_id', $user)->first();
+        $waybill = WayBill::where('id', $id)->where('user_id', $user)->first();
 
         if (!$waybill) {
             return response()->json([

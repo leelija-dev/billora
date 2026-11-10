@@ -188,7 +188,7 @@ export const useInventoryStore = create((set, get) => ({
     } catch (error) {
       console.error(' Update Stock Error:', error)
       console.error(' Update Stock Error Response:', error.response?.data)
-      toast.error('Failed to update stock')
+      toast.error(error.response?.data?.message ||'Failed to update stock')
       set({ loading: false })
       return { success: false, error: error.response?.data }
     }

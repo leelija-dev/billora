@@ -472,8 +472,15 @@ class StocksController extends Controller
                         'message' => 'Stock not found'
                     ]);
                 }
+                if ($data['purchase_price'] > $data['selling_price']) {
+    return response()->json([
+        'status'  => false,
+        'message' => 'Purchase price cannot be greater than selling price',
+    ], 422);
+}
                 $stock->update($data);
-                if($data['seller_id']){
+                // if($data['seller_id']){
+                if (!empty($data['seller_id'])) {
                 $seller = Seller::where('user_id', $user)
                     ->where('id', $data['seller_id'])
                     ->first();
