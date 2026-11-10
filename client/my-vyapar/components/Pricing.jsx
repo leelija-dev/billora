@@ -82,7 +82,31 @@ const Pricing = ({
   const [subscribing, setSubscribing] = useState(null);
   const cardRefs = useRef([]);
   const router = useRouter();
+  const goToComparison = () => {
+    if (isPricingPage) {
+      setShowComparison(true); // open the table if it was collapsed
+      setTimeout(() => {
+        document
+          .getElementById("plan-comparison")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    } else {
+      // e.g. pricing section on the home page -> go to the pricing page
+      router.push("/pricing#plan-comparison");
+      useEffect(() => {
+  if (!isPricingPage || typeof window === "undefined") return;
+  if (window.location.hash !== "#plan-comparison") return;
 
+  const t = setTimeout(() => {
+    document
+      .getElementById("plan-comparison")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 400);
+
+  return () => clearTimeout(t);
+}, [isPricingPage, plans?.length]);
+    }
+  };
   const {
     user,
     token,
@@ -857,7 +881,8 @@ const Pricing = ({
     if (!plans || plans.length === 0) return null;
 
     return (
-      <div className="mt-16 relative z-10">
+      // <div className="mt-16 relative z-10">
+      <div id="plan-comparison" className="mt-16 relative z-10 scroll-mt-24">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-3">
@@ -1431,7 +1456,15 @@ const Pricing = ({
                   plan.allFeaturesList && plan.allFeaturesList.length > 0
                     ? plan.allFeaturesList
                     : [];
+                const isFeatureIncluded = (feature) => {
+                const name = typeof feature === "string" ? feature : feature.name;
+                  return plan.featureMap && plan.featureMap[name] !== undefined
+                    ? plan.featureMap[name]
+                    : plan.features.includes(name);
+                };
 
+                const providedFeatures = featuresToDisplay.filter(isFeatureIncluded);
+                const providedCount = providedFeatures.length;
                 return (
                   <div
                     key={plan.id}
@@ -1545,13 +1578,16 @@ const Pricing = ({
                               Features
                             </h4>
                             <span className="text-xs text-gray-400">
-                              {featuresToDisplay.length} features
+                              {/* {featuresToDisplay.length} features */}
+                              {providedCount} {providedCount === 1 ? "feature" : "features"}
                             </span>
                           </div>
 
                           <div className="space-y-2.5 text-left max-w-sm mx-auto">
-                            {featuresToDisplay.length > 0 ? (
-                              featuresToDisplay
+                            {/* {featuresToDisplay.length > 0 ? (
+                              featuresToDisplay */}
+                              {providedFeatures.length > 0 ? (
+                                providedFeatures
                                 .slice(0, 6)
                                 .map((feature, idx) => {
                                   const featureName =
@@ -1603,9 +1639,20 @@ const Pricing = ({
                                 No features available
                               </div>
                             )}
-                            {featuresToDisplay.length > 6 && (
+                            {/* {featuresToDisplay.length > 6 && (
                               <div className="text-center text-xs text-purple-600 font-medium mt-2">
                                 +{featuresToDisplay.length - 6} more features
+                              </div>
+                            )} */}
+                            {providedCount > 6 && (
+                              <div className="text-center mt-2">
+                                <button
+                                  type="button"
+                                  onClick={goToComparison}
+                                  className="text-xs text-purple-600 font-medium hover:underline cursor-pointer"
+                                >
+                                  +{providedCount - 6} more features
+                                </button>
                               </div>
                             )}
                           </div>

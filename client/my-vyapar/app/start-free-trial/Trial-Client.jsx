@@ -31,7 +31,7 @@ import {
   FaCreditCard,
   FaCheck,
 } from "react-icons/fa";
-
+const featureName = (f) => (typeof f === "string" ? f : f?.name || "");
 const TrialClient = () => {
   const router = useRouter();
   const { user, isLoggedIn, isLoading } = useAuthStore();
@@ -99,16 +99,27 @@ const TrialClient = () => {
   }, [isLoading, isLoggedIn, user, router]);
 
   // Pre-fill form from logged-in user (read-only fields)
+  // useEffect(() => {
+  //   if (isLoggedIn && user) {
+  //     setFormData({
+  //       customerName: user.name || user.full_name || "",
+  //       customerEmail: user.email || "",
+  //       customerPhone: user.phone || user.mobile || "",
+  //       planId: "",
+  //     });
+  //   }
+  // }, [isLoggedIn, user]);
   useEffect(() => {
-    if (isLoggedIn && user) {
-      setFormData({
-        customerName: user.name || user.full_name || "",
-        customerEmail: user.email || "",
-        customerPhone: user.phone || user.mobile || "",
-        planId: "",
-      });
-    }
-  }, [isLoggedIn, user]);
+  if (isLoggedIn && user) {
+    setFormData((prev) => ({
+      ...prev,
+      customerName: user.name || user.full_name || "",
+      customerEmail: user.email || "",
+      customerPhone: user.phone || user.mobile || "",
+      // planId is NOT touched here, so the selected plan stays
+    }));
+  }
+}, [isLoggedIn, user?.id]);
 
   const handlePlanSelect = (planId) => {
     setFormData((prev) => ({ ...prev, planId: planId.toString() }));
@@ -696,7 +707,8 @@ const handleSubmit = async (e) => {
                                                     className="flex items-center gap-2 text-xs text-slate-600"
                                                   >
                                                     <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                                                    <span>{feature}</span>
+                                                    {/* <span>{feature}</span> */}
+                                                    <span>{featureName(feature)}</span>
                                                   </div>
                                                 ))}
                                               {plan.features.length > 4 && (
@@ -749,7 +761,8 @@ const handleSubmit = async (e) => {
                                       className="flex items-center gap-2 text-xs text-slate-700"
                                     >
                                       <FaCheck className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                                      <span>{feature}</span>
+                                      {/* <span>{feature}</span> */}
+                                      <span>{featureName(feature)}</span>
                                     </div>
                                   ),
                                 )}
