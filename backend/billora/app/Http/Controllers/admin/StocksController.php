@@ -453,7 +453,8 @@ class StocksController extends Controller
                     'seller_id'     => 'nullable',
                     'product_variant_id' => 'nullable|exists:product_variant,id'
                 ]);
-                Log::info('product variant id:  ' . $data['product_variant_id']);
+                // Log::info('product variant id:  ' . $data['product_variant_id']);
+
                 // $product = Products::findOrFail($data['product_id']);
                 // if(!$product){
                 //     return response()->json([
